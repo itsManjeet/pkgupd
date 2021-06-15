@@ -1,0 +1,1 @@
+add_library(auto SHARED auto.cc)

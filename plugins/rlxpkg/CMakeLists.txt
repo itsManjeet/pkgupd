@@ -1,0 +1,1 @@
+add_library(rlxpkg SHARED rlxpkg.cc)

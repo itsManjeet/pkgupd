@@ -1,0 +1,26 @@
+id: dev.rlxos.pkgupd
+version: 0.1.0
+about: |
+  An extensible package manager for rlxos
+
+sources:
+  - https://github.com/rlxos/pkgupd
+
+environ:
+
+prescript:
+
+postscript:
+
+pack: none
+
+
+packages:
+  - id: pkgupd
+    plugin: auto
+    flags:
+      - id: cflags
+        value: -O3
+        only: true
+
+    pack: none
