@@ -16,7 +16,6 @@ enum buildtool
     NONE,
     AUTOCONF,
     AUTOGEN,
-    MAKEFILE,
     PYSETUP,
     MESON,
     CMAKE,
@@ -25,7 +24,6 @@ enum buildtool
 std::map<string, buildtool> buildtool_files = {
     {"configure", AUTOCONF},
     {"autogen.sh", AUTOGEN},
-    {"Makefile", MAKEFILE},
     {"CMakeLists.txt", CMAKE},
     {"meson.build", MESON},
     {"setup.py", PYSETUP}};
@@ -38,8 +36,6 @@ string buildtool_tool(buildtool c)
         return "../configure";
     case buildtool::AUTOGEN:
         return "../autogen.sh";
-    case buildtool::MAKEFILE:
-        return "make";
     case buildtool::CMAKE:
         return "cmake";
     case buildtool::MESON:
