@@ -70,9 +70,9 @@ namespace pkgupd
 
             _dir_work = rlx::utils::sys::tempdir(_dir_work, "pkgupd");
 
-            _recipe.appendenviron("PKGDIR="+ _dir_pkgs);
-            _recipe.appendenviron("SRCDIR="+ _dir_src);
-            _recipe.appendenviron("WORKDIR="+ _dir_work);
+            _recipe.appendenviron("PKGUPD_PKGDIR=" + _dir_pkgs);
+            _recipe.appendenviron("PKGUPD_SRCDIR=" + _dir_src);
+            _recipe.appendenviron("PKGUPD_WORKDIR=" + _dir_work);
         }
 
         ~compiler()
@@ -154,8 +154,8 @@ namespace pkgupd
             string src_dir = _dir_work + "/src/" + _recipe.dir(pkg);
             string pkg_dir = _dir_work + "/pkg/" + pkg->id();
 
-            _recipe.appendenviron("srcdir="+ src_dir);
-            _recipe.appendenviron("pkgdir="+ pkg_dir);
+            _recipe.appendenviron("pkgupd_srcdir=" + src_dir);
+            _recipe.appendenviron("pkgupd_pkgdir=" + pkg_dir);
 
             if (pkg->prescript().length())
             {

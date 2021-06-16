@@ -177,9 +177,8 @@ namespace pkgupd
                 return pkg->environ();
 
             auto _new_env = _environ;
-            _new_env.insert(
-                _new_env.end(),
-                pkg->environ().begin(), pkg->environ().end());
+            for(auto i : pkg->environ())
+                _new_env.push_back(i);
 
             return _new_env;
         }
