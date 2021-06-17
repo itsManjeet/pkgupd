@@ -212,7 +212,7 @@ namespace pkgupd
             if (pkg->postscript().length())
             {
                 io::process("executing postscript");
-                if (utils::exec::command(pkg->postscript(), src_dir, _recipe.environ(pkg)))
+                if (utils::exec::command(pkg->postscript(), ".", _recipe.environ(pkg)))
                 {
                     _error = "failed to execute postscript";
                     return false;
