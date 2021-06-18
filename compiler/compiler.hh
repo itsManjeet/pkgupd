@@ -157,6 +157,9 @@ namespace pkgupd
             _recipe.appendenviron("pkgupd_srcdir=" + src_dir);
             _recipe.appendenviron("pkgupd_pkgdir=" + pkg_dir);
 
+            if (!std::filesystem::exists(src_dir))
+                std::filesystem::create_directories(src_dir);
+
             if (pkg->prescript().length())
             {
                 io::process("executing prescript");
