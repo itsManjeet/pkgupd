@@ -1,5 +1,7 @@
 #include "recipe.hh"
 #include "compiler/compiler.hh"
+#include "installer/installer.hh"
+#include "database/database.hh"
 
 #include <cli/cli.hh>
 #include <io.hh>
@@ -43,6 +45,56 @@ int main(int ac, char **av)
             .long_id("debug")
             .required(true))
 
+        .arg(arg::create("recompile")
+            .long_id("recompile")
+            .about("recompile specified package if already compiled")
+            .required(true))
+        
+        .arg(arg::create("recompile-all")
+            .long_id("recompile-all")
+            .about("recompile all packages in specified recipe file"))
+
+        .sub(app::create("install")
+            .about("install specified package from recipe dir")
+            .fn([](context const& cc) -> int
+            {
+
+                if (cc.args().size() == 0)
+                {
+                    io::error("no recipe file specified");
+                    return 1;
+                }
+
+                io::debug(level::trace, "configuration:\n", cc.config());
+
+                for(auto const& pkg : cc.args())
+                {
+                    io::process("installing ", pkg);                    
+
+                    auto [pkgid, subpkg] = parse_pkgid(pkg);
+
+                    auto recipe = pkgupd::recipe(pkgid);
+                    auto installer = pkgupd::installer(recipe, cc.config());
+
+                    try {
+                        if (!installer.install(subpkg))
+                        {
+                            io::error(installer.error());
+                            return 1;
+                        }
+                    } catch(std::runtime_error const& e)
+                    {
+                        io::error(e.what());
+                        return 1;
+                    }
+                    
+
+                    io::success("installed ", pkg);
+                }
+
+                return 0;
+            }))
+
         .sub(app::create("compile")
             .about("Compile package from specifed recipe file")
             .fn([](context const& cc) -> int
@@ -61,6 +113,7 @@ int main(int ac, char **av)
                     io::process("compiling ", pkg);                    
 
                     auto [pkgid, subpkg] = parse_pkgid(pkg);
+
 
                     auto recipe = pkgupd::recipe(pkgid);
                     auto compiler = pkgupd::compiler(recipe, cc.config());

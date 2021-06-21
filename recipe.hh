@@ -120,6 +120,8 @@ namespace pkgupd
             _path,
             _pack;
 
+        bool _clean = true;
+
         YAML::Node _node;
 
         std::vector<string> _sources,
@@ -141,6 +143,7 @@ namespace pkgupd
             OPTVAL(postscript, _node, "");
 
             OPTVAL(pack, _node, "none");
+            OPTVAL_TYPE(clean, _node, true, bool);
 
             if (_node["sources"])
                 for (auto const &i : _node["sources"])
@@ -163,6 +166,8 @@ namespace pkgupd
 
         DEFINE_GET_METHOD(string, path);
 
+        DEFINE_GET_METHOD(bool, clean);
+
         DEFINE_GET_METHOD(YAML::Node, node);
 
         DEFINE_GET_METHOD(std::vector<string>, sources);
@@ -177,7 +182,7 @@ namespace pkgupd
                 return pkg->environ();
 
             auto _new_env = _environ;
-            for(auto i : pkg->environ())
+            for (auto i : pkg->environ())
                 _new_env.push_back(i);
 
             return _new_env;
@@ -192,8 +197,7 @@ namespace pkgupd
 
         string const pack(package *pkg) const
         {
-            assert(pkg != nullptr);
-            if (pkg->pack().length() == 0)
+            if (pkg == nullptr || (pkg && pkg->pack().length() == 0))
                 return _pack;
 
             return pkg->pack();

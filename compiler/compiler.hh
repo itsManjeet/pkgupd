@@ -235,7 +235,7 @@ namespace pkgupd
         {
             if (_recipe.pack(pkg) == "none")
             {
-                path::writefile(_dir_data + "/" + _recipe.id() + "." + pkg->id(), _recipe.node());
+                path::writefile(_dir_data + "/" + _recipe.id() + ":" + pkg->id(), _recipe.node());
                 return true;
             }
 
@@ -264,7 +264,7 @@ namespace pkgupd
 
             assert(plugin_pack_func != nullptr);
 
-            auto package_path = _dir_pkgs + "/" + _recipe.id() + "." + pkg->id() + "." + pack_id;
+            auto package_path = _dir_pkgs + "/" + _recipe.id() + ":" + pkg->id() + "." + pack_id;
 
             auto [status, output] = plugin_pack_func(_recipe, _config, pkg, dir, package_path);
             if (!status)
@@ -320,7 +320,7 @@ namespace pkgupd
                     if (pkg_id != pkg.id())
                         continue;
 
-                if (std::filesystem::exists(_dir_data + "/" + _recipe.id() + "." + pkg.id()))
+                if (std::filesystem::exists(_dir_data + "/" + _recipe.id() + ":" + pkg.id()))
                 {
                     io::println("skipping ", pkg.id(), ", already installed");
                     if (pkg_id.length())
@@ -344,7 +344,8 @@ namespace pkgupd
 
                 pkg_build = true;
 
-                clean();
+                if (_recipe.clean())
+                    clean();
             }
 
             if (_recipe.postscript().length())
@@ -362,6 +363,8 @@ namespace pkgupd
                 _error = "no package found with id " + pkg_id;
                 return false;
             }
+
+            clean();
 
             return true;
         }
