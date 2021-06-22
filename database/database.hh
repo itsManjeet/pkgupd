@@ -73,9 +73,10 @@ namespace pkgupd
             }
         }
 
-        std::vector<recipe> resolve(string const &pkgid, bool compiletime = false)
+        std::vector<recipe> resolve(string pkgid, bool compiletime = false)
         {
-            auto pkg = (*this)[pkgid];
+            auto [rcp, p] = parse_pkgid(pkgid);
+            auto pkg = (*this)[rcp];
 
             if (algo::contains(__depid, pkgid) || installed(pkgid))
                 return __deplist;
