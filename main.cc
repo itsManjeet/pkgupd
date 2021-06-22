@@ -55,6 +55,10 @@ int main(int ac, char **av)
             .long_id("recompile-all")
             .about("recompile all packages in specified recipe file"))
 
+        .arg(arg::create("no-depends")
+            .long_id("no-depends")
+            .about("skip dependencies resolvement"))
+
         .sub(app::create("install-file")
             .about("perform installation from filepath")
             .fn([](context const &cc) -> int
@@ -117,12 +121,13 @@ int main(int ac, char **av)
 
                 std::vector<string> pkgs;
                 
-                for(auto const& i : cc.args())
+                for(auto  i : cc.args())
                 {
                     if (!cc.checkflag("no-depends"))
-                       for(auto const & j : database.resolve(i))
+                    {
+                        for(auto const & j : database.resolve(i))
                             pkgs.push_back(j.id());
-
+                    }
                     pkgs.push_back(i);
                 }
 
@@ -214,8 +219,13 @@ int main(int ac, char **av)
                 for(auto const& i : cc.args())
                 {
                     if (!cc.checkflag("no-depends"))
-                       for(auto const & j : database.resolve(i, true))
+                    {
+                        if (std::filesystem::exists(i))
+                            continue;
+                        for(auto const & j : database.resolve(i, true))
                             pkgs.push_back(j.id());
+                    }
+                       
 
                     pkgs.push_back(i);
                 }
@@ -227,7 +237,7 @@ int main(int ac, char **av)
                     auto [pkgid, subpkg] = database.parse_pkgid(pkg);
                     
                     try {
-                        auto recipe = database[pkgid];
+                        auto recipe = (std::filesystem::exists(pkg) ? pkgupd::recipe(pkg) : database[pkgid]);
                         auto compiler = pkgupd::compiler(recipe, cc.config());
 
                         if (database.installed(pkg) && !cc.checkflag("force"))
@@ -329,6 +339,23 @@ int main(int ac, char **av)
 
                 return 0;
                 
+            }))
+
+        .sub(app::create("info")
+            .about("Print Information about pkgid")
+            .fn([](context const& cc) -> int
+            {
+                if (cc.args().size() == 0)
+                {
+                    io::error("no pkgid file specified");
+                    return 1;
+                }
+
+                io::debug(level::trace, "configuration:\n", cc.config());
+                auto database = pkgupd::database(cc.config());
+
+                io::println(database[cc.args()[0]]);
+                return 0;
             }))
 
 

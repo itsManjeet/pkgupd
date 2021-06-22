@@ -29,7 +29,8 @@ namespace pkgupd
         YAML::Node _config;
         string _dir_data,
             _dir_root,
-            _dir_recipe;
+            _dir_recipe,
+            _dir_pkgs;
 
         std::vector<string> __depid;
         std::vector<recipe> __deplist;
@@ -48,6 +49,11 @@ namespace pkgupd
             _dir_root = get_dir("root", "/");
             _dir_data = get_dir("data", DEFAULT_DIR_DATA);
             _dir_recipe = get_dir("recipes", DEFAULT_DIR_RECIPE);
+            _dir_pkgs = get_dir("pkgs", DEFAULT_DIR_PKGS);
+
+            for (auto const &i : {_dir_root, _dir_data, _dir_recipe, _dir_pkgs})
+                if (!std::filesystem::exists(i))
+                    std::filesystem::create_directories(i);
         }
 
         DEFINE_GET_METHOD(string, dir_root);

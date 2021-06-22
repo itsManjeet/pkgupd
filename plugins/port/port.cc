@@ -24,10 +24,9 @@ extern "C" std::tuple<bool, string> pkgupd_build(
             env.push_back(io::format(i, "=", node["compiler"][i].as<string>()));
     };
 
-    env.push_back("SRCDIR=" + src_dir);
     env.push_back("PKGDEST=" + pkg_dir);
 
-    string compiler = (node["compiler"] && node["compiler"]["recipe"] ? node["compiler"]["recipe"].as<string>() : "rcp-compiler");
+    string compiler = (node["compiler"] && node["compiler"]["recipe"] ? node["compiler"]["recipe"].as<string>() : "port-compiler");
 
     if (rlx::utils::exec::command(
             compiler + " " + pkg->id(), src_dir,

@@ -8,6 +8,7 @@
 
 #include "../recipe.hh"
 #include "../config.hh"
+#include "../installer/installer.hh"
 
 namespace pkgupd
 {
@@ -185,7 +186,7 @@ namespace pkgupd
                 return true;
             }
 
-            auto plugin_path = utils::dlmodule::search(plugin, "/lib/pkgupd/:/usr/lib/pkgupd", "PKGUPD_PLUGINS");
+            auto plugin_path = utils::dlmodule::search(plugin, "/lib/pkgupd/:/usr/lib/pkgupd/", "PKGUPD_PLUGINS");
             if (plugin_path.length() == 0)
             {
                 _error = "failed to find plugin '" + plugin + "' required to build " + pkg->id();
@@ -276,6 +277,18 @@ namespace pkgupd
             if (!std::filesystem::exists(package_path))
             {
                 _error = "no output generated";
+                return false;
+            }
+
+            
+
+            auto [instlr, _pkg] = installer::frompath(package_path, _config);
+            string subpkg = "";
+            if (_pkg != nullptr)
+                subpkg = _pkg->id();
+            if (!instlr.install(subpkg))
+            {
+                _error = instlr.error();
                 return false;
             }
 

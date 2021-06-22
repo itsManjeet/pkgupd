@@ -59,20 +59,27 @@ pkgupd_getrecipe(string pkgpath)
     auto data = utils::exec::output(
         io::format("tar -xaf \"", pkgpath, "\" ./.info -O"));
 
-    io::writefile(tmpfile, data);
-    auto recipe = pkgupd::recipe(tmpfile);
-    auto node = YAML::Load(data);
-    pkgupd::package *pkg = nullptr;
-
-    if (node["pkgid"])
+    try
     {
-        for (auto p : recipe.packages())
-            if (p.id() == node["pkgid"].as<string>())
-            {
-                pkg = new pkgupd::package(p);
-                break;
-            }
-    }
+        io::writefile(tmpfile, data);
+        auto recipe = pkgupd::recipe(tmpfile);
+        auto node = YAML::Load(data);
+        pkgupd::package *pkg = nullptr;
 
-    return {true, "", recipe, pkg};
+        if (node["pkgid"])
+        {
+            for (auto p : recipe.packages())
+                if (p.id() == node["pkgid"].as<string>())
+                {
+                    pkg = new pkgupd::package(p);
+                    break;
+                }
+        }
+
+        return {true, "", recipe, pkg};
+    } catch (std::exception const& c)
+    {
+        io::error(c.what());
+        return {false, "", pkgupd::recipe(tmpfile), nullptr};
+    }
 }

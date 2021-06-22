@@ -13,3 +13,5 @@ add_executable(pkgupd main.cc)
 target_link_libraries(pkgupd yaml-cpp curlcpp dl)
 install(TARGETS pkgupd
     RUNTIME DESTINATION bin)
+
+install(FILES port-compiler DESTINATION bin PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
