@@ -17,6 +17,7 @@ namespace pkgupd
     {
     public:
         typedef std::tuple<bool, string, std::vector<string>> (*unpack_func)(recipe const &, YAML::Node const &, package *, string pkgpath, string rootdir);
+        typedef std::tuple<bool, string, recipe, package *> (*getrecipe_func)(string path);
 
     private:
         recipe _recipe;
@@ -71,9 +72,9 @@ namespace pkgupd
             string pkgfile = pkgid + "." + _recipe.pack(pkg);
             string pkgpath = _dir_pkgs + "/" + pkgfile;
 
-            io::debug(level::trace,"pkgfile ", pkgpath);
+            io::debug(level::trace, "pkgfile ", pkgpath);
             if (std::filesystem::exists(pkgpath))
-                io::debug(level::trace,pkgfile, " found in cache");
+                io::debug(level::trace, pkgfile, " found in cache");
             else
             {
 
@@ -85,6 +86,35 @@ namespace pkgupd
             }
 
             return {true, pkgpath};
+        }
+
+        static std::tuple<installer, package *> frompath(std::string pkgpath, YAML::Node const &cc)
+        {
+            assert(std::filesystem::exists(pkgpath));
+            string plugin = std::filesystem::path(pkgpath).extension();
+            plugin = plugin.substr(1, plugin.length() - 1);
+            if (plugin.length() == 0)
+                throw installer::exception(io::format(pkgpath, " not a installable package"));
+
+            string plugin_path = utils::dlmodule::search(plugin, "/lib/pkgupd:/usr/lib/pkgupd", "PKGUPD_PLUGINS");
+            if (plugin_path.length() == 0)
+                throw installer::exception(io::format("failed to find plugin '" + plugin + "' required to getrecipe " + pkgpath));
+
+            getrecipe_func getrecipe_plugin_fn;
+            try
+            {
+                getrecipe_plugin_fn = utils::dlmodule::load<getrecipe_func>(plugin_path, "pkgupd_getrecipe");
+            }
+            catch (std::runtime_error const &e)
+            {
+                throw installer::exception(e.what());
+            }
+
+            auto [status, mesg, rcp, pkg] = getrecipe_plugin_fn(pkgpath);
+            if (!status)
+                throw installer::exception(mesg);
+
+            return {installer(rcp, cc), pkg};
         }
 
         bool install(std::string subpkg = "")

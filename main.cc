@@ -55,6 +55,51 @@ int main(int ac, char **av)
             .long_id("recompile-all")
             .about("recompile all packages in specified recipe file"))
 
+        .sub(app::create("install-file")
+            .about("perform installation from filepath")
+            .fn([](context const &cc) -> int
+            {
+                if (cc.args().size() == 0)
+                {
+                    io::error("no pkgid specified");
+                    return 1;
+                }
+
+                auto pkgpath = cc.args()[0];
+                if (!std::filesystem::exists(pkgpath))
+                {
+                    io::error(pkgpath, " not exist");
+                    return 1;
+                }
+                auto database = pkgupd::database(cc.config());
+                io::debug(level::trace, "configuration:\n", cc.config());
+
+                try 
+                {
+                    auto [installer, pkg] = pkgupd::installer::frompath(pkgpath, cc.config());
+                    string subpkg = "";
+                    if (pkg != nullptr)
+                        subpkg = pkg->id();
+
+                    if (!installer.install(subpkg))
+                    {
+                        io::error(installer.error());
+                        return false;
+                    }
+
+                    if (pkg)
+                        delete pkg;
+                }
+                catch(rlx::obj::exception  e)
+                {
+                    io::error(e.what());
+                    return false;
+                }
+                
+
+                return true;
+            }))
+
         .sub(app::create("install")
             .about("install specified package from recipe dir")
             .fn([](context const& cc) -> int
@@ -70,7 +115,18 @@ int main(int ac, char **av)
 
                 io::debug(level::trace, "configuration:\n", cc.config());
 
-                for(auto const& pkg : cc.args())
+                std::vector<string> pkgs;
+                
+                for(auto const& i : cc.args())
+                {
+                    if (!cc.checkflag("no-depends"))
+                       for(auto const & j : database.resolve(i))
+                            pkgs.push_back(j.id());
+
+                    pkgs.push_back(i);
+                }
+
+                for(auto const& pkg : pkgs)
                 {
                     io::process("installing ", pkg);                    
 
@@ -109,6 +165,35 @@ int main(int ac, char **av)
 
                 return 0;
             }))
+        
+        .sub(app::create("depends")
+            .about("Resolve required dependencies")
+            .fn([](context const& cc )-> int
+            {
+                if (cc.args().size() == 0)
+                {
+                    io::error("no pkgid specified");
+                    return 1;
+                }
+
+                io::debug(level::trace, "configuration:\n", cc.config());
+                auto database = pkgupd::database(cc.config());
+
+                try
+                {
+                    for(auto const& pkg : cc.args())
+                        for(auto const& i : database.resolve(pkg))
+                            io::println(i.id());
+                }
+                catch(pkgupd::database::exception e)
+                {
+                    io::error(e.what());
+                    return 1;
+                }
+                
+
+                return 0;
+            }))
 
         .sub(app::create("compile")
             .about("Compile package from specifed recipe file")
@@ -124,7 +209,18 @@ int main(int ac, char **av)
                 io::debug(level::trace, "configuration:\n", cc.config());
                 auto database = pkgupd::database(cc.config());
 
-                for(auto const& pkg : cc.args())
+                std::vector<string> pkgs;
+                
+                for(auto const& i : cc.args())
+                {
+                    if (!cc.checkflag("no-depends"))
+                       for(auto const & j : database.resolve(i, true))
+                            pkgs.push_back(j.id());
+
+                    pkgs.push_back(i);
+                }
+
+                for(auto const& pkg : pkgs)
                 {
                     io::process("compiling ", pkg);                    
 
@@ -201,14 +297,14 @@ int main(int ac, char **av)
                     auto [pkgid, subpkg] = database.parse_pkgid(pkg);
                     
                     try {
-                        auto recipe = database[pkgid];
-                        auto remover = pkgupd::remover(recipe, cc.config());
-
                         if (!database.installed(pkg))
                         {
                             io::info(pkg, " is not already installed, skipping");
                             continue;
                         }
+
+                        auto recipe = database.installed_recipe(pkg);
+                        auto remover = pkgupd::remover(recipe, cc.config());
 
                         if (!remover.remove(pkg))
                         {

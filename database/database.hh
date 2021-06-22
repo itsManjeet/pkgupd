@@ -31,6 +31,9 @@ namespace pkgupd
             _dir_root,
             _dir_recipe;
 
+        std::vector<string> __depid;
+        std::vector<recipe> __deplist;
+
     public:
         database(YAML::Node const &c)
             : _config(c)
@@ -63,6 +66,34 @@ namespace pkgupd
                 throw database::exception("No recipe file found for " + pkgid);
             }
         }
+
+        std::vector<recipe> resolve(string const &pkgid, bool compiletime = false)
+        {
+            auto pkg = (*this)[pkgid];
+
+            if (algo::contains(__depid, pkgid) || installed(pkgid))
+                return __deplist;
+
+            auto total_deps = pkg.runtime();
+            if (compiletime)
+                total_deps = algo::merge(total_deps, pkg.buildtime());
+            for (auto const &i : total_deps)
+            {
+                auto dep = (*this)[i];
+                if (algo::contains(__depid, i) || installed(i))
+                    continue;
+
+                resolve(i, compiletime);
+                __deplist.push_back(dep);
+                __depid.push_back(i);
+            }
+
+            __depid.push_back(pkgid);
+
+            return __deplist;
+        }
+
+        DEFINE_GET_METHOD(std::vector<recipe>, _deplist);
 
         std::string const pkgid(recipe const &_recipe, package *pkg) const
         {
@@ -101,7 +132,7 @@ namespace pkgupd
                 try
                 {
                     auto _recipe = (*this)[pkgid];
-                    auto _installed = installed_recipe(pkgid, _recipe[pkgid]);
+                    auto _installed = installed_recipe(i.path().filename().string());
 
                     if (_recipe.version() != _installed.version())
                         outdatedlist.push_back(_recipe);
@@ -165,9 +196,8 @@ namespace pkgupd
             return installedfiles(pkgid(_recipe, pkg));
         }
 
-        recipe const installed_recipe(recipe const &_recipe, package *pkg) const
+        recipe const installed_recipe(string const &id) const
         {
-            auto id = pkgid(_recipe, pkg);
             if (!installed(id))
                 throw database::exception(id + " is not already installed");
 

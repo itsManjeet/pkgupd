@@ -128,7 +128,9 @@ namespace pkgupd
         YAML::Node _node;
 
         std::vector<string> _sources,
-            _environ;
+            _environ,
+            _runtime,
+            _buildtime;
 
         std::vector<package> _packages;
 
@@ -159,6 +161,17 @@ namespace pkgupd
             if (_node["environ"])
                 for (auto const &i : _node["environ"])
                     _environ.push_back(i.as<string>());
+
+            if (_node["depends"])
+            {
+                if (_node["depends"] && _node["depends"]["runtime"])
+                    for (auto const &i : _node["depends"]["runtime"])
+                        _runtime.push_back(i.as<string>());
+
+                if (_node["depends"] && _node["depends"]["buildtime"])
+                    for (auto const &i : _node["depends"]["buildtime"])
+                        _buildtime.push_back(i.as<string>());
+            }
         }
 
         DEFINE_GET_METHOD(string, id);
@@ -174,6 +187,8 @@ namespace pkgupd
         DEFINE_GET_METHOD(YAML::Node, node);
 
         DEFINE_GET_METHOD(std::vector<string>, sources);
+        DEFINE_GET_METHOD(std::vector<string>, buildtime);
+        DEFINE_GET_METHOD(std::vector<string>, runtime);
 
         std::vector<string> const environ(package *pkg = nullptr) const
         {
@@ -226,6 +241,12 @@ namespace pkgupd
                 return get_dir(_sources[0]);
 
             return "";
+        }
+
+        friend std::ostream &operator<<(std::ostream &os, recipe const &rcp)
+        {
+            os << rcp.node();
+            return os;
         }
     };
 }
