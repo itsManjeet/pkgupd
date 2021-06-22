@@ -1,25 +1,21 @@
 #include "recipe.hh"
 #include "compiler/compiler.hh"
 #include "installer/installer.hh"
+#include "remover/remover.hh"
 #include "database/database.hh"
 
 #include <cli/cli.hh>
 #include <io.hh>
+#include <iostream>
 
-std::tuple<std::string, std::string> parse_pkgid(std::string pkgid)
-{
-    size_t idx = pkgid.find_first_of(':');
-    if (idx== std::string::npos)
-        return {pkgid, ""};
-
-    return {pkgid.substr(0,idx), pkgid.substr(idx+1, pkgid.length() - (idx+1))};
-}
+using std::string;
 
 int main(int ac, char **av)
 {
     namespace io = rlx::io;
     using color = rlx::io::color;
     using level = rlx::io::debug_level;
+    
 
     using namespace rlx::cli;
 
@@ -49,6 +45,11 @@ int main(int ac, char **av)
             .long_id("recompile")
             .about("recompile specified package if already compiled")
             .required(true))
+
+        .arg(arg::create("force")
+            .long_id("force")
+            .short_id('f')
+            .about("force task to do"))
         
         .arg(arg::create("recompile-all")
             .long_id("recompile-all")
@@ -61,9 +62,11 @@ int main(int ac, char **av)
 
                 if (cc.args().size() == 0)
                 {
-                    io::error("no recipe file specified");
+                    io::error("no pkgid specified");
                     return 1;
                 }
+
+                auto database = pkgupd::database(cc.config());
 
                 io::debug(level::trace, "configuration:\n", cc.config());
 
@@ -71,20 +74,32 @@ int main(int ac, char **av)
                 {
                     io::process("installing ", pkg);                    
 
-                    auto [pkgid, subpkg] = parse_pkgid(pkg);
-
-                    auto recipe = pkgupd::recipe(pkgid);
-                    auto installer = pkgupd::installer(recipe, cc.config());
+                    auto [pkgid, subpkg] = database.parse_pkgid(pkg);
 
                     try {
+                        auto recipe = database[pkgid];
+                        auto installer = pkgupd::installer(recipe, cc.config());
+
+                        if (database.installed(pkg) && !cc.checkflag("force"))
+                        {
+                            io::info(pkg +" is already installed, skipping");
+                            continue;
+                        }
+
                         if (!installer.install(subpkg))
                         {
                             io::error(installer.error());
                             return 1;
                         }
-                    } catch(std::runtime_error const& e)
+                    } 
+                    catch(std::runtime_error const& e)
                     {
                         io::error(e.what());
+                        return 1;
+                    } 
+                    catch(pkgupd::database::exception e)
+                    {
+                        io::message(color::RED, "Database",e.what());
                         return 1;
                     }
                     
@@ -102,31 +117,59 @@ int main(int ac, char **av)
 
                 if (cc.args().size() == 0)
                 {
-                    io::error("no recipe file specified");
+                    io::error("no pkgid specified");
                     return 1;
                 }
 
                 io::debug(level::trace, "configuration:\n", cc.config());
+                auto database = pkgupd::database(cc.config());
 
                 for(auto const& pkg : cc.args())
                 {
                     io::process("compiling ", pkg);                    
 
-                    auto [pkgid, subpkg] = parse_pkgid(pkg);
-
-
-                    auto recipe = pkgupd::recipe(pkgid);
-                    auto compiler = pkgupd::compiler(recipe, cc.config());
-
+                    auto [pkgid, subpkg] = database.parse_pkgid(pkg);
+                    
                     try {
-                        if (!compiler.compile(subpkg))
+                        auto recipe = database[pkgid];
+                        auto compiler = pkgupd::compiler(recipe, cc.config());
+
+                        if (database.installed(pkg) && !cc.checkflag("force"))
                         {
-                            io::error(compiler.error());
-                            return 1;
+                            io::info(pkg, " is already installed/compiled, skipping");
+                            continue;
                         }
-                    } catch(std::runtime_error const& e)
+                        if (subpkg.length() == 0)
+                            for(auto const& i : recipe.packages())
+                            {
+                                if (database.installed(recipe.id()+":"+i.id()) && !cc.checkflag("force"))
+                                {
+                                    io::info(recipe.id()+":"+i.id(), " is already installed/compiled, skipping");
+                                    continue;
+                                }
+                                if (!compiler.compile(i.id()))
+                                {
+                                    io::error(compiler.error());
+                                    return 1;
+                                }
+                            }
+                        else
+                            if (!compiler.compile(subpkg))
+                            {
+                                io::error(compiler.error());
+                                return 1;
+                            }
+
+                        
+                    }
+                    catch(std::runtime_error const& e)
                     {
                         io::error(e.what());
+                        return 1;
+                    }
+                    catch(pkgupd::database::exception e)
+                    {
+                        io::message(color::RED, "Database", e.what());
                         return 1;
                     }
                     
@@ -134,6 +177,122 @@ int main(int ac, char **av)
                     io::success("compiled ", pkg);
                 }
 
+                return 0;
+            }))
+
+        .sub(app::create("remove")
+            .about("Remove specified application from system")
+            .fn([](context const& cc) -> int
+            {
+
+                if (cc.args().size() == 0)
+                {
+                    io::error("no pkgid file specified");
+                    return 1;
+                }
+
+                io::debug(level::trace, "configuration:\n", cc.config());
+                auto database = pkgupd::database(cc.config());
+
+                for(auto const& pkg : cc.args())
+                {
+                    io::process("removing ", pkg);                    
+
+                    auto [pkgid, subpkg] = database.parse_pkgid(pkg);
+                    
+                    try {
+                        auto recipe = database[pkgid];
+                        auto remover = pkgupd::remover(recipe, cc.config());
+
+                        if (!database.installed(pkg))
+                        {
+                            io::info(pkg, " is not already installed, skipping");
+                            continue;
+                        }
+
+                        if (!remover.remove(pkg))
+                        {
+                            io::error(remover.error());
+                            return 1;
+                        }
+                    }
+                    catch(std::runtime_error const& e)
+                    {
+                        io::error(e.what());
+                        return 1;
+                    }
+                    catch(pkgupd::database::exception e)
+                    {
+                        io::message(color::RED, "Database", e.what());
+                        return 1;
+                    }
+                    
+
+                    io::success("removed ", pkg);
+                }
+
+                return 0;
+                
+            }))
+
+
+        .sub(app::create("sync")
+            .about("Synchronize local database with repositories")
+            .fn([](context const& cc) -> int
+            {
+                auto tempfile = rlx::utils::sys::tempfile("/tmp", "rlx-recipes");
+                auto database = pkgupd::database(cc.config());
+
+                if (!database.get_from_server("", tempfile))
+                {
+                    io::error(database.error());
+                    return 1;
+                }
+
+                YAML::Node node;
+                try
+                {
+                    node = YAML::LoadFile(tempfile);
+                    // TODO add verifier
+                
+                    for(auto const & i : node["recipes"])
+                        io::writefile(database.dir_recipe()+"/"+i["id"].as<string>(), i);
+
+                    std::filesystem::remove(tempfile);
+                } 
+                catch (YAML::BadSubscript e)
+                {
+                    io::error(e.what());
+                    return 1;
+                }
+                
+
+                
+
+                auto outdated = database.list_out_dated();
+                if (outdated.size() != 0)
+                {
+                    io::info(outdated.size(), " package(s) are outdated");
+                    auto ans = io::input(std::cin, "Do you want to continue the update");
+                    if (ans == "yes" ||
+                        ans == "y" ||
+                        ans == "Y" ||
+                        ans == "Yes" ||
+                        ans == "YES")
+                    {
+                        for(auto const& i : outdated)
+                        {
+                            auto updater = pkgupd::installer(i, cc.config());
+                            if (!updater.install())
+                                io::error(updater.error());
+                        }
+                        
+                    }
+                    else
+                    {
+                        return 0;    
+                    }
+                }
                 return 0;
             }))
         

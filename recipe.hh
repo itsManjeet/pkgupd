@@ -13,6 +13,9 @@
 namespace pkgupd
 {
     using std::string;
+    using namespace rlx;
+    using color = rlx::io::color;
+    using level = rlx::io::debug_level;
 
     class flag
     {
@@ -194,6 +197,15 @@ namespace pkgupd
         }
 
         DEFINE_GET_METHOD(std::vector<package>, packages);
+
+        package *operator[](string subpkg)
+        {
+            for (auto &p : _packages)
+                if (p.id() == subpkg)
+                    return &p;
+
+            return nullptr;
+        }
 
         string const pack(package *pkg) const
         {

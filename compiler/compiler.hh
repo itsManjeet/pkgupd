@@ -34,7 +34,7 @@ namespace pkgupd
             string url = u;
             string name = path::basename(u);
 
-            size_t idx = url.rfind("::", 0);
+            size_t idx = url.rfind("::");
             if (idx == string::npos)
                 return {url, name};
 
@@ -319,16 +319,6 @@ namespace pkgupd
                 if (pkg_id.length())
                     if (pkg_id != pkg.id())
                         continue;
-
-                if (std::filesystem::exists(_dir_data + "/" + _recipe.id() + ":" + pkg.id()))
-                {
-                    io::println("skipping ", pkg.id(), ", already installed");
-                    if (pkg_id.length())
-                        if (pkg_id != pkg.id())
-                            pkg_build = true;
-
-                    continue;
-                }
 
                 if (!download(&pkg))
                     return false;

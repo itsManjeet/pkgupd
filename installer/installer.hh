@@ -5,6 +5,7 @@
 #include <algo/algo.hh>
 #include "../recipe.hh"
 #include "../config.hh"
+#include "../database/database.hh"
 
 namespace pkgupd
 {
@@ -20,6 +21,7 @@ namespace pkgupd
     private:
         recipe _recipe;
         YAML::Node _config;
+        database _database;
 
         string _dir_pkgs,
             _dir_work,
@@ -41,7 +43,7 @@ namespace pkgupd
     public:
         installer(recipe const &r,
                   YAML::Node const &c)
-            : _recipe(r), _config(c)
+            : _recipe(r), _config(c), _database(c)
         {
             auto get_dir = [&](string path, string fallback) -> string
             {
@@ -66,49 +68,23 @@ namespace pkgupd
         std::tuple<bool, string> download(package *pkg)
         {
             auto pkgid = _recipe.id() + (pkg == nullptr ? "" : ":" + pkg->id());
-            bool downloaded = false;
             string pkgfile = pkgid + "." + _recipe.pack(pkg);
             string pkgpath = _dir_pkgs + "/" + pkgfile;
 
-            io::info("pkgfile ", pkgpath);
+            io::debug(level::trace,"pkgfile ", pkgpath);
             if (std::filesystem::exists(pkgpath))
-            {
-                io::info(pkgfile, " found in cache");
-                downloaded = true;
-            }
+                io::debug(level::trace,pkgfile, " found in cache");
             else
             {
-                if (!_config["mirrors"])
+
+                if (!_database.get_from_server(pkgfile, pkgpath))
                 {
-                    _error = "no mirror specified in config file";
+                    _error = _database.error();
                     return {false, ""};
-                }
-
-                for (auto const &mirror : _config["mirrors"])
-                {
-                    io::process("downloading ", pkgid, " from ", mirror.first.as<string>());
-
-                    string url = mirror.first.as<string>() + "/" + pkgfile;
-
-                    if (!rlx::curl::download(url, pkgpath))
-                        io::error("failed to get ", pkgid, " from ", url);
-                    else
-                    {
-                        downloaded = true;
-                        break;
-                    }
                 }
             }
 
-            if (!downloaded)
-                _error = "failed to download " + pkgid;
-
-            return {downloaded, pkgpath};
-        }
-
-        bool exec_triggers(std::vector<string> filelist)
-        {
-            return true;
+            return {true, pkgpath};
         }
 
         bool install(std::string subpkg = "")
@@ -174,8 +150,11 @@ namespace pkgupd
                 _error = output;
                 return false;
             }
-            if (!exec_triggers(filelist))
+            if (!_database.exec_triggers(filelist))
+            {
+                _error = _database.error();
                 return false;
+            }
 
             if (!register_pkg(filelist, pkg))
                 return false;

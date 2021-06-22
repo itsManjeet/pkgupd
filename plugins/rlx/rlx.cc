@@ -11,21 +11,31 @@ using namespace rlx;
 using color = rlx::io::color;
 using level = rlx::io::debug_level;
 
-extern "C" std::tuple<bool, string> pkgupd_pack(pkgupd::recipe const &recipe, YAML::Node const &, pkgupd::package *pkg, string dir, string output)
+extern "C" std::tuple<bool, string> pkgupd_pack(pkgupd::recipe const &recipe, YAML::Node const &, pkgupd::package *pkg, string pkgdir, string output)
 {
-    std::ofstream file(dir + "/.info");
+    if (!std::filesystem::create_directories(pkgdir + "/.data"))
+        return {false, "failed to create " + pkgdir + "/.data"};
 
-    file << recipe.node() << std::endl;
-    file << "pkgid: " << pkg->id() << std::endl;
+    std::ofstream file(pkgdir + "/.data/info");
+    file << "id: " << pkg->id() << std::endl
+         << "version: " << recipe.version() << std::endl
+         << "release: " << 1 << std::endl
+         << "description: " << recipe.about()
+         << "depends: " << std::endl;
+
     file.close();
 
+    std::ofstream rcp(pkgdir + "/.info");
+    rcp << recipe.node() << std::endl
+        << "pkgid: " << pkg->id() << std::endl;
+    rcp.close();
+
     if (rlx::utils::exec::command(
-            io::format("tar -caf " + output + " . "),
-            dir,
+            io::format("tar -caf ", output, " . "),
+            pkgdir,
             recipe.environ()))
-    {
         return {false, "failed to pack"};
-    }
+
     return {true, ""};
 }
 
