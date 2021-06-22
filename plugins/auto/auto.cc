@@ -9,7 +9,6 @@ using namespace rlx;
 using color = rlx::io::color;
 using level = rlx::io::debug_level;
 
-
 /// TODO rewrite in better way
 enum buildtool
 {
@@ -119,7 +118,7 @@ extern "C" std::tuple<bool, string> pkgupd_build(
         if (i.id() == "configure")
         {
             if (i.only())
-                args = " " + i.value() + (b == CMAKE ? " -S " : " ") + ( b == MESON || b == CMAKE ? " .. " : "");
+                args = " " + i.value().substr(0, i.value().length() - 1) + (b == CMAKE ? " -S " : " ") + (b == MESON || b == CMAKE ? " .. " : "");
             else
                 args += " " + i.value();
 

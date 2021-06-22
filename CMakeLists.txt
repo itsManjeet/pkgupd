@@ -10,7 +10,7 @@ include_directories(lib ${YAML_CPP_INCLUDE_DIRS})
 add_subdirectory(plugins)
 
 add_executable(pkgupd main.cc)
-target_link_libraries(pkgupd yaml-cpp curlcpp dl)
+target_link_libraries(pkgupd yaml-cpp curlcpp dl curl)
 install(TARGETS pkgupd
     RUNTIME DESTINATION bin)
 
