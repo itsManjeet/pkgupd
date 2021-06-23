@@ -220,9 +220,18 @@ int main(int ac, char **av)
                 {
                     if (!cc.checkflag("no-depends"))
                     {
-                        if (!std::filesystem::exists(i))
-                            for(auto const & j : database.resolve(i, true))
-                                pkgs.push_back(j.id());
+                        try 
+                        {
+                            if (!std::filesystem::exists(i))
+                                for(auto const & j : database.resolve(i, true))
+                                    pkgs.push_back(j.id());
+                        }
+                        catch(pkgupd::database::exception e)
+                        {
+                            io::error(e.what());
+                            return 1;
+                        }
+                        
                     }
                        
 
