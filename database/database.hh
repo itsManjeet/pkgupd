@@ -62,10 +62,11 @@ namespace pkgupd
 
         recipe const operator[](std::string pkgid) const
         {
+            auto [rcp,p] = parse_pkgid(pkgid);
             try
             {
-                io::debug(level::trace, "checking ", _dir_recipe + "/" + pkgid);
-                return recipe(_dir_recipe + "/" + pkgid);
+                io::debug(level::trace, "checking ", _dir_recipe + "/" + rcp);
+                return recipe(_dir_recipe + "/" + rcp);
             }
             catch (YAML::BadFile const &e)
             {

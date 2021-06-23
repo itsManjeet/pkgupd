@@ -352,8 +352,16 @@ int main(int ac, char **av)
 
                 io::debug(level::trace, "configuration:\n", cc.config());
                 auto database = pkgupd::database(cc.config());
-
-                io::println(database[cc.args()[0]]);
+                try 
+                {
+                    io::println(database[cc.args()[0]]);
+                }
+                catch(pkgupd::database::exception e)
+                {
+                    io::error(e.what());
+                    return 1;
+                }
+                
                 return 0;
             }))
 
