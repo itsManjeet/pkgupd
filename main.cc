@@ -158,6 +158,11 @@ int main(int ac, char **av)
                         io::error(e.what());
                         return 1;
                     } 
+                    catch(rlx::obj::exception e)
+                    {
+                        io::error(e.what());
+                        return 1;
+                    } 
                     catch(pkgupd::database::exception e)
                     {
                         io::message(color::RED, "Database",e.what());
@@ -281,6 +286,11 @@ int main(int ac, char **av)
                         io::error(e.what());
                         return 1;
                     }
+                    catch(rlx::obj::exception e)
+                    {
+                        io::error(e.what());
+                        return 1;
+                    } 
                     catch(pkgupd::database::exception e)
                     {
                         io::message(color::RED, "Database", e.what());
@@ -335,6 +345,11 @@ int main(int ac, char **av)
                         io::error(e.what());
                         return 1;
                     }
+                    catch(rlx::obj::exception e)
+                    {
+                        io::error(e.what());
+                        return 1;
+                    } 
                     catch(pkgupd::database::exception e)
                     {
                         io::message(color::RED, "Database", e.what());

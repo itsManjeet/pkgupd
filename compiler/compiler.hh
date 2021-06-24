@@ -242,6 +242,49 @@ namespace pkgupd
 
             string dir = _dir_work + "/pkg/" + pkg->id();
 
+            if (_recipe.strip())
+            {
+                io::process("stripping output");
+
+                std::string _filter = "cat";
+                if (_recipe.no_strip().size())
+                {
+                    _filter = "grep -v ";
+                    for (auto const &i : _recipe.no_strip())
+                        _filter += " -e " + i.substr(0, i.length() - 1);
+                }
+
+                std::string _script =
+                    "find . -type f -printf \"%P\\n\" 2>/dev/null | " + _filter +
+                    " | while read -r binary ; do \n"
+                    " case \"$(file -bi \"$binary\")\" in \n"
+                    " *application/x-sharedlib*)      strip --strip-unneeded \"$binary\" ;; \n"
+                    " *application/x-pie-executable*) strip --strip-unneeded \"$binary\" ;; \n"
+                    " *application/x-archive*)        strip --strip-debug    \"$binary\" ;; \n"
+                    " *application/x-object*) \n"
+                    "    case \"$binary\" in \n"
+                    "     *.ko)                       strip --strip-unneeded \"$binary\" ;; \n"
+                    "     *)                          continue ;; \n"
+                    "    esac;; \n"
+                    " *application/x-executable*)     strip --strip-all \"$binary\" ;; \n"
+                    " *)                              continue ;; \n"
+                    " esac\n"
+                    " done\n";
+
+                if (_recipe.strip_script().length() != 0)
+                {
+                    io::println("using custom strip script");
+                    _script = _recipe.strip_script();
+                }
+
+                io::debug(level::trace, "striping in ", dir);
+                if (rlx::utils::exec::command(_script, dir))
+                {
+                    _error = "failed to execute ";
+                    return false;
+                }
+            }
+
             auto pack_id = _recipe.pack(pkg);
 
             io::info("found '", color::MAGENTA, pack_id, color::RESET, color::BOLD, "'");
@@ -265,7 +308,7 @@ namespace pkgupd
 
             assert(plugin_pack_func != nullptr);
 
-            auto package_path = _dir_pkgs + "/" + _recipe.id() + ":" + pkg->id() + "." + pack_id;
+            auto package_path = _dir_pkgs + "/" + _recipe.id() + "-" + _recipe.version() + ":" + pkg->id() + "." + pack_id;
 
             auto [status, output] = plugin_pack_func(_recipe, _config, pkg, dir, package_path);
             if (!status)
@@ -279,8 +322,6 @@ namespace pkgupd
                 _error = "no output generated";
                 return false;
             }
-
-            
 
             auto [instlr, _pkg] = installer::frompath(package_path, _config);
             string subpkg = "";
@@ -314,6 +355,12 @@ namespace pkgupd
 
             if (!prepare(nullptr))
                 return false;
+
+            if (_config["environ"])
+            {
+                for (auto const &i : _config["environ"])
+                    _recipe.appendenviron(i.as<string>());
+            }
 
             if (_recipe.prescript().length())
             {

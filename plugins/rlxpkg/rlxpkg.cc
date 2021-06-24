@@ -40,3 +40,36 @@ pkgupd_unpack(pkgupd::recipe const &recipe, YAML::Node const &, pkgupd::package 
 
     return {true, "", filelist};
 }
+
+extern "C" std::tuple<bool, string, pkgupd::recipe, pkgupd::package *>
+pkgupd_getrecipe(string pkgpath)
+{
+    io::process("getting recipe file from ", pkgpath);
+    auto tmpfile = utils::sys::tempfile("/tmp", "rcp");
+    auto data = utils::exec::output(
+        io::format("tar -xaf \"", pkgpath, "\" ./.info -O"));
+
+    try
+    {
+        io::writefile(tmpfile, data);
+        auto recipe = pkgupd::recipe(tmpfile);
+        auto node = YAML::Load(data);
+        pkgupd::package *pkg = nullptr;
+
+        if (node["pkgid"])
+        {
+            for (auto p : recipe.packages())
+                if (p.id() == node["pkgid"].as<string>())
+                {
+                    pkg = new pkgupd::package(p);
+                    break;
+                }
+        }
+
+        return {true, "", recipe, pkg};
+    } catch (std::exception const& c)
+    {
+        io::error(c.what());
+        return {false, "", pkgupd::recipe(tmpfile), nullptr};
+    }
+}

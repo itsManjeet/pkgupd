@@ -121,16 +121,19 @@ namespace pkgupd
             _prescript,
             _postscript,
             _path,
-            _pack;
+            _pack,
+            _strip_script;
 
-        bool _clean = true;
+        bool _clean = true,
+            _strip = true;
 
         YAML::Node _node;
 
         std::vector<string> _sources,
             _environ,
             _runtime,
-            _buildtime;
+            _buildtime,
+            _no_strip;
 
         std::vector<package> _packages;
 
@@ -149,10 +152,17 @@ namespace pkgupd
 
             OPTVAL(pack, _node, "none");
             OPTVAL_TYPE(clean, _node, true, bool);
+            OPTVAL_TYPE(strip, _node, true, bool);
+
+            OPTVAL(strip_script, _node, "");
 
             if (_node["sources"])
                 for (auto const &i : _node["sources"])
                     _sources.push_back(i.as<string>());
+
+            if (_node["no_strip"])
+                for (auto const &i : _node["no_strip"])
+                    _no_strip.push_back(i.as<string>());
 
             if (_node["packages"])
                 for (auto const &i : _node["packages"])
@@ -184,11 +194,15 @@ namespace pkgupd
 
         DEFINE_GET_METHOD(bool, clean);
 
+        DEFINE_GET_METHOD(bool, strip);
+        DEFINE_GET_METHOD(string, strip_script);
+
         DEFINE_GET_METHOD(YAML::Node, node);
 
         DEFINE_GET_METHOD(std::vector<string>, sources);
         DEFINE_GET_METHOD(std::vector<string>, buildtime);
         DEFINE_GET_METHOD(std::vector<string>, runtime);
+        DEFINE_GET_METHOD(std::vector<string>, no_strip);
 
         std::vector<string> const environ(package *pkg = nullptr) const
         {

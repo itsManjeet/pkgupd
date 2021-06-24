@@ -68,7 +68,7 @@ namespace pkgupd
 
         std::tuple<bool, string> download(package *pkg)
         {
-            auto pkgid = _recipe.id() + (pkg == nullptr ? "" : ":" + pkg->id());
+            auto pkgid = _recipe.id() + "-" + _recipe.version() + (pkg == nullptr ? "" : ":" + pkg->id());
             string pkgfile = pkgid + "." + _recipe.pack(pkg);
             string pkgpath = _dir_pkgs + "/" + pkgfile;
 
