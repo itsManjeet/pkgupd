@@ -170,7 +170,7 @@ extern "C" std::tuple<bool, string> pkgupd_build(
     {
         string cmd = "DESTDIR=" + get_env("DESTDIR", pkg_dir);
         if (std::filesystem::exists(dir + "/Makefile"))
-            cmd += " make install ";
+            cmd = " make install " + cmd;
         if (std::filesystem::exists(dir + "/ninja.build"))
             cmd += " ninja install ";
 

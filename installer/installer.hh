@@ -186,15 +186,14 @@ namespace pkgupd
                 return false;
             }
 
-            if (!register_pkg(filelist, pkg))
+            if (!register_pkg(filelist, _recipe.id() + (_recipe.id() == pkgid ? "" : ":" + pkgid)))
                 return false;
 
             return true;
         }
 
-        bool register_pkg(std::vector<string> fileslist, package *pkg)
+        bool register_pkg(std::vector<string> fileslist, string pkgid)
         {
-            auto pkgid = _recipe.id() + (pkg == nullptr ? "" : ":" + pkg->id());
             string data_file = _dir_data + "/" + pkgid;
             string list_file = data_file + ".files";
             if (std::filesystem::exists(list_file))
