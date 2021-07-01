@@ -58,6 +58,11 @@ int main(int ac, char **av)
         .arg(arg::create("no-depends")
             .long_id("no-depends")
             .about("skip dependencies resolvement"))
+        
+        .arg(arg::create("all")
+            .short_id('a')
+            .long_id("all")
+            .about("Set ALL flag"))
 
         .sub(app::create("install-file")
             .about("perform installation from filepath")
@@ -192,7 +197,7 @@ int main(int ac, char **av)
                 try
                 {
                     for(auto const& pkg : cc.args())
-                        for(auto const& i : database.resolve(pkg))
+                        for(auto const& i : database.resolve(pkg, cc.checkflag("all")))
                             io::println(i.id());
                 }
                 catch(pkgupd::database::exception e)
