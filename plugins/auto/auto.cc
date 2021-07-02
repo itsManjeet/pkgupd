@@ -66,9 +66,9 @@ extern "C" std::tuple<bool, string> pkgupd_build(
 
     io::info("found '", color::MAGENTA, build_tool_cmd, color::RESET, color::BOLD, "'");
 
-    auto get_env = [&recipe](const string &f, string fallback) -> string
+    auto get_env = [&](const string &f, string fallback) -> string
     {
-        auto env = recipe.environ();
+        auto env = recipe.environ(pkg);
 
         for (auto const &i : env)
         {
