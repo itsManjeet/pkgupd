@@ -35,7 +35,7 @@ pkgupd_unpack(pkgupd::recipe const &recipe, YAML::Node const &, pkgupd::package 
     auto filelist = tar::files(pkgfile);
     io::process("extracting ", pkgfile, " into ", root_dir);
     if (utils::exec::command(
-            io::format("tar -xhpf \"", pkgfile, "\" -C ", root_dir)))
+            io::format("tar --exclude='./.info' --exclude='./.data/' -xhpf \"", pkgfile, "\" -C ", root_dir)))
         return {false, "failed to unpack", std::vector<string>()};
 
     return {true, "", filelist};

@@ -5,7 +5,7 @@
 #include <path/path.hh>
 #include <curl/curl.hh>
 #include <yaml-cpp/yaml.h>
-
+#include <tuple>
 #include "../recipe.hh"
 #include "../config.hh"
 #include "../installer/installer.hh"
@@ -45,13 +45,6 @@ namespace pkgupd
             return {url, name};
         }
 
-        void clean()
-        {
-            io::process("clearing cache");
-            if (getenv("NO_CLEAN") == nullptr && std::filesystem::exists(_dir_work))
-                std::filesystem::remove_all(_dir_work);
-        }
-
     public:
         compiler(recipe const &r,
                  YAML::Node const &c)
@@ -81,6 +74,13 @@ namespace pkgupd
             clean();
         }
 
+        void clean()
+        {
+            io::process("clearing cache");
+            if (getenv("NO_CLEAN") == nullptr && std::filesystem::exists(_dir_work))
+                std::filesystem::remove_all(_dir_work);
+        }
+
         bool download(package *pkg)
         {
             auto srcs = pkg == nullptr ? _recipe.sources() : pkg->sources();
@@ -106,6 +106,15 @@ namespace pkgupd
         {
             auto srcs = pkg == nullptr ? _recipe.sources() : pkg->sources();
 
+            if (!std::filesystem::exists(_dir_work + "/src"))
+                std::filesystem::create_directories(_dir_work + "/src");
+
+            if (_recipe.port().length())
+            {
+                io::info("writing port file");
+                io::writefile(_dir_work + "/src/" + _recipe.id(), _recipe.port());
+            }
+
             auto is_tar = [](string const &s) -> bool
             {
                 for (auto i : {"xz", "gz", "bzip2", "zip", "bz2", "tgz", "txz", "tar"})
@@ -120,9 +129,6 @@ namespace pkgupd
             {
                 auto [url, filename] = parse_url(src);
                 auto pkgpath = _dir_src + "/" + filename;
-
-                if (!std::filesystem::exists(_dir_work + "/src"))
-                    std::filesystem::create_directories(_dir_work + "/src");
 
                 if (is_tar(filename))
                 {
@@ -183,6 +189,10 @@ namespace pkgupd
                     _error = "failed to execute script";
                     return false;
                 }
+                return true;
+            }
+            else if (plugin == "skip")
+            {
                 return true;
             }
 
@@ -323,14 +333,21 @@ namespace pkgupd
                 return false;
             }
 
-            auto [instlr, _pkg] = installer::frompath(package_path, _config);
-            string subpkg = "";
-            if (_pkg != nullptr)
-                subpkg = _pkg->id();
-            if (!instlr.install(subpkg))
+            if (_config["no-install"] && _config["no-install"].as<string>() == "1")
             {
-                _error = instlr.error();
-                return false;
+                io::info("skipping installation");
+            }
+            else
+            {
+                auto [instlr, _pkg] = installer::frompath(package_path, _config);
+                string subpkg = "";
+                if (_pkg != nullptr)
+                    subpkg = _pkg->id();
+                if (!instlr.install(subpkg))
+                {
+                    _error = instlr.error();
+                    return false;
+                }
             }
 
             return true;
@@ -394,7 +411,9 @@ namespace pkgupd
 
                 pkg_build = true;
 
-                if (_recipe.clean())
+                if (!_recipe.clean())
+                    io::info("skip cleaning");
+                else
                     clean();
             }
 
@@ -413,9 +432,6 @@ namespace pkgupd
                 _error = "no package found with id " + pkg_id;
                 return false;
             }
-
-            clean();
-
             return true;
         }
     };

@@ -77,7 +77,8 @@ pkgupd_getrecipe(string pkgpath)
         }
 
         return {true, "", recipe, pkg};
-    } catch (std::exception const& c)
+    }
+    catch (std::exception const &c)
     {
         io::error(c.what());
         return {false, "", pkgupd::recipe(tmpfile), nullptr};

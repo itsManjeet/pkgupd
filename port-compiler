@@ -1,6 +1,6 @@
 #/bin/bash
 
-echo "pkgdir: ${PKGDIR}"
+echo "pkgdir: ${PKGUPD_PKGDIR}"
 
 export LC_ALL=C
 
@@ -44,8 +44,10 @@ abort() {
 
 TEMPDIR=$(mktemp -d /tmp/rcp.XXXXXXXXXX)
 RCPSPEC=${RCPSPEC:-"/etc/rcp.spec"}
-SRCDIR=${SRCDIR:-'/var/cache/src'}
-PKGDIR=${PKGDIR:-'/var/cache/pkgs'}
+PKGUPD_SRCDIR=${PKGUPD_SRCDIR:-'/var/cache/pkgupd/src'}
+PKGUPD_PKGDIR=${PKGUPD_PKGDIR:-'/var/cache/pkgupd/pkgs'}
+pkgupd_pkgdir=${pkgupd_pkgdir:-"${TEMPDIR}/pkg"}
+pkgupd_srcdir=${pkgupd_srcdir:-"${TEMPDIR}/src"}
 COMPRESS_ALGO=${COMPRESS_ALGO:-'zstd'}
 
 HEREDIR=$(pwd)
@@ -62,11 +64,12 @@ export MAKEFLAGS=${MAKEFLAGS:-"-j $(nproc)"}
     abort 5 "no recipe file in current directory" "Must be at $(pwd)/recipe"
 }
 
-. ${RECIPEFILEID}
+debug "recipe file id: ${RECIPEFILEID}"
+. ./${RECIPEFILEID}
 
 
-[[ -d $SRCDIR ]] || mkdir -p $SRCDIR
-[[ -d $PKGDIR ]] || mkdir -p $PKGDIR
+[[ -d $PKGUPD_SRCDIR ]] || mkdir -p $PKGUPD_SRCDIR
+[[ -d $PKGUPD_PKGDIR ]] || mkdir -p $PKGUPD_PKGDIR
 
 debug "downloading source file"
 for s in ${source[@]} ; do
@@ -79,28 +82,28 @@ for s in ${source[@]} ; do
     fi
 
     if [[ "${filename}" != "${s}" ]] ; then
-        if [[ ! -e "${SRCDIR}/${filename}" ]] ; then
-            wget -c --passive-ftp --no-directories --tries=3 --waitretry=3 --output-document="${SRCDIR}/${filename}.part" "${url}" ${WGET_ARGS}
+        if [[ ! -e "${PKGUPD_SRCDIR}/${filename}" ]] ; then
+            wget -c --passive-ftp --no-directories --tries=3 --waitretry=3 --output-document="${PKGUPD_SRCDIR}/${filename}.part" "${url}" ${WGET_ARGS}
         if [[ $? != 0 ]] ; then
             abort 7 "failed to download ${filename} from ${url}"
         fi
-        mv ${SRCDIR}/${filename}{.part,}
+        mv ${PKGUPD_SRCDIR}/${filename}{.part,}
         fi
     fi
 done
 
 debug "preparing source file"
-WORKDIR=${TEMPDIR}/work
-PKGDEST=${PKGDEST:-${TEMPDIR}/${name}}
+WORKDIR=${pkgupd_srcdir}
+PKGDEST=${pkgupd_pkgdir}
 
 [[ -d ${WORKDIR} ]] || mkdir -p $WORKDIR
 [[ -d ${PKGDEST} ]] || mkdir -p $PKGDEST
 
 for s in ${source[@]} ; do
     if echo $s | grep -Eq '::(http|https|ftp)://' ; then
-        filename=${SRCDIR}/$(echo $s | awk -F '::' '{print $1}')
+        filename=${PKGUPD_SRCDIR}/$(echo $s | awk -F '::' '{print $1}')
     elif echo $s | grep -Eq '^(http|https|ftp)://' ; then
-        filename=${SRCDIR}/$(basename $s)
+        filename=${PKGUPD_SRCDIR}/$(basename $s)
     else
         filename=${PWD}/$(basename $s)
     fi
@@ -154,8 +157,8 @@ for s in ${source[@]} ; do
 
 done
 
-export src=${WORKDIR}
-export pkg=${PKGDEST}
+export src=${pkgupd_srcdir}
+export pkg=${pkgupd_pkgdir}/${name}
 
 cd $src
 (set -e -x; build 2>&1)
@@ -165,7 +168,7 @@ fi
 
 if [[ ! -z "$splits" ]] ; then
     for sbuild in ${splits[@]} ; do
-        export pkg="${PKGDEST}/$sbuild"
+        export pkg="${pkgupd_pkgdir}/../$sbuild"
         (set -e -x; "build_$sbuild" 2>&1)
         if [[ $? != 0 ]] ; then
             abort 10 "error while compiling split package $sbuild"

@@ -276,6 +276,8 @@ int main(int ac, char **av)
                                     io::error(compiler.error());
                                     return 1;
                                 }
+                                if (recipe.clean())
+                                    compiler.clean();
                             }
                         else
                             if (!compiler.compile(subpkg))

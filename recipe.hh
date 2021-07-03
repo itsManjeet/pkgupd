@@ -9,6 +9,8 @@
 #include <vector>
 
 #include <assert.h>
+#include <pwd.h>
+#include <grp.h>
 
 namespace pkgupd
 {
@@ -16,6 +18,79 @@ namespace pkgupd
     using namespace rlx;
     using color = rlx::io::color;
     using level = rlx::io::debug_level;
+
+    class user
+    {
+    private:
+        unsigned _id;
+        string _name,
+            _group,
+            _about,
+            _shell,
+            _dir;
+
+    public:
+        user(YAML::Node const &n)
+        {
+            GETVAL_TYPE(id, n, unsigned);
+            GETVAL(name, n);
+            OPTVAL(group, n, "");
+            OPTVAL(about, n, "");
+            OPTVAL(shell, n, "");
+            OPTVAL(dir, n, "");
+        }
+
+        DEFINE_GET_METHOD(unsigned, id);
+        DEFINE_GET_METHOD(string, name);
+        DEFINE_GET_METHOD(string, group);
+        DEFINE_GET_METHOD(string, about);
+        DEFINE_GET_METHOD(string, shell);
+        DEFINE_GET_METHOD(string, dir);
+
+        string const command() const
+        {
+            return io::format(
+                "useradd ", _name, " -u ", _id,
+                (_about.length() ? " -c \"" + _about + "\" " : ""),
+                (_dir.length() ? " -d " + _dir : ""),
+                (_shell.length() ? " -s " + _shell : ""),
+                (_group.length() ? " -g " + _group : ""));
+        }
+
+        bool exists() const
+        {
+            return getpwnam(_name.c_str()) != nullptr;
+        }
+    };
+
+    class group
+    {
+    private:
+        unsigned _id;
+        string _name;
+
+    public:
+        group(YAML::Node const &n)
+        {
+            GETVAL_TYPE(id, n, unsigned);
+            GETVAL(name, n);
+        }
+
+        DEFINE_GET_METHOD(unsigned, id);
+        DEFINE_GET_METHOD(string, name);
+
+        string const command() const
+        {
+            return io::format(
+                "groupadd ", _name, " -g ", _id);
+        }
+
+        bool exists() const
+        {
+        
+            return getgrnam(_name.c_str()) != nullptr;
+        }
+    };
 
     class flag
     {
@@ -60,7 +135,6 @@ namespace pkgupd
 
         std::vector<string> _sources;
         std::vector<flag> _flags;
-
         std::vector<string> _environ;
 
     public:
@@ -119,13 +193,16 @@ namespace pkgupd
             _version,
             _about,
             _prescript,
+            _preinstall,
             _postscript,
             _path,
             _pack,
-            _strip_script;
+            _strip_script,
+            _port,
+            _postinstall;
 
         bool _clean = true,
-            _strip = true;
+             _strip = true;
 
         YAML::Node _node;
 
@@ -136,6 +213,8 @@ namespace pkgupd
             _no_strip;
 
         std::vector<package> _packages;
+        std::vector<user> _users;
+        std::vector<group> _groups;
 
     public:
         recipe(string const &path)
@@ -153,8 +232,12 @@ namespace pkgupd
             OPTVAL(pack, _node, "none");
             OPTVAL_TYPE(clean, _node, true, bool);
             OPTVAL_TYPE(strip, _node, true, bool);
+            OPTVAL(preinstall, _node, "");
+            OPTVAL(postinstall, _node, "");
 
             OPTVAL(strip_script, _node, "");
+
+            OPTVAL(port, _node, "");
 
             if (_node["sources"])
                 for (auto const &i : _node["sources"])
@@ -182,6 +265,14 @@ namespace pkgupd
                     for (auto const &i : _node["depends"]["buildtime"])
                         _buildtime.push_back(i.as<string>());
             }
+
+            if (_node["users"])
+                for (auto const &i : _node["users"])
+                    _users.push_back(user(i));
+
+            if (_node["groups"])
+                for (auto const &i : _node["groups"])
+                    _groups.push_back(group(i));
         }
 
         DEFINE_GET_METHOD(string, id);
@@ -191,6 +282,13 @@ namespace pkgupd
         DEFINE_GET_METHOD(string, postscript);
 
         DEFINE_GET_METHOD(string, path);
+        DEFINE_GET_METHOD(string, port);
+
+        DEFINE_GET_METHOD(string, preinstall);
+        DEFINE_GET_METHOD(string, postinstall);
+
+        DEFINE_GET_METHOD(std::vector<user>, users);
+        DEFINE_GET_METHOD(std::vector<group>, groups);
 
         DEFINE_GET_METHOD(bool, clean);
 

@@ -139,6 +139,12 @@ namespace pkgupd
                 }
             }
 
+            if (_recipe.preinstall().length())
+            {
+                io::info("executing preinstallation script");
+                rlx::utils::exec::command("bash -euc '" + _recipe.preinstall() + "'", "/tmp", _recipe.environ(pkg));
+            }
+
             string plugin = _recipe.pack(pkg);
             string pkgid = pkg == nullptr ? _recipe.id() : pkg->id();
 
@@ -180,6 +186,38 @@ namespace pkgupd
                 _error = output;
                 return false;
             }
+
+            if (_recipe.postinstall().length())
+            {
+                io::info("executing postinstallation script");
+                rlx::utils::exec::command("bash -euc '" + _recipe.postinstall() + "'", "/tmp", _recipe.environ(pkg));
+            }
+
+            if (_recipe.groups().size())
+            {
+                for (auto const &i : _recipe.groups())
+                    if (!i.exists())
+                    {
+                        io::info("creating group ", color::MAGENTA, i.name());
+                        if (rlx::utils::exec::command(i.command()))
+                            io::warn("failed to create required group ", i.name());
+                    }
+            }
+
+            if (_recipe.users().size())
+            {
+                for (auto const &i : _recipe.users())
+                {
+                    io::debug(level::debug, "checking required user: ", color::MAGENTA, i.name(), color::RESET);
+                    if (!i.exists())
+                    {
+                        io::info("creating user ", color::MAGENTA, i.name());
+                        if (rlx::utils::exec::command(i.command()))
+                            io::warn("failed to create required user ", i.name());
+                    }
+                }
+            }
+
             if (!_database.exec_triggers(filelist))
             {
                 _error = _database.error();

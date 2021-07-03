@@ -16,7 +16,8 @@ extern "C" std::tuple<bool, string> pkgupd_build(
     string src_dir,
     string pkg_dir)
 {
-    auto env = recipe.environ();
+    io::debug(level::trace, "port::pkgupd_build() start");
+    auto env = recipe.environ(pkg);
 
     auto checkenv = [&](string i) -> void
     {
@@ -24,10 +25,9 @@ extern "C" std::tuple<bool, string> pkgupd_build(
             env.push_back(io::format(i, "=", node["compiler"][i].as<string>()));
     };
 
-    env.push_back("PKGDEST=" + pkg_dir);
-
     string compiler = (node["compiler"] && node["compiler"]["recipe"] ? node["compiler"]["recipe"].as<string>() : "port-compiler");
 
+    io::debug(level::trace, "Compiler: ", color::MAGENTA, compiler, color::RESET);
     if (rlx::utils::exec::command(
             compiler + " " + pkg->id(), src_dir,
             env))
