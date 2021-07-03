@@ -417,7 +417,7 @@ int main(int ac, char **av)
                     // TODO add verifier
                 
                     for(auto const & i : node["recipes"])
-                        io::writefile(database.dir_recipe()+"/"+i["id"].as<string>(), i);
+                        io::writefile(database.dir_recipe()+"/"+i["id"].as<string>()+".yml", i);
 
                     std::filesystem::remove(tempfile);
                 } 
