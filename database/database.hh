@@ -19,7 +19,7 @@ namespace pkgupd
             {
             }
 
-            const char *what()
+            const char *what() const noexcept
             {
                 return _what.c_str();
             }
@@ -32,6 +32,7 @@ namespace pkgupd
             _dir_recipe,
             _dir_pkgs;
 
+        std::vector<string> _repositories;
         std::vector<string> __depid;
         std::vector<recipe> __deplist;
 
@@ -51,6 +52,12 @@ namespace pkgupd
             _dir_recipe = get_dir("recipes", DEFAULT_DIR_RECIPE);
             _dir_pkgs = get_dir("pkgs", DEFAULT_DIR_PKGS);
 
+            if (c["default"] && c["default"]["repositories"])
+                for (auto const &i : c["default"]["repositories"])
+                    _repositories.push_back(i.as<string>());
+            else
+                _repositories.push_back("core");
+
             for (auto const &i : {_dir_root, _dir_data, _dir_recipe, _dir_pkgs})
                 if (!std::filesystem::exists(i))
                     std::filesystem::create_directories(i);
@@ -59,19 +66,24 @@ namespace pkgupd
         DEFINE_GET_METHOD(string, dir_root);
         DEFINE_GET_METHOD(string, dir_data);
         DEFINE_GET_METHOD(string, dir_recipe);
+        DEFINE_GET_METHOD(std::vector<string>, repositories);
+
+        string const getrepo(string const &id) const
+        {
+            for (auto const &i : _repositories)
+            {
+                io::debug(level::trace, "checking ", i, " for ", id);
+                string rcp_path = _dir_recipe + "/" + i + "/" + id + ".yml";
+                if (std::filesystem::exists(rcp_path))
+                    return i;
+            }
+            throw database::exception("No recipe file found for " + id);
+        }
 
         recipe const operator[](std::string pkgid) const
         {
             auto [rcp, p] = parse_pkgid(pkgid);
-            try
-            {
-                io::debug(level::trace, "checking ", _dir_recipe + "/" + rcp + ".yml");
-                return recipe(_dir_recipe + "/" + rcp + ".yml");
-            }
-            catch (YAML::BadFile const &e)
-            {
-                throw database::exception("No recipe file found for " + pkgid);
-            }
+            return _dir_recipe + "/" + getrepo(rcp) + "/" + rcp + ".yml";
         }
 
         std::vector<recipe> resolve(string pkgid, bool compiletime = false)
@@ -155,7 +167,7 @@ namespace pkgupd
             return outdatedlist;
         }
 
-        bool get_from_server(string pkgid = "", string output = "a.out")
+        bool get_from_server(string repo, string pkgid = "", string output = "a.out")
         {
             if (pkgid.length() == 0)
                 pkgid = "recipes";
@@ -171,7 +183,7 @@ namespace pkgupd
             for (auto const &mirror : mirrors)
             {
                 io::process("downloading ", pkgid, " from ", mirror);
-                string url = mirror + "/" + pkgid;
+                string url = mirror + "/" + repo + "/" + pkgid;
                 if (!rlx::curl::download(url, output))
                     io::error("faild to get from ", mirror);
                 else

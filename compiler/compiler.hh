@@ -9,6 +9,7 @@
 #include "../recipe.hh"
 #include "../config.hh"
 #include "../installer/installer.hh"
+#include "../database/database.hh"
 
 namespace pkgupd
 {
@@ -24,6 +25,7 @@ namespace pkgupd
     private:
         recipe _recipe;
         YAML::Node _config;
+        database _database;
 
         string _dir_pkgs,
             _dir_src,
@@ -48,7 +50,8 @@ namespace pkgupd
     public:
         compiler(recipe const &r,
                  YAML::Node const &c)
-            : _recipe(r), _config(c)
+            : _recipe(r), _config(c),
+              _database(c)
         {
             auto get_dir = [&](string path, string fallback) -> string
             {
@@ -61,6 +64,8 @@ namespace pkgupd
             _dir_src = get_dir("src", DEFAULT_DIR_SRC);
             _dir_work = get_dir("work", DEFAULT_DIR_WORK);
             _dir_data = get_dir("data", DEFAULT_DIR_DATA);
+
+            _dir_pkgs += "/" + _database.getrepo(_recipe.id());
 
             _dir_work = rlx::utils::sys::tempdir(_dir_work, "pkgupd");
 
@@ -288,7 +293,7 @@ namespace pkgupd
                 }
 
                 io::debug(level::trace, "striping in ", dir);
-                if (rlx::utils::exec::command(_script, dir))
+                if (WEXITSTATUS(system(("cd " + dir + "; " + _script).c_str())))
                 {
                     _error = "failed to execute ";
                     return false;

@@ -4,6 +4,8 @@
 #include "remover/remover.hh"
 #include "database/database.hh"
 
+#include <boost/exception_ptr.hpp>
+
 #include <cli/cli.hh>
 #include <io.hh>
 #include <iostream>
@@ -385,7 +387,31 @@ int main(int ac, char **av)
                 auto database = pkgupd::database(cc.config());
                 try 
                 {
-                    io::println(database[cc.args()[0]]);
+                    auto pkg = cc.args()[0];
+                    auto [pkgid, subpkg] = database.parse_pkgid(pkg);
+                    auto recipe = database[pkgid];
+                    io::println(
+                        io::color::CYAN, "id", color::RESET, color::BOLD, "        :  ", recipe.id(),'\n',
+                        io::color::CYAN, "version", color::RESET, color::BOLD, "   :  ", recipe.version(),'\n',
+                        io::color::CYAN, "about", color::RESET, color::BOLD, "     :  ", recipe.about(),
+                        io::color::CYAN, "provider", color::RESET, color::BOLD, "  :  ", recipe.pack(recipe[subpkg]),
+                        io::color::RESET
+                    );
+
+                    if (database.installed(pkg))
+                    {
+                        auto installed_recipe = database.installed_recipe(pkg);
+                    io::println(
+                        io::color::CYAN, "installed", color::RESET, color::BOLD," :  ", color::GREEN, "True", '\n',
+                        io::color::CYAN, "sys-ver", color::RESET, color::BOLD, "  : ", installed_recipe.version(), color::RESET
+                    );
+                    } else
+                    {
+                    io::println(
+                        io::color::CYAN, "installed", color::RESET, color::BOLD," :  ", color::RED, "False", color::RESET
+                    );
+                    }
+                    
                 }
                 catch(pkgupd::database::exception e)
                 {
@@ -404,30 +430,37 @@ int main(int ac, char **av)
                 auto tempfile = rlx::utils::sys::tempfile("/tmp", "rlx-recipes");
                 auto database = pkgupd::database(cc.config());
 
-                if (!database.get_from_server("", tempfile))
+                for(auto const& repo : database.repositories())
                 {
-                    io::error(database.error());
-                    return 1;
+                    io::process("syncing ", repo);
+                    if (!database.get_from_server(repo,"", tempfile))
+                    {
+                        io::error(database.error());
+                        return 1;
+                    }
+                    YAML::Node node;
+                    try
+                    {
+                        node = YAML::LoadFile(tempfile);
+                        // TODO add verifier
+                    
+                        for(auto const & i : node["recipes"])
+                        {
+                            auto rcp_dir = io::format(database.dir_recipe() ,"/",repo,"/");
+                            std::filesystem::create_directories(rcp_dir);
+                            io::writefile(rcp_dir+i["id"].as<string>()+".yml", i);
+                        }
+                            
+
+                        std::filesystem::remove(tempfile);
+                    } 
+                    catch (YAML::BadSubscript e)
+                    {
+                        io::error(e.what());
+                        return 1;
+                    }
+                    
                 }
-
-                YAML::Node node;
-                try
-                {
-                    node = YAML::LoadFile(tempfile);
-                    // TODO add verifier
-                
-                    for(auto const & i : node["recipes"])
-                        io::writefile(database.dir_recipe()+"/"+i["id"].as<string>()+".yml", i);
-
-                    std::filesystem::remove(tempfile);
-                } 
-                catch (YAML::BadSubscript e)
-                {
-                    io::error(e.what());
-                    return 1;
-                }
-                
-
                 
 
                 auto outdated = database.list_out_dated();

@@ -59,6 +59,7 @@ namespace pkgupd
             _dir_data = get_dir("data", DEFAULT_DIR_DATA);
 
             _dir_work = rlx::utils::sys::tempdir(_dir_work, "pkgupd");
+            _dir_pkgs += "/" + _database.getrepo(_recipe.id());
         }
 
         ~installer()
