@@ -143,7 +143,7 @@ namespace pkgupd
             GETVAL(id, n);
             OPTVAL(dir, n, "");
             OPTVAL(plugin, n, "auto");
-            OPTVAL(pack, n, "");
+            OPTVAL(pack, n, "rlxpkg");
 
             OPTVAL(prescript, n, "");
             OPTVAL(postscript, n, "");
