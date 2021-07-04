@@ -26,7 +26,7 @@ extern "C" std::tuple<bool, string> pkgupd_build(
     };
 
     string compiler = (node["compiler"] && node["compiler"]["recipe"] ? node["compiler"]["recipe"].as<string>() : "port-compiler");
-
+    
     io::debug(level::trace, "Compiler: ", color::MAGENTA, compiler, color::RESET);
     if (rlx::utils::exec::command(
             compiler + " " + pkg->id(), src_dir,

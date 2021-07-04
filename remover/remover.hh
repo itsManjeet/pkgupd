@@ -38,17 +38,25 @@ namespace pkgupd
 
             std::reverse(pkgfiles.begin(), pkgfiles.end());
 
-            for (auto const &i : pkgfiles)
+            for (auto i : pkgfiles)
             {
-                string fpath = _database.dir_root() + "/" + i;
-                if (std::filesystem::exists(fpath))
-                {
-                    if (std::filesystem::is_directory(fpath) && !std::filesystem::is_empty(fpath))
-                        continue;
+                if (i.substr(0, 2) == "./")
+                    i = i.substr(2, i.length() - 2);
 
-                    if (!std::filesystem::remove(fpath))
-                        io::warn("failed to remove, fpath");
+                string fpath = _database.dir_root();
+                if (fpath[fpath.length() - 1] != '/')
+                    fpath += "/";
+                fpath += i;
+                io::debug(level::trace, "checking ", fpath);
+                if (std::filesystem::is_directory(fpath) && !std::filesystem::is_empty(fpath))
+                {
+                    io::debug(level::trace, "  skipping non-empty dir ", fpath);
+                    continue;
                 }
+                    
+                io::debug(level::trace, "  removing ", fpath);
+                if (!std::filesystem::remove(fpath))
+                    io::warn("failed to remove, fpath");
             }
 
             if (!std::filesystem::remove(_database.dir_data() + "/" + pkgid))

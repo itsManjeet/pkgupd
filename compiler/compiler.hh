@@ -114,10 +114,10 @@ namespace pkgupd
             if (!std::filesystem::exists(_dir_work + "/src"))
                 std::filesystem::create_directories(_dir_work + "/src");
 
-            if (_recipe.port().length())
+            if (_recipe.port().length() && pkg)
             {
                 io::info("writing port file");
-                io::writefile(_dir_work + "/src/" + _recipe.id(), _recipe.port());
+                io::writefile(_dir_work + "/src/" + pkg->id(), _recipe.port());
             }
 
             auto is_tar = [](string const &s) -> bool

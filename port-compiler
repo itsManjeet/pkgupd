@@ -67,13 +67,12 @@ export MAKEFLAGS=${MAKEFLAGS:-"-j $(nproc)"}
 debug "recipe file id: ${RECIPEFILEID}"
 . ./${RECIPEFILEID}
 
-
 [[ -d $PKGUPD_SRCDIR ]] || mkdir -p $PKGUPD_SRCDIR
 [[ -d $PKGUPD_PKGDIR ]] || mkdir -p $PKGUPD_PKGDIR
 
 debug "downloading source file"
-for s in ${source[@]} ; do
-    if echo $s | grep -Eq '::(http|https|ftp)://' ; then
+for s in ${source[@]}; do
+    if echo $s | grep -Eq '::(http|https|ftp)://'; then
         filename=$(echo $s | awk -F '::' '{print $1}')
         url=$(echo $s | awk -F '::' '{print $2}')
     else
@@ -81,13 +80,13 @@ for s in ${source[@]} ; do
         url="${s}"
     fi
 
-    if [[ "${filename}" != "${s}" ]] ; then
-        if [[ ! -e "${PKGUPD_SRCDIR}/${filename}" ]] ; then
+    if [[ "${filename}" != "${s}" ]]; then
+        if [[ ! -e "${PKGUPD_SRCDIR}/${filename}" ]]; then
             wget -c --passive-ftp --no-directories --tries=3 --waitretry=3 --output-document="${PKGUPD_SRCDIR}/${filename}.part" "${url}" ${WGET_ARGS}
-        if [[ $? != 0 ]] ; then
-            abort 7 "failed to download ${filename} from ${url}"
-        fi
-        mv ${PKGUPD_SRCDIR}/${filename}{.part,}
+            if [[ $? != 0 ]]; then
+                abort 7 "failed to download ${filename} from ${url}"
+            fi
+            mv ${PKGUPD_SRCDIR}/${filename}{.part,}
         fi
     fi
 done
@@ -99,17 +98,17 @@ PKGDEST=${pkgupd_pkgdir}
 [[ -d ${WORKDIR} ]] || mkdir -p $WORKDIR
 [[ -d ${PKGDEST} ]] || mkdir -p $PKGDEST
 
-for s in ${source[@]} ; do
-    if echo $s | grep -Eq '::(http|https|ftp)://' ; then
+for s in ${source[@]}; do
+    if echo $s | grep -Eq '::(http|https|ftp)://'; then
         filename=${PKGUPD_SRCDIR}/$(echo $s | awk -F '::' '{print $1}')
-    elif echo $s | grep -Eq '^(http|https|ftp)://' ; then
+    elif echo $s | grep -Eq '^(http|https|ftp)://'; then
         filename=${PKGUPD_SRCDIR}/$(basename $s)
     else
         filename=${PWD}/$(basename $s)
     fi
 
-    for noext in ${noextract} ; do
-        if [[ "$noext" = "$(basename ${filename})" ]] ; then
+    for noext in ${noextract}; do
+        if [[ "$noext" = "$(basename ${filename})" ]]; then
             nxt=1
             break
         fi
@@ -119,38 +118,38 @@ for s in ${source[@]} ; do
         abort 8 "${filename} is missing"
     }
 
-    if [[ "${filename}" != "${file}" ]] && [[ "${nxt}" != 1 ]] ; then
+    if [[ "${filename}" != "${file}" ]] && [[ "${nxt}" != 1 ]]; then
         case "${filename}" in
-            *.tar|*.tar.*|*.tgz|*.tbz2|*.txz|*.zip|*.rpm)
-                case "${filename}" in
-                    *bz2|*bzip2)
-                        CMS=j
-                        ;;
-                    
-                    *gz)
-                        CMS=z
-                        ;;
+        *.tar | *.tar.* | *.tgz | *.tbz2 | *.txz | *.zip | *.rpm)
+            case "${filename}" in
+            *bz2 | *bzip2)
+                CMS=j
+                ;;
 
-                    *xz)
-                        CMS=J
-                        ;;
-                esac
-                debug "extracting $(basename $filename)"
-                tar -C "${WORKDIR}" -${CMS} -xf "${filename}"
+            *gz)
+                CMS=z
                 ;;
-            
-            *)
-                debug "copying $(basename $filename)"
-                cp "${filename}" "${WORKDIR}"
+
+            *xz)
+                CMS=J
                 ;;
+            esac
+            debug "extracting $(basename $filename)"
+            tar -C "${WORKDIR}" -${CMS} -xf "${filename}"
+            ;;
+
+        *)
+            debug "copying $(basename $filename)"
+            cp "${filename}" "${WORKDIR}"
+            ;;
         esac
-        if [[ "$?" != 0 ]] ; then
+        if [[ "$?" != 0 ]]; then
             abort 8 "error while preparing file"
         fi
     else
         debug "copying $(basename $filename)"
         cp "${filename}" "${WORKDIR}"
-        if [[ "$?" != 0 ]] ; then
+        if [[ "$?" != 0 ]]; then
             abort 9 "error while preparing file"
         fi
     fi
@@ -158,19 +157,25 @@ for s in ${source[@]} ; do
 done
 
 export src=${pkgupd_srcdir}
-export pkg=${pkgupd_pkgdir}/${name}
+export pkg=${pkgupd_pkgdir}
 
 cd $src
-(set -e -x; build 2>&1)
-if [[ $? != 0 ]] ; then
+(
+    set -e -x
+    build 2>&1
+)
+if [[ $? != 0 ]]; then
     abort 2 "failed to compile package"
 fi
 
-if [[ ! -z "$splits" ]] ; then
-    for sbuild in ${splits[@]} ; do
+if [[ ! -z "$splits" ]]; then
+    for sbuild in ${splits[@]}; do
         export pkg="${pkgupd_pkgdir}/../$sbuild"
-        (set -e -x; "build_$sbuild" 2>&1)
-        if [[ $? != 0 ]] ; then
+        (
+            set -e -x
+            "build_$sbuild" 2>&1
+        )
+        if [[ $? != 0 ]]; then
             abort 10 "error while compiling split package $sbuild"
         fi
         unset pkg
@@ -178,36 +183,39 @@ if [[ ! -z "$splits" ]] ; then
 fi
 
 cd ${PKGDEST}
-if [[ -z "$skip_strip" ]] ; then
-if [[ "$nostrip" ]] ; then
-    for i in ${nostrip[@]} ; do
-        xstrip="$xstrip -e $i"
-    done
-    FILTER="grep -v $xstrip"
-else
-    FILTER="cat"
-fi
+if [[ -z "$skip_strip" ]]; then
+    if [[ "$nostrip" ]]; then
+        for i in ${nostrip[@]}; do
+            xstrip="$xstrip -e $i"
+        done
+        FILTER="grep -v $xstrip"
+    else
+        FILTER="cat"
+    fi
 fi
 
-find . -type f -printf "%P\n" 2>/dev/null | $FILTER | while read -r binary ; do
+find . -type f -printf "%P\n" 2>/dev/null | $FILTER | while read -r binary; do
     case "$(file -bi "$binary")" in
-        *application/x-sharedlib*)  # Libraries (.so)
+    *application/x-sharedlib*) # Libraries (.so)
+        ${CROSS_COMPILE}strip --strip-unneeded "$binary" 2>/dev/null ;;
+    *application/x-pie-executable*) # Libraries (.so)
+        ${CROSS_COMPILE}strip --strip-unneeded "$binary" 2>/dev/null ;;
+    *application/x-archive*) # Libraries (.a)
+        ${CROSS_COMPILE}strip --strip-debug "$binary" 2>/dev/null ;;
+    *application/x-object*)
+        case "$binary" in
+        *.ko) # Kernel module
             ${CROSS_COMPILE}strip --strip-unneeded "$binary" 2>/dev/null ;;
-        *application/x-pie-executable*)  # Libraries (.so)
-            ${CROSS_COMPILE}strip --strip-unneeded "$binary" 2>/dev/null ;;
-        *application/x-archive*)    # Libraries (.a)
-            ${CROSS_COMPILE}strip --strip-debug "$binary" 2>/dev/null ;;
-        *application/x-object*)
-            case "$binary" in
-                *.ko)                   # Kernel module
-                    ${CROSS_COMPILE}strip --strip-unneeded "$binary" 2>/dev/null ;;
-                *)
-                    continue;;
-            esac;;
-        *application/x-executable*) # Binaries
-            ${CROSS_COMPILE}strip --strip-all "$binary" 2>/dev/null ;;
         *)
-            continue ;;
+            continue
+            ;;
+        esac
+        ;;
+    *application/x-executable*) # Binaries
+        ${CROSS_COMPILE}strip --strip-all "$binary" 2>/dev/null ;;
+    *)
+        continue
+        ;;
     esac
 done
 
@@ -229,7 +237,8 @@ find . -type l -path "*/man/man*/*" | while read -r file; do
     fi
 done
 if [ -d usr/share/info ]; then
-    (cd usr/share/info
+    (
+        cd usr/share/info
         for file in $(find . -type f); do
             if [ "$file" = "${file%%.gz}" ]; then
                 gzip -9 "$file"
@@ -238,9 +247,9 @@ if [ -d usr/share/info ]; then
     )
 fi
 
-if [[ "${REMOVE_DOCS}" ]] ; then
+if [[ "${REMOVE_DOCS}" ]]; then
     debug "removing doc file"
-    for i in doc gtk-doc info ; do
+    for i in doc gtk-doc info; do
         rm -rf usr/share/${i} usr/${i} usr/local/${i} opt/share/${i}
     done
 fi
