@@ -4,8 +4,6 @@
 #include "remover/remover.hh"
 #include "database/database.hh"
 
-#include <boost/exception_ptr.hpp>
-
 #include <cli/cli.hh>
 #include <io.hh>
 #include <iostream>
