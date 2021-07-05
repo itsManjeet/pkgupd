@@ -120,9 +120,24 @@ namespace pkgupd
             return _recipe.id() + (pkg == nullptr ? "" : ":" + pkg->id());
         }
 
+
+        /** @brief Check if pkg is already installed or not
+         *  @param pkgid packages id in format <recipe>:<package>
+         * 
+         */
         bool const installed(string const &pkgid) const
         {
-            return std::filesystem::exists(_dir_data + "/" + pkgid);
+            if (std::filesystem::exists(_dir_data + "/" + pkgid))
+                return true;
+
+            /** check if all the packages of recipe is installed or not
+             */
+            auto _recipe = (*this)[pkgid];
+            for (auto const &i : _recipe.packages())
+                if (!installed(_recipe.id() + ":" + i.id()))
+                    return false;
+
+            return true;
         }
 
         bool const installed(recipe const &_recipe, package *pkg) const
