@@ -120,7 +120,6 @@ namespace pkgupd
             return _recipe.id() + (pkg == nullptr ? "" : ":" + pkg->id());
         }
 
-
         /** @brief Check if pkg is already installed or not
          *  @param pkgid packages id in format <recipe>:<package>
          * 
@@ -137,7 +136,8 @@ namespace pkgupd
                 if (!installed(_recipe.id() + ":" + i.id()))
                     return false;
 
-            return true;
+            // check if recipe is a meta package
+            return _recipe.packages().size() != 0;
         }
 
         bool const installed(recipe const &_recipe, package *pkg) const
