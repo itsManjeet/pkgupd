@@ -256,6 +256,13 @@ namespace pkgupd
             }
 
             string dir = _dir_work + "/pkg/" + pkg->id();
+            
+            if (!std::filesystem::exists(dir))
+            {
+                _error = "No output folder generated";
+                return false;
+            }
+
 
             if (_recipe.strip())
             {

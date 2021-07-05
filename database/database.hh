@@ -97,6 +97,7 @@ namespace pkgupd
             auto total_deps = pkg.runtime();
             if (compiletime)
                 total_deps = algo::merge(total_deps, pkg.buildtime());
+
             for (auto const &i : total_deps)
             {
                 auto dep = (*this)[i];
@@ -129,15 +130,19 @@ namespace pkgupd
             if (std::filesystem::exists(_dir_data + "/" + pkgid))
                 return true;
 
-            /** check if all the packages of recipe is installed or not
-             */
-            auto _recipe = (*this)[pkgid];
-            for (auto const &i : _recipe.packages())
-                if (!installed(_recipe.id() + ":" + i.id()))
-                    return false;
+            if (pkgid.find(':') == string::npos)
+            {
+                /* check if all the packages of recipe is installed or not */
+                auto _recipe = (*this)[pkgid];
+                for (auto const &i : _recipe.packages())
+                    if (!installed(_recipe.id() + ":" + i.id()))
+                        return false;
 
+                return _recipe.packages().size() != 0;
+            }
+            
             // check if recipe is a meta package
-            return _recipe.packages().size() != 0;
+            return false;
         }
 
         bool const installed(recipe const &_recipe, package *pkg) const
