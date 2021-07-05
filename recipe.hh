@@ -230,7 +230,7 @@ namespace pkgupd
             OPTVAL(postscript, _node, "");
 
             OPTVAL(pack, _node, "none");
-            OPTVAL_TYPE(clean, _node, true, bool);
+            OPTVAL_TYPE(clean, _node, false, bool);
             OPTVAL_TYPE(strip, _node, true, bool);
             OPTVAL(preinstall, _node, "");
             OPTVAL(postinstall, _node, "");

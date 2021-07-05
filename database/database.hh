@@ -144,7 +144,7 @@ namespace pkgupd
             auto outdatedlist = std::vector<recipe>();
             for (auto const &i : std::filesystem::directory_iterator(_dir_data))
             {
-                if (i.path().filename().extension() == "files")
+                if (i.path().filename().extension() == ".files")
                     continue;
 
                 auto [pkgid, subpkg] = parse_pkgid(i.path().filename().string());
