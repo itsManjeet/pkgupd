@@ -135,44 +135,57 @@ extern "C" std::tuple<bool, string> pkgupd_build(
                                   dir, recipe.environ(pkg)))
         return {false, "failed to configure"};
 
+    string cmd;
+    if (std::filesystem::exists(dir + "/Makefile"))
     {
-        string cmd;
-        if (std::filesystem::exists(dir + "/Makefile"))
-            cmd += " make ";
-        if (std::filesystem::exists(dir + "/ninja.build"))
-            cmd += " ninja ";
+        io::info("found ", color::MAGENTA, "make");
+        cmd = " make ";
+    }
+    else if (std::filesystem::exists(dir + "/build.ninja"))
+    {
+        io::info("found ", color::MAGENTA, "ninja");
+        cmd = " ninja ";
+    }
+    else
+        return {false, "failed to get buildtool"};
 
-        string cmd_args = "";
+    string cmd_args = "";
 
-        for (auto const &i : pkg->flags())
+    for (auto const &i : pkg->flags())
+    {
+        if (i.id() == "compile")
         {
-            if (i.id() == "compile")
-            {
-                if (i.only())
-                    cmd_args = " " + i.value();
-                else
-                    cmd_args += " " + i.value();
+            if (i.only())
+                cmd_args = " " + i.value();
+            else
+                cmd_args += " " + i.value();
 
-                break;
-            }
+            break;
         }
+    }
 
-        if (rlx::utils::exec::command(
-                io::format(
-                    cmd, cmd_args),
-                dir,
-                recipe.environ(pkg)))
-        {
-            return {false, "failed to compile"};
-        }
+    if (rlx::utils::exec::command(
+            cmd + " " + cmd_args,
+            dir,
+            recipe.environ(pkg)))
+    {
+        return {false, "failed to compile"};
     }
 
     {
         string cmd = "DESTDIR=" + get_env("DESTDIR", pkg_dir);
         if (std::filesystem::exists(dir + "/Makefile"))
+        {
+            io::info("found ", color::MAGENTA, "make");
             cmd = " make install " + cmd;
-        if (std::filesystem::exists(dir + "/ninja.build"))
-            cmd += " ninja install ";
+        }
+        else if (std::filesystem::exists(dir + "/build.ninja"))
+        {
+            io::info("found ", color::MAGENTA, "ninja");
+            cmd += " ninja install";
+        }
+        else
+            return {false, "failed to get installer tool"};
 
         string cmd_args = "";
 
