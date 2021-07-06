@@ -3,70 +3,88 @@
 #include <string>
 
 #include <io.hh>
+#include <rlx.hh>
 
 using std::string;
 using namespace rlx;
 using color = rlx::io::color;
 using level = rlx::io::debug_level;
 
-/// TODO rewrite in better way
-enum buildtool
+class auto_ : public obj
 {
-    NONE,
-    AUTOCONF,
-    AUTOGEN,
-    PYSETUP,
-    MESON,
-    CMAKE,
-};
-
-std::map<string, buildtool> buildtool_files = {
-    {"configure", AUTOCONF},
-    {"autogen.sh", AUTOGEN},
-    {"CMakeLists.txt", CMAKE},
-    {"meson.build", MESON},
-    {"setup.py", PYSETUP}};
-
-string buildtool_tool(buildtool c)
-{
-    switch (c)
+private:
+    enum class configurator
     {
-    case buildtool::AUTOCONF:
-        return "../configure";
-    case buildtool::AUTOGEN:
-        return "../autogen.sh";
-    case buildtool::CMAKE:
-        return "cmake";
-    case buildtool::MESON:
-        return "meson";
-    case buildtool::PYSETUP:
-        return "setup.py";
+        none,
+        autoconf,
+        autogen,
+        pysetup,
+        meson,
+        cmake
+    };
+    enum class builder
+    {
+        none,
+        ninja,
+        make,
+    };
+
+    std::map<string, configurator> configurators =
+        {
+            {"configure", configurator::autoconf},
+            {"autogen.sh", configurator::autogen},
+            {"CMakeLists.txt", configurator::cmake},
+            {"meson.build", configurator::meson},
+            {"setup.py", configurator::pysetup},
+        };
+
+    std::map<string, builder> builders =
+        {
+            {"Makefile", builder::make},
+            {"build.ninja", builder::ninja},
+        };
+
+    pkgupd::recipe const &recipe;
+    pkgupd::package *pkg;
+    string src_dir;
+    string pkg_dir;
+
+    configurator get_configurators(string path)
+    {
+        // check if custom  configurator is provided
+        for (auto const &i : pkg->flags())
+            if (i.id() == "configurator")
+                if (configurators.find(i.value()) == configurators.end())
+                    return configurator::none;
+                else
+                    return configurators[i.value()];
+
+        // otherwise search
+        for (auto const &i : configurators)
+            if (std::filesystem::exists(path + "/" + i.first))
+                return i.second;
+
+        return configurator::none;
     }
 
-    throw std::runtime_error("unknow build tool id" + std::to_string(c));
-}
+    builder get_builder(string path)
+    {
+        // check if custom  builder is provided
+        for (auto const &i : pkg->flags())
+            if (i.id() == "builder")
+                if (builders.find(i.value()) == builders.end())
+                    return builder::none;
+                else
+                    return builders[i.value()];
 
-extern "C" std::tuple<bool, string> pkgupd_build(
-    pkgupd::recipe const &recipe,
-    YAML::Node const &node,
-    pkgupd::package *pkg,
-    string src_dir,
-    string pkg_dir)
-{
-    buildtool b = NONE;
+        for (auto const &i : builders)
+            if (std::filesystem::exists(path + "/" + i.first))
+                return i.second;
 
-    for (auto const &t : buildtool_files)
-        if (std::filesystem::exists(src_dir + "/" + t.first))
-        {
-            b = t.second;
-            break;
-        }
+        return builder::none;
+    }
 
-    auto build_tool_cmd = buildtool_tool(b);
-
-    io::info("found '", color::MAGENTA, build_tool_cmd, color::RESET, color::BOLD, "'");
-
-    auto get_env = [&](const string &f, string fallback) -> string
+    string get_env(const string &f, string fallback)
     {
         auto env = recipe.environ(pkg);
 
@@ -78,139 +96,232 @@ extern "C" std::tuple<bool, string> pkgupd_build(
         }
 
         return fallback;
-    };
-
-    string args;
-    string prefix = get_env("PREFIX", "/usr");
-    string libdir = get_env("LIBDIR", prefix + "/lib");
-    string sysconfdir = get_env("SYSCONFDIR", "/etc");
-    string bindir = get_env("BINDIR", prefix + "/bin");
-    string localstatedir = get_env("LOCALSTATEDIR", "/var");
-    string datadir = get_env("DATADIR", prefix + "/share");
-
-    if (b >= AUTOCONF && b <= MESON)
-    {
-
-        args = rlx::io::format(
-            " --prefix=", prefix,
-            " --libdir=", libdir,
-            " --libexecdir=", libdir,
-            " --sysconfdir=", sysconfdir,
-            " --bindir=", bindir,
-            " --sbindir=", bindir,
-            " --localstatedir=", localstatedir,
-            " --datadir=", datadir);
-
-        if (b == MESON)
-            args += " .. ";
     }
 
-    if (b == CMAKE)
+    std::string get_config_args(configurator c)
     {
-        args = rlx::io::format(
-            " -DCMAKE_INSTALL_PREFIX=", prefix);
+        string prefix = get_env("PREFIX", "/usr");
+        string libdir = get_env("LIBDIR", prefix + "/lib");
+        string sysconfdir = get_env("SYSCONFDIR", "/etc");
+        string bindir = get_env("BINDIR", prefix + "/bin");
+        string localstatedir = get_env("LOCALSTATEDIR", "/var");
+        string datadir = get_env("DATADIR", prefix + "/share");
 
-        args += " -S ..";
-    }
-
-    for (auto const &i : pkg->flags())
-    {
-        if (i.id() == "configure")
+        string args;
+        if (c == configurator::autoconf ||
+            c == configurator::autogen ||
+            c == configurator::meson)
         {
-            if (i.only())
-                args = " " + i.value().substr(0, i.value().length() - 1) + (b == CMAKE ? " -S " : " ") + (b == MESON || b == CMAKE ? " .. " : "");
-            else
-                args += " " + i.value();
+            return io::format(
+                "--prefix=", prefix,
+                " --libdir=", libdir,
+                " --sysconfdir=", sysconfdir,
+                " --bindir=", bindir,
+                " --sbindir=", bindir,
+                " --libexecdir=", libdir,
+                " --datadir=", datadir,
+                " --localstatedir=", localstatedir,
 
-            break;
+                // add meson buildtype=release
+                (c == configurator::meson ? " --buildtype=release  .. " : ""));
         }
-    }
-
-    string dir = src_dir + "/build_" + pkg->id();
-    std::filesystem::create_directories(dir);
-
-    if (rlx::utils::exec::command(rlx::io::format(
-                                      build_tool_cmd,
-                                      args),
-                                  dir, recipe.environ(pkg)))
-        return {false, "failed to configure"};
-
-    string cmd;
-    if (std::filesystem::exists(dir + "/Makefile"))
-    {
-        io::info("found ", color::MAGENTA, "make");
-        cmd = " make ";
-    }
-    else if (std::filesystem::exists(dir + "/build.ninja"))
-    {
-        io::info("found ", color::MAGENTA, "ninja");
-        cmd = " ninja ";
-    }
-    else
-        return {false, "failed to get buildtool"};
-
-    string cmd_args = "";
-
-    for (auto const &i : pkg->flags())
-    {
-        if (i.id() == "compile")
+        else if (c == configurator::cmake)
         {
-            if (i.only())
-                cmd_args = " " + i.value();
-            else
-                cmd_args += " " + i.value();
-
-            break;
+            return io::format(
+                "-DCMAKE_INSTALL_PREFIX=", prefix,
+                " -DCMAKE_INSTALL_LIBDIR=", libdir,
+                " -DCMAKE_BUILD_TYPE=RELEASE",
+                " -DCMAKE_INSTALL_SYSCONFDIR=", sysconfdir,
+                " -DCMAKE_INSTALL_BINDIR=", bindir,
+                " -DCMAKE_INSTALL_SBINDIR=", bindir,
+                " -DCMAKE_INSTALL_LOCALSTATEDIR=", localstatedir,
+                " -DCMAKE_INSTALL_DATADIR=", datadir,
+                " -DCMAKE_INSTALL_LIBEXECDIR=", libdir,
+                " -DCMAKE_INSTALL_SYSCONFDIR=", sysconfdir,
+                " -S ..");
         }
+        throw std::runtime_error("unknown configurator provided");
     }
 
-    if (rlx::utils::exec::command(
-            cmd + " " + cmd_args,
-            dir,
-            recipe.environ(pkg)))
+    std::string get_compile_args(builder b)
     {
-        return {false, "failed to compile"};
+        return "-j $(nproc)";
     }
 
+    std::string get_install_args(builder b)
     {
-        string cmd = "DESTDIR=" + get_env("DESTDIR", pkg_dir);
-        if (std::filesystem::exists(dir + "/Makefile"))
-        {
-            io::info("found ", color::MAGENTA, "make");
-            cmd = " make install " + cmd;
-        }
-        else if (std::filesystem::exists(dir + "/build.ninja"))
-        {
-            io::info("found ", color::MAGENTA, "ninja");
-            cmd += " ninja install";
-        }
-        else
-            return {false, "failed to get installer tool"};
+        return (b == builder::make ? "DESTDIR=" + pkg_dir : "") + "install";
+    }
 
-        string cmd_args = "";
+public:
+    auto_(pkgupd::recipe const &recipe,
+          YAML::Node const &node,
+          pkgupd::package *pkg,
+          string src_dir,
+          string pkg_dir)
 
+        : recipe(recipe),
+          pkg(pkg),
+          src_dir(src_dir),
+          pkg_dir(pkg_dir)
+    {
+    }
+
+    auto get_flag_value(string const &f)
+    {
         for (auto const &i : pkg->flags())
-        {
-            if (i.id() == "install")
-            {
-                if (i.only())
-                    cmd_args = " " + i.value();
-                else
-                    cmd_args += " " + i.value();
+            if (i.id() == f)
+                return std::tuple{
+                    i.value(),
+                    i.only()};
 
-                break;
-            }
-        }
-
-        if (rlx::utils::exec::command(
-                io::format(
-                    cmd, cmd_args),
-                dir,
-                recipe.environ(pkg)))
-        {
-            return {false, "failed to install"};
-        }
+        return std::tuple{string(""), false};
     }
+
+    bool configure(string build_dir)
+    {
+        auto _conf = get_configurators(src_dir);
+        if (_conf == configurator::none)
+        {
+            _error = "no valid configurator found in '" + src_dir + "'";
+            return false;
+        }
+
+        io::info("found ", color::MAGENTA, "'", _conf, "'");
+
+        auto conf_args = get_config_args(_conf);
+        auto [_conf_args, force] = get_flag_value("configure");
+        if (force)
+            conf_args = _conf_args;
+        else
+            conf_args += " " + _conf_args;
+
+        string _cmd = io::format(_conf, " ", conf_args);
+
+        if (rlx::utils::exec::command(_cmd, build_dir, recipe.environ(pkg)))
+        {
+            _error = "configuration failed";
+            return false;
+        }
+
+        return true;
+    }
+
+    bool compile(string build_dir)
+    {
+        auto _builder = get_builder(build_dir);
+        if (_builder == builder::none)
+        {
+            _error = "no valid builder found in '" + build_dir + "'";
+            return false;
+        }
+
+        io::info("found ", color::MAGENTA, "'", _builder, "'");
+
+        auto compile_args = get_compile_args(_builder);
+
+        auto [_compile_args, force] = get_flag_value("compile");
+        if (force)
+            compile_args = _compile_args;
+        else
+            compile_args += " " + _compile_args;
+
+        string _cmd = io::format(_builder, " ", compile_args);
+
+        if (rlx::utils::exec::command(_cmd, build_dir, recipe.environ(pkg)))
+        {
+            _error = "configuration failed";
+            return false;
+        }
+
+        return true;
+    }
+
+    bool install(string build_dir)
+    {
+        auto _builder = get_builder(build_dir);
+        if (_builder == builder::none)
+        {
+            _error = "no valid builder found in '" + build_dir + "'";
+            return false;
+        }
+
+        io::info("found ", color::MAGENTA, "'", _builder, "'");
+
+        auto args = get_install_args(_builder);
+
+        auto [_args, force] = get_flag_value("compile");
+        if (force)
+            args = _args;
+        else
+            args += " " + _args;
+
+        string _cmd = io::format(_builder, " ", _args);
+
+        if (rlx::utils::exec::command(_cmd, build_dir, recipe.environ(pkg)))
+        {
+            _error = "configuration failed";
+            return false;
+        }
+
+        return true;
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, configurator c)
+    {
+        switch (c)
+        {
+        case configurator::cmake:
+            os << "cmake";
+            break;
+        case configurator::autogen:
+            os << "../autogen.sh";
+            break;
+        case configurator::autoconf:
+            os << "../configure";
+            break;
+        case configurator::meson:
+            os << "meson";
+            break;
+        }
+        return os;
+    }
+
+    friend std::ostream &operator<<(std::ostream &os, builder c)
+    {
+        switch (c)
+        {
+        case builder::ninja:
+            os << "ninja";
+            break;
+        case builder::make:
+            os << "make";
+            break;
+        }
+        return os;
+    }
+};
+
+extern "C" std::tuple<bool, string> pkgupd_build(
+    pkgupd::recipe const &recipe,
+    YAML::Node const &node,
+    pkgupd::package *pkg,
+    string src_dir,
+    string pkg_dir)
+{
+    auto _a = auto_(recipe, node, pkg, src_dir, pkg_dir);
+    string _build_dir = src_dir + "/build_" + pkg->id();
+
+    io::process("configuring source");
+    if (!_a.configure(_build_dir))
+        return {false, _a.error()};
+
+    io::process("compiling codes");
+    if (!_a.compile(_build_dir))
+        return {false, _a.error()};
+
+    if (!_a.install(_build_dir))
+        return {false, _a.error()};
 
     return {true, ""};
 }
