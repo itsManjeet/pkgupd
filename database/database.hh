@@ -1,11 +1,15 @@
 #ifndef __DATABASE__
 #define __DATABASE__
 
+#include <rlx.hh>
+#include <algo/algo.hh>
+#include <curl/curl.hh>
 #include "../recipe.hh"
+#include "../config.hh"
 
 namespace pkgupd
 {
-    class database : public obj
+    class database : public rlx::obj
     {
     public:
         class exception : public std::exception
@@ -30,11 +34,12 @@ namespace pkgupd
         string _dir_data,
             _dir_root,
             _dir_recipe,
-            _dir_pkgs;
+            _dir_pkgs,
+            _dir_src,
+            _dir_work;
 
         std::vector<string> _repositories;
-        std::vector<string> __depid;
-        std::vector<recipe> __deplist;
+        std::list<string> __depid;
 
     public:
         database(YAML::Node const &c)
@@ -51,6 +56,8 @@ namespace pkgupd
             _dir_data = get_dir("data", DEFAULT_DIR_DATA);
             _dir_recipe = get_dir("recipes", DEFAULT_DIR_RECIPE);
             _dir_pkgs = get_dir("pkgs", DEFAULT_DIR_PKGS);
+            _dir_work = get_dir("work", DEFAULT_DIR_WORK);
+            _dir_src = get_dir("src", DEFAULT_DIR_SRC);
 
             if (c["default"] && c["default"]["repositories"])
                 for (auto const &i : c["default"]["repositories"])
@@ -58,7 +65,7 @@ namespace pkgupd
             else
                 _repositories.push_back("core");
 
-            for (auto const &i : {_dir_root, _dir_data, _dir_recipe, _dir_pkgs})
+            for (auto const &i : {_dir_root, _dir_data, _dir_recipe, _dir_pkgs, _dir_work, _dir_src})
                 if (!std::filesystem::exists(i))
                     std::filesystem::create_directories(i);
         }
@@ -66,6 +73,9 @@ namespace pkgupd
         DEFINE_GET_METHOD(string, dir_root);
         DEFINE_GET_METHOD(string, dir_data);
         DEFINE_GET_METHOD(string, dir_recipe);
+        DEFINE_GET_METHOD(string, dir_pkgs);
+        DEFINE_GET_METHOD(string, dir_work);
+        DEFINE_GET_METHOD(string, dir_src);
         DEFINE_GET_METHOD(std::vector<string>, repositories);
 
         string const getrepo(string const &id) const
@@ -86,39 +96,38 @@ namespace pkgupd
             return _dir_recipe + "/" + getrepo(rcp) + "/" + rcp + ".yml";
         }
 
-        std::vector<recipe> resolve(string pkgid, bool compiletime = false)
+        std::list<string> resolve(string pkgid, bool compiletime = false)
         {
+
             auto [rcp, p] = parse_pkgid(pkgid);
             auto pkg = (*this)[rcp];
 
-            if (algo::contains(__depid, pkgid) || installed(pkgid))
-                return __deplist;
+            if (std::find(__depid.begin(), __depid.end(), pkgid) != __depid.end() || installed(pkgid))
+                return __depid;
+
+            __depid.push_front(pkgid);
 
             auto total_deps = pkg.runtime();
             if (compiletime)
-                total_deps = algo::merge(total_deps, pkg.buildtime());
+                total_deps = rlx::algo::merge(total_deps, pkg.buildtime());
 
             for (auto const &i : total_deps)
             {
                 auto dep = (*this)[i];
-                if (algo::contains(__depid, i) || installed(i))
+                if (std::find(__depid.begin(), __depid.end(), i) != __depid.end() || installed(i))
                     continue;
 
                 resolve(i, compiletime);
-                __deplist.push_back(dep);
-                __depid.push_back(i);
+                if (std::find(__depid.begin(), __depid.end(), pkgid) == __depid.end())
+                    __depid.push_front(i);
             }
 
-            __depid.push_back(pkgid);
-
-            return __deplist;
+            return __depid;
         }
 
-        DEFINE_GET_METHOD(std::vector<recipe>, _deplist);
-
-        std::string const pkgid(recipe const &_recipe, package *pkg) const
+        std::string const pkgid(string const &_recipe_id, string const &_pkg_id = "", string const &_recipe_version = "") const
         {
-            return _recipe.id() + (pkg == nullptr ? "" : ":" + pkg->id());
+            return _recipe_id + (_recipe_version.length() ? "-" : "") + _recipe_version + (_pkg_id.length() ? ":" : "") + _pkg_id;
         }
 
         /** @brief Check if pkg is already installed or not
@@ -140,14 +149,14 @@ namespace pkgupd
 
                 return _recipe.packages().size() != 0;
             }
-            
+
             // check if recipe is a meta package
             return false;
         }
 
         bool const installed(recipe const &_recipe, package *pkg) const
         {
-            return installed(pkgid(_recipe, pkg));
+            return installed(pkgid(_recipe.id(), pkg == nullptr ? "" : pkg->id()));
         }
 
         std::tuple<string, string> parse_pkgid(string pkgid) const
@@ -159,9 +168,9 @@ namespace pkgupd
             return {pkgid.substr(0, idx), pkgid.substr(idx + 1, pkgid.length() - (idx + 1))};
         }
 
-        std::vector<recipe> list_out_dated() const
+        std::vector<string> list_out_dated() const
         {
-            auto outdatedlist = std::vector<recipe>();
+            auto outdatedlist = std::vector<string>();
             for (auto const &i : std::filesystem::directory_iterator(_dir_data))
             {
                 if (i.path().filename().extension() == ".files")
@@ -175,7 +184,7 @@ namespace pkgupd
                     auto _installed = installed_recipe(i.path().filename().string());
 
                     if (_recipe.version() != _installed.version())
-                        outdatedlist.push_back(_recipe);
+                        outdatedlist.push_back(i.path().filename().string());
                 }
                 catch (database::exception e)
                 {
@@ -202,7 +211,7 @@ namespace pkgupd
             bool downloaded = false;
             for (auto const &mirror : mirrors)
             {
-                io::process("downloading ", pkgid, " from ", mirror);
+                io::process("getting ", pkgid, " from ", mirror);
                 string url = mirror + "/" + repo + "/" + pkgid;
                 if (!rlx::curl::download(url, output))
                     io::error("faild to get from ", mirror);
@@ -233,7 +242,7 @@ namespace pkgupd
 
         std::vector<string> installedfiles(recipe const &_recipe, package *pkg) const
         {
-            return installedfiles(pkgid(_recipe, pkg));
+            return installedfiles(pkgid(_recipe.id(), pkg == nullptr ? "" : pkg->id()));
         }
 
         recipe const installed_recipe(string const &id) const

@@ -6,7 +6,9 @@
 #include "../recipe.hh"
 #include "../config.hh"
 #include "../database/database.hh"
-
+#include "plugin.hh"
+#include <chrono>
+#include <ctime>
 namespace pkgupd
 {
     using namespace rlx;
@@ -16,11 +18,15 @@ namespace pkgupd
     class installer : public obj
     {
     public:
+        using plugin_init = plugin::installer *(*)(YAML::Node const &);
+
+        typedef recipe (*getrecipe)(YAML::Node const &, string pkgpath);
+        typedef std::tuple<bool, string> (*unpack)(YAML::Node const &, string pkgpath, string root_dir);
+
         typedef std::tuple<bool, string, std::vector<string>> (*unpack_func)(recipe const &, YAML::Node const &, package *, string pkgpath, string rootdir);
         typedef std::tuple<bool, string, recipe, package *> (*getrecipe_func)(string path);
 
     private:
-        recipe _recipe;
         YAML::Node _config;
         database _database;
 
@@ -42,9 +48,8 @@ namespace pkgupd
         }
 
     public:
-        installer(recipe const &r,
-                  YAML::Node const &c)
-            : _recipe(r), _config(c), _database(c)
+        installer(YAML::Node const &c)
+            : _config(c), _database(c)
         {
             auto get_dir = [&](string path, string fallback) -> string
             {
@@ -59,7 +64,6 @@ namespace pkgupd
             _dir_data = get_dir("data", DEFAULT_DIR_DATA);
 
             _dir_work = rlx::utils::sys::tempdir(_dir_work, "pkgupd");
-            _dir_pkgs += "/" + _database.getrepo(_recipe.id());
         }
 
         ~installer()
@@ -67,29 +71,62 @@ namespace pkgupd
             clean();
         }
 
-        std::tuple<bool, string> download(package *pkg)
+        std::vector<string> download(recipe const &_recipe, string const &_sub_pkg)
         {
-            auto pkgid = _recipe.id() + "-" + _recipe.version() + (pkg == nullptr ? "" : ":" + pkg->id());
-            string pkgfile = pkgid + "." + _recipe.pack(pkg);
-            string pkgpath = _dir_pkgs + "/" + pkgfile;
-
-            io::debug(level::trace, "pkgfile ", pkgpath);
-            if (std::filesystem::exists(pkgpath))
-                io::debug(level::trace, pkgfile, " found in cache");
-            else
+            package *pkg = nullptr;
+            for (auto i : _recipe.packages())
             {
-
-                if (!_database.get_from_server(pkgfile, pkgpath))
+                if (i.id() == _sub_pkg)
                 {
-                    _error = _database.error();
-                    return {false, ""};
+                    pkg = &i;
+                    break;
                 }
             }
 
-            return {true, pkgpath};
+            if (pkg == nullptr)
+            {
+                _error = _recipe.id() + "has no package with id '" + _sub_pkg + "'";
+                return {};
+            }
+
+            string pkgid = _database.pkgid(_recipe.id(), pkg->id(), _recipe.version());
+            string pkgfile = pkgid + "." + _recipe.pack(pkg);
+            string pkgpath = _database.dir_pkgs() + "/" + pkgfile;
+
+            io::debug(level::debug, "pkgpath: ", pkgpath);
+            if (std::filesystem::exists(pkgpath))
+                io::info(pkgid, " found in cache");
+            else
+            {
+                if (!_database.get_from_server(_database.getrepo(_recipe.id()), pkgfile, pkgpath))
+                {
+                    _error = _database.error();
+                    return {};
+                }
+            }
+
+            return {pkgpath};
         }
 
-        static std::tuple<installer, package *> frompath(std::string pkgpath, YAML::Node const &cc)
+        std::vector<string> download(recipe const &_recipe)
+        {
+            std::vector<string> pkglist;
+            for (auto const &i : _recipe.packages())
+            {
+                auto pkgpath = download(_recipe, i.id());
+                if (pkgpath.size() == 0)
+                    return {};
+
+                if (!std::filesystem::exists(pkgpath[0]))
+                    return {};
+
+                pkglist.push_back(pkgpath[0]);
+            }
+
+            return pkglist;
+        }
+
+        plugin::installer *get_plugin_from_path(string const &pkgpath)
         {
             assert(std::filesystem::exists(pkgpath));
             string plugin = std::filesystem::path(pkgpath).extension();
@@ -97,106 +134,67 @@ namespace pkgupd
             if (plugin.length() == 0)
                 throw installer::exception(io::format(pkgpath, " not a installable package"));
 
-            string plugin_path = utils::dlmodule::search(plugin, "/lib/pkgupd:/usr/lib/pkgupd", "PKGUPD_PLUGINS");
-            if (plugin_path.length() == 0)
-                throw installer::exception(io::format("failed to find plugin '" + plugin + "' required to getrecipe " + pkgpath));
-
-            getrecipe_func getrecipe_plugin_fn;
-            try
-            {
-                getrecipe_plugin_fn = utils::dlmodule::load<getrecipe_func>(plugin_path, "pkgupd_getrecipe");
-            }
-            catch (std::runtime_error const &e)
-            {
-                throw installer::exception(e.what());
-            }
-
-            auto [status, mesg, rcp, pkg] = getrecipe_plugin_fn(pkgpath);
-            if (!status)
-                throw installer::exception(mesg);
-
-            return {installer(rcp, cc), pkg};
+            return get_plugin(plugin);
         }
 
-        bool install(std::string subpkg = "")
+        plugin::installer *get_plugin(string const &plugin)
         {
-            package *pkg;
-            if (subpkg.length())
-            {
-                bool found = false;
-                for (auto p : _recipe.packages())
-                {
-                    if (p.id() == subpkg)
-                    {
-                        found = true;
-                        pkg = &p;
-                        break;
-                    }
-                }
-                if (!found)
-                {
-                    _error = "no package " + subpkg + " found in " + _recipe.id();
-                    return false;
-                }
-            }
-
-            if (_recipe.preinstall().length())
-            {
-                io::info("executing preinstallation script");
-                rlx::utils::exec::command("bash -euc '" + _recipe.preinstall() + "'", "/tmp", _recipe.environ(pkg));
-            }
-
-            string plugin = _recipe.pack(pkg);
-            string pkgid = pkg == nullptr ? _recipe.id() : pkg->id();
-
-            if (plugin.length() == 0 || plugin == "none")
-            {
-                io::info(pkgid, " not a installable package, try compile");
-                return true;
-            }
-
-            auto [status, pkgpath] = download(pkg);
-            if (!status)
-                return false;
 
             string plugin_path = utils::dlmodule::search(plugin, "/lib/pkgupd:/usr/lib/pkgupd", "PKGUPD_PLUGINS");
             if (plugin_path.length() == 0)
-            {
-                _error = "failed to find plugin '" + plugin + "' required to unpack " + pkgid;
-                return false;
-            }
+                throw installer::exception(io::format("failed to find plugin '" + plugin + "'"));
 
-            unpack_func plugin_unpack_fn;
+            plugin_init _plug_init;
             try
             {
-                plugin_unpack_fn = utils::dlmodule::load<unpack_func>(plugin_path, "pkgupd_unpack");
+                _plug_init = utils::dlmodule::load<plugin_init>(plugin_path, "pkgupd_init");
             }
             catch (std::runtime_error const &e)
             {
                 _error = e.what();
-                return false;
+                return nullptr;
             }
 
-            assert(plugin_unpack_fn != nullptr);
+            return _plug_init(_config);
+        }
 
-            auto [unpack_status, output, filelist] =
-                plugin_unpack_fn(_recipe, _config, pkg, pkgpath, _dir_root);
+        bool install(string const &pkgpath, bool skip_scripts = false, bool skip_usrgrp = false, bool skip_triggers = false)
+        {
+            auto plug = get_plugin_from_path(pkgpath);
+            if (plug == nullptr)
+                return false;
 
-            if (!unpack_status)
+            auto [_recipe, pkg] = plug->get(pkgpath);
+
+            if (_recipe == nullptr)
             {
-                _error = output;
+                _error = plug->error();
                 return false;
             }
 
-            if (_recipe.postinstall().length())
+            if (_recipe->preinstall().length() && !skip_scripts)
+            {
+                io::info("executing preinstallation script");
+                rlx::utils::exec::command("bash -euc '" + _recipe->preinstall() + "'", "/tmp", _recipe->environ(pkg));
+            }
+
+            std::vector<string> fileslist;
+            if (!plug->unpack(pkgpath, _database.dir_root(), fileslist))
+            {
+                _error = plug->error();
+                delete plug;
+                return false;
+            }
+
+            if (_recipe->postinstall().length() && !skip_scripts)
             {
                 io::info("executing postinstallation script");
-                rlx::utils::exec::command("bash -euc '" + _recipe.postinstall() + "'", "/tmp", _recipe.environ(pkg));
+                rlx::utils::exec::command("bash -euc '" + _recipe->postinstall() + "'", "/tmp", _recipe->environ(pkg));
             }
 
-            if (_recipe.groups().size())
+            if (_recipe->groups().size() && !skip_usrgrp)
             {
-                for (auto const &i : _recipe.groups())
+                for (auto const &i : _recipe->groups())
                     if (!i.exists())
                     {
                         io::info("creating group ", color::MAGENTA, i.name());
@@ -205,9 +203,9 @@ namespace pkgupd
                     }
             }
 
-            if (_recipe.users().size())
+            if (_recipe->users().size() && !skip_usrgrp)
             {
-                for (auto const &i : _recipe.users())
+                for (auto const &i : _recipe->users())
                 {
                     io::debug(level::debug, "checking required user: ", color::MAGENTA, i.name(), color::RESET);
                     if (!i.exists())
@@ -219,19 +217,16 @@ namespace pkgupd
                 }
             }
 
-            if (!_database.exec_triggers(filelist))
+            if (!_database.exec_triggers(fileslist) && !skip_triggers)
             {
                 _error = _database.error();
                 return false;
             }
 
-            if (!register_pkg(filelist, _recipe.id() + (_recipe.id() == pkgid ? "" : ":" + pkgid)))
-                return false;
-
             return true;
         }
 
-        bool register_pkg(std::vector<string> fileslist, string pkgid)
+        bool register_pkg(recipe *_recipe, std::vector<string> fileslist, string pkgid, bool scripts_done = false, bool usrgrp_done = false, bool triggers_done = false)
         {
             string data_file = _dir_data + "/" + pkgid;
             string list_file = data_file + ".files";
@@ -259,7 +254,18 @@ namespace pkgupd
                 }
             }
 
-            io::writefile(data_file, _recipe.node());
+            auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+            char buff[100] = {0};
+            std::strftime(buff, sizeof(buff), "%Y-%m-%d", std::localtime(&now));
+
+            auto node = _recipe->node();
+            node["pkgid"] = pkgid;
+            node["installed-on"] = string(buff);
+            node["script-done"] = scripts_done;
+            node["triggers-done"] = triggers_done;
+            node["usrgrp-done"] = usrgrp_done;
+
+            io::writefile(data_file, node);
             io::writefile(list_file, algo::str::join(fileslist, "\n"));
 
             return true;

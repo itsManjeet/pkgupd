@@ -87,7 +87,7 @@ namespace pkgupd
 
         bool exists() const
         {
-        
+
             return getgrnam(_name.c_str()) != nullptr;
         }
     };
@@ -327,9 +327,12 @@ namespace pkgupd
 
         package *operator[](string subpkg)
         {
+            if (subpkg.length() == 0)
+                return nullptr;
+
             for (auto &p : _packages)
                 if (p.id() == subpkg)
-                    return &p;
+                    return new package(p);
 
             return nullptr;
         }

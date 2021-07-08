@@ -1,4 +1,5 @@
 #include "../../recipe.hh"
+#include "../../compiler/plugin.hh"
 #include <tuple>
 #include <string>
 
@@ -10,7 +11,7 @@ using namespace rlx;
 using color = rlx::io::color;
 using level = rlx::io::debug_level;
 
-class auto_ : public obj
+class auto_ : public plugin::compiler
 {
 private:
     enum class configurator
@@ -44,12 +45,7 @@ private:
             {"build.ninja", builder::ninja},
         };
 
-    pkgupd::recipe const &recipe;
-    pkgupd::package *pkg;
-    string src_dir;
-    string pkg_dir;
-
-    configurator get_configurators(string path)
+    configurator get_configurators(pkgupd::package *pkg, string path)
     {
         // check if custom  configurator is provided
         for (auto const &i : pkg->flags())
@@ -67,7 +63,7 @@ private:
         return configurator::none;
     }
 
-    builder get_builder(string path)
+    builder get_builder(pkgupd::package *pkg, string path)
     {
         // check if custom  builder is provided
         for (auto const &i : pkg->flags())
@@ -84,9 +80,9 @@ private:
         return builder::none;
     }
 
-    string get_env(const string &f, string fallback)
+    string get_env(pkgupd::recipe *recipe, pkgupd::package *pkg, const string &f, string fallback)
     {
-        auto env = recipe.environ(pkg);
+        auto env = recipe->environ(pkg);
 
         for (auto const &i : env)
         {
@@ -98,14 +94,14 @@ private:
         return fallback;
     }
 
-    std::string get_config_args(configurator c)
+    std::string get_config_args(pkgupd::recipe *recipe, pkgupd::package *pkg, configurator c)
     {
-        string prefix = get_env("PREFIX", "/usr");
-        string libdir = get_env("LIBDIR", prefix + "/lib");
-        string sysconfdir = get_env("SYSCONFDIR", "/etc");
-        string bindir = get_env("BINDIR", prefix + "/bin");
-        string localstatedir = get_env("LOCALSTATEDIR", "/var");
-        string datadir = get_env("DATADIR", prefix + "/share");
+        string prefix = get_env(recipe, pkg, "PREFIX", "/usr");
+        string libdir = get_env(recipe, pkg, "LIBDIR", prefix + "/lib");
+        string sysconfdir = get_env(recipe, pkg, "SYSCONFDIR", "/etc");
+        string bindir = get_env(recipe, pkg, "BINDIR", prefix + "/bin");
+        string localstatedir = get_env(recipe, pkg, "LOCALSTATEDIR", "/var");
+        string datadir = get_env(recipe, pkg, "DATADIR", prefix + "/share");
 
         string args;
         if (c == configurator::autoconf ||
@@ -148,26 +144,18 @@ private:
         return "-j $(nproc)";
     }
 
-    std::string get_install_args(builder b)
+    std::string get_install_args(builder b, string pkg_dir)
     {
         return (b == builder::make ? "DESTDIR=" + pkg_dir : "") + "install";
     }
 
 public:
-    auto_(pkgupd::recipe const &recipe,
-          YAML::Node const &node,
-          pkgupd::package *pkg,
-          string src_dir,
-          string pkg_dir)
-
-        : recipe(recipe),
-          pkg(pkg),
-          src_dir(src_dir),
-          pkg_dir(pkg_dir)
+    auto_(YAML::Node const &config)
+        : plugin::compiler(config)
     {
     }
 
-    auto get_flag_value(string const &f)
+    auto get_flag_value(pkgupd::package *pkg, string const &f)
     {
         for (auto const &i : pkg->flags())
             if (i.id() == f)
@@ -178,9 +166,9 @@ public:
         return std::tuple{string(""), false};
     }
 
-    bool configure(string build_dir)
+    bool configure(pkgupd::recipe *recipe, pkgupd::package *pkg, string src_dir, string build_dir)
     {
-        auto _conf = get_configurators(src_dir);
+        auto _conf = get_configurators(pkg, src_dir);
         if (_conf == configurator::none)
         {
             _error = "no valid configurator found in '" + src_dir + "'";
@@ -189,8 +177,8 @@ public:
 
         io::info("found ", color::MAGENTA, "'", _conf, "'");
 
-        auto conf_args = get_config_args(_conf);
-        auto [_conf_args, force] = get_flag_value("configure");
+        auto conf_args = get_config_args(recipe, pkg, _conf);
+        auto [_conf_args, force] = get_flag_value(pkg, "configure");
         if (force)
             conf_args = _conf_args;
         else
@@ -198,7 +186,7 @@ public:
 
         string _cmd = io::format(_conf, " ", conf_args);
 
-        if (rlx::utils::exec::command(_cmd, build_dir, recipe.environ(pkg)))
+        if (rlx::utils::exec::command(_cmd, build_dir, recipe->environ(pkg)))
         {
             _error = "configuration failed";
             return false;
@@ -207,9 +195,9 @@ public:
         return true;
     }
 
-    bool compile(string build_dir)
+    bool compile(pkgupd::recipe *recipe, pkgupd::package *pkg, string build_dir)
     {
-        auto _builder = get_builder(build_dir);
+        auto _builder = get_builder(pkg, build_dir);
         if (_builder == builder::none)
         {
             _error = "no valid builder found in '" + build_dir + "'";
@@ -220,7 +208,7 @@ public:
 
         auto compile_args = get_compile_args(_builder);
 
-        auto [_compile_args, force] = get_flag_value("compile");
+        auto [_compile_args, force] = get_flag_value(pkg, "compile");
         if (force)
             compile_args = _compile_args;
         else
@@ -228,7 +216,7 @@ public:
 
         string _cmd = io::format(_builder, " ", compile_args);
 
-        if (rlx::utils::exec::command(_cmd, build_dir, recipe.environ(pkg)))
+        if (rlx::utils::exec::command(_cmd, build_dir, recipe->environ(pkg)))
         {
             _error = "configuration failed";
             return false;
@@ -237,9 +225,9 @@ public:
         return true;
     }
 
-    bool install(string build_dir)
+    bool install(pkgupd::recipe *recipe, pkgupd::package *pkg, string build_dir, string pkg_dir)
     {
-        auto _builder = get_builder(build_dir);
+        auto _builder = get_builder(pkg, build_dir);
         if (_builder == builder::none)
         {
             _error = "no valid builder found in '" + build_dir + "'";
@@ -248,9 +236,9 @@ public:
 
         io::info("found ", color::MAGENTA, "'", _builder, "'");
 
-        auto args = get_install_args(_builder);
+        auto args = get_install_args(_builder, pkg_dir);
 
-        auto [_args, force] = get_flag_value("compile");
+        auto [_args, force] = get_flag_value(pkg, "compile");
         if (force)
             args = _args;
         else
@@ -258,7 +246,7 @@ public:
 
         string _cmd = io::format(_builder, " ", _args);
 
-        if (rlx::utils::exec::command(_cmd, build_dir, recipe.environ(pkg)))
+        if (rlx::utils::exec::command(_cmd, build_dir, recipe->environ(pkg)))
         {
             _error = "configuration failed";
             return false;
@@ -300,28 +288,33 @@ public:
         }
         return os;
     }
+
+    bool compile(pkgupd::recipe *recipe, pkgupd::package *pkg, string src_dir, string pkg_dir)
+    {
+        string _build_dir = src_dir + "/build_" + pkg->id();
+        if (!configure(recipe, pkg, src_dir, _build_dir))
+        {
+            _error = "failed to configure";
+            return false;
+        }
+
+        if (!compile(recipe, pkg, _build_dir))
+        {
+            _error = "failed to compile";
+            return false;
+        }
+
+        if (!install(recipe, pkg, _build_dir, pkg_dir))
+        {
+            _error = "failed to install";
+            return false;
+        }
+
+        return true;
+    }
 };
 
-extern "C" std::tuple<bool, string> pkgupd_build(
-    pkgupd::recipe const &recipe,
-    YAML::Node const &node,
-    pkgupd::package *pkg,
-    string src_dir,
-    string pkg_dir)
+extern "C" plugin::compiler *pkgupd_init(YAML::Node const &c)
 {
-    auto _a = auto_(recipe, node, pkg, src_dir, pkg_dir);
-    string _build_dir = src_dir + "/build_" + pkg->id();
-
-    io::process("configuring source");
-    if (!_a.configure(_build_dir))
-        return {false, _a.error()};
-
-    io::process("compiling codes");
-    if (!_a.compile(_build_dir))
-        return {false, _a.error()};
-
-    if (!_a.install(_build_dir))
-        return {false, _a.error()};
-
-    return {true, ""};
+    return new auto_(c);
 }
