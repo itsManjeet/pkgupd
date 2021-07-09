@@ -91,7 +91,15 @@ namespace pkgupd
 
             string pkgid = _database.pkgid(_recipe.id(), pkg->id(), _recipe.version());
             string pkgfile = pkgid + "." + _recipe.pack(pkg);
-            string pkgpath = _database.dir_pkgs() + "/" + pkgfile;
+            string pkgpath = _database.dir_pkgs() + "/" + _database.getrepo(_recipe.id()) + "/" + pkgfile;
+
+            std::error_code ec;
+            std::filesystem::create_directory(std::filesystem::path(pkgpath).parent_path(), ec);
+            if (ec)
+            {
+                _error = ec.message();
+                return {};
+            }
 
             io::debug(level::debug, "pkgpath: ", pkgpath);
             if (std::filesystem::exists(pkgpath))
