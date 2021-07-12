@@ -230,7 +230,7 @@ namespace pkgupd
             OPTVAL(prescript, _node, "");
             OPTVAL(postscript, _node, "");
 
-            OPTVAL(pack, _node, "rlxpkg");
+            OPTVAL(pack, _node, "rlx");
             OPTVAL_TYPE(clean, _node, false, bool);
             OPTVAL_TYPE(strip, _node, true, bool);
             OPTVAL(preinstall, _node, "");

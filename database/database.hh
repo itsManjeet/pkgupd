@@ -135,7 +135,13 @@ namespace pkgupd
 
         std::string const pkgid(string const &_recipe_id, string const &_pkg_id = "", string const &_recipe_version = "") const
         {
-            return (_pkg_id.length() == 0 ? _recipe_id : _pkg_id) + (_recipe_version.length() ? "-" + _recipe_version + "-x86_64" : "");
+            if (getenv("USE_APPCTL_FORMAT") != nullptr)
+            {
+                string rel = getenv("APPCTL_RELEASE") == nullptr ? "1" : getenv("APPCTL_RELEASE");
+                return (_pkg_id.length() == 0 ? _recipe_id : _pkg_id) + (_recipe_version.length() ? "-" + _recipe_version + "-" + rel + "-x86_64" : "");
+            }
+
+            return _recipe_id + (_recipe_version.length() ? "-" : "") + _recipe_version + (_pkg_id.length() ? ":" : "") + _pkg_id;
         }
 
         /** @brief Check if pkg is already installed or not
