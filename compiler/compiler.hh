@@ -278,7 +278,10 @@ namespace pkgupd
 
         bool pack(recipe *_recipe, package *pkg, string _dir_work, string _dir_pkgs)
         {
-            assert(_recipe->pack(pkg) != "none");
+            if (_recipe->pack(pkg) == "none")
+            {
+                return true;
+            }
 
             string dir = _dir_work + "/pkg/" + pkg->id();
 
@@ -309,11 +312,20 @@ namespace pkgupd
                 _error = _installer_plug_->error();
                 return false;
             }
-            
+
             if (!std::filesystem::exists(package_path))
             {
                 _error = "no output generated";
                 return false;
+            }
+
+            if (_recipe->node()["split"] && _recipe->node()["split"].as<bool>() == false)
+            {
+                if (!_installer.install(package_path))
+                {
+                    _error = _installer.error();
+                    return false;
+                }
             }
 
             _packages.push_back(package_path);
