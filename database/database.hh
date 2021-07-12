@@ -135,7 +135,7 @@ namespace pkgupd
 
         std::string const pkgid(string const &_recipe_id, string const &_pkg_id = "", string const &_recipe_version = "") const
         {
-            return _recipe_id + (_recipe_version.length() ? "-" : "") + _recipe_version + (_pkg_id.length() ? ":" : "") + _pkg_id;
+            return (_pkg_id.length() == 0 ? _recipe_id : _pkg_id) + (_recipe_version.length() ? "-" + _recipe_version + "-x86_64" : "");
         }
 
         /** @brief Check if pkg is already installed or not
