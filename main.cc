@@ -81,7 +81,9 @@ int main(int ac, char **av)
                 if (!cc.checkflag("no-depends"))
                 {
                     auto dep = database.resolve(pkgid, cc.checkflag("compile"));
-                    dep.pop_back();
+                    if (dep.size() && dep.back() == pkgid)
+                        dep.pop_back();
+
                     for(auto i : dep)
                     {
                         auto subcc = context(cc);
@@ -139,15 +141,26 @@ int main(int ac, char **av)
                 else
                 {
                     // io::process("downloading ", color::MAGENTA, "'", pkgid,"'");
-
-                    if (database.installed(pkgid) && !cc.checkflag("force"))
-                    {
-                        io::info(color::MAGENTA, "'", pkgid, "'", color::RESET, color::BOLD, " is already installed");
-                        return 1;
-                    }
-
                     auto [_recipe_id, _subpkg_id] = database.parse_pkgid(pkgid);
-                    recipe = new pkgupd::recipe(database[_recipe_id]);
+                    if (std::filesystem::exists(pkgid) && rlx::utils::string::ends_with(pkgid, ".yml"))
+                    {
+                        io::debug(level::debug, "getting local recipe ", pkgid);
+                        recipe = new pkgupd::recipe(pkgid);
+                        if (database.installed(recipe) && !cc.checkflag("force"))
+                        {
+                            io::info(color::MAGENTA, "'", pkgid, "'", color::RESET, color::BOLD, " is already installed");
+                            return 1;
+                        }      
+                    } else {
+                        recipe = new pkgupd::recipe(database[_recipe_id]);
+                        if (database.installed(pkgid) && !cc.checkflag("force"))
+                        {
+                            io::info(color::MAGENTA, "'", pkgid, "'", color::RESET, color::BOLD, " is already installed");
+                            return 1;
+                        }      
+                    }
+                    
+
                     pkg = (*recipe)[_subpkg_id];
 
                     if (cc.checkflag("compile") || recipe->compile())

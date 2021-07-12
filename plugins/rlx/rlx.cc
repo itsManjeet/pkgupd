@@ -65,36 +65,41 @@ public:
         string output;
 
         {
-            auto [exitcode, _output] = rlx::sys::exec(
-                io::format("tar -xaf \"", pkgpath, "\" ./.info -O"));
-            if (exitcode != 0)
+            if (getenv("USE_APPCTL_FORMAT") == nullptr)
             {
-                io::info("no pkgupd meta data found, checking for appctl one");
+                auto [exitcode, _output] = rlx::sys::exec(
+                    io::format("tar -xaf \"", pkgpath, "\" ./.info -O"));
+                if (exitcode != 0)
                 {
-                    auto [exitcode, _output] = rlx::sys::exec(
-                        io::format("tar -xaf \"", pkgpath, "\" .data/info -O"));
-                    if (exitcode != 0)
-                    {
-                        _error = "corrupt or invalid package, meta data is missing";
-                        return {nullptr, nullptr};
-                    }
-                    else
-                    {
-                        auto node = YAML::Load(_output);
-                        output = io::format(
-                            "id: ", node["name"].as<string>(), '\n',
-                            "version: ", node["version"].as<string>(), '\n',
-                            "about: ", node["description"].as<string>(), '\n',
-                            "packages:\n  - id: ", node["name"].as<string>(), '\n',
-                            "    plugin: port\npkgid: ", node["name"].as<string>());
-
-                        io::debug(level::trace, output);
-                    }
+                    _error = "corrupt or invalid package, meta data is missing, try set USE_APPCTL_FORMAT=1 for appctl packages";
+                    return {nullptr, nullptr};
+                }
+                else
+                {
+                    output = _output;
                 }
             }
             else
             {
-                output = _output;
+                auto [exitcode, _output] = rlx::sys::exec(
+                    io::format("tar -xaf \"", pkgpath, "\" .data/info -O"));
+                if (exitcode != 0)
+                {
+                    _error = "corrupt or invalid package, meta data is missing";
+                    return {nullptr, nullptr};
+                }
+                else
+                {
+                    auto node = YAML::Load(_output);
+                    output = io::format(
+                        "id: ", node["name"].as<string>(), '\n',
+                        "version: ", node["version"].as<string>(), '\n',
+                        "about: ", node["description"].as<string>(), '\n',
+                        "packages:\n  - id: ", node["name"].as<string>(), '\n',
+                        "    plugin: port\npkgid: ", node["name"].as<string>());
+
+                    io::debug(level::trace, output);
+                }
             }
         }
 
@@ -127,7 +132,8 @@ public:
         return {nullptr, nullptr};
     }
 
-    bool getfile(string pkgpath, string path, string out)
+    bool
+    getfile(string pkgpath, string path, string out)
     {
         auto [status, output] = rlx::sys::exec("tar -xhaf " + pkgpath + " " + path + " -O >" + out);
         if (status != 0)

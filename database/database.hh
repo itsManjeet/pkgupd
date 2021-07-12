@@ -89,13 +89,17 @@ namespace pkgupd
                 if (std::filesystem::exists(rcp_path))
                     return i;
             }
-            throw database::exception("No recipe file found for " + id);
+            return "temp";
         }
 
         recipe const operator[](std::string pkgid) const
         {
             auto [rcp, p] = parse_pkgid(pkgid);
-            return _dir_recipe + "/" + getrepo(rcp) + "/" + rcp + ".yml";
+            auto rpath = _dir_recipe + "/" + getrepo(rcp) + "/" + rcp + ".yml";
+            if (!std::filesystem::exists(rpath))
+                throw std::runtime_error("recipe file for " + pkgid + " not exist");
+            
+            return rpath;
         }
 
         std::vector<string> resolve(string pkgid, bool compiletime = false)
@@ -168,7 +172,20 @@ namespace pkgupd
             return false;
         }
 
-        bool const installed(recipe const &_recipe, package *pkg) const
+        bool const installed(recipe *_recipe) const
+        {
+
+            /* check if all the packages of recipe is installed or not */
+
+            for (auto const &i : _recipe->packages())
+                if (!installed(_recipe->id() + ":" + i.id()))
+                    return false;
+
+            return _recipe->packages().size() != 0;
+        }
+
+        bool const
+        installed(recipe const &_recipe, package *pkg) const
         {
             return installed(pkgid(_recipe.id(), pkg == nullptr ? "" : pkg->id()));
         }
