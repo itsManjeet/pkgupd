@@ -80,7 +80,13 @@ public:
                     }
                     else
                     {
-                        output = _output;
+                        auto node = YAML::Node(_output);
+                        output = io::format(
+                            "id: ", node["name"].as<string>(), '\n',
+                            "version: ", node["version"].as<string>(), '\n',
+                            "about: ", node["description"].as<string>(), '\n',
+                            "packages:\n  - id: ", node["name"].as<string>(), '\n',
+                            "  plugin: port\npkgid: ", node["name"].as<string>());
                     }
                 }
             }

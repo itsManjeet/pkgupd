@@ -101,8 +101,8 @@ int main(int ac, char **av)
                 /*
                  * check if package path is provided
                  */
-                if (std::filesystem::exists(pkgid) && !
-                    std::filesystem::is_directory(pkgid))
+                if (std::filesystem::exists(pkgid) &&
+                    std::filesystem::path(pkgid).extension() != ".yml")
                 {
                     io::info("found ",color::MAGENTA,"'",pkgid,"'", color::RESET, color::BOLD, " as ", color::CYAN, "package");
                     auto plug = installer.get_plugin(pkgid);
