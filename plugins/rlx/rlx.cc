@@ -6,6 +6,7 @@
 
 #include <rlx.hh>
 #include <io.hh>
+#include <sys/exec.hh>
 #include <fstream>
 #include <tar/tar.hh>
 
@@ -14,10 +15,10 @@ using namespace rlx;
 using color = rlx::io::color;
 using level = rlx::io::debug_level;
 
-class rlxpkg : public plugin::installer
+class _rlx : public plugin::installer
 {
 public:
-    rlxpkg(YAML::Node const &c)
+    _rlx(YAML::Node const &c)
         : plugin::installer(c)
     {
     }
@@ -26,6 +27,7 @@ public:
     {
         fileslist = tar::files(pkgpath);
         io::process("extracting ", pkgpath, " into ", rootdir);
+
         if (utils::exec::command(
                 io::format("tar --exclude='./.info' --exclude='./.data/' -xhpf \"", pkgpath, "\" -C ", rootdir)))
         {
@@ -43,6 +45,7 @@ public:
         file << "pkgid: " << pkgid << std::endl;
 
         file.close();
+
         if (rlx::utils::exec::command(
                 io::format("tar -caf " + out + " . "),
                 pkgdir))
@@ -58,14 +61,40 @@ public:
     {
         io::process("getting recipe file from ", pkgpath);
         auto tmpfile = utils::sys::tempfile("/tmp", "rcp");
-        auto data = utils::exec::output(
-            io::format("tar -xaf \"", pkgpath, "\" ./.info -O"));
+
+        string output;
+
+        {
+            auto [exitcode, _output] = rlx::sys::exec(
+                io::format("tar -xaf \"", pkgpath, "\" ./.info -O"));
+            if (exitcode != 0)
+            {
+                io::info("no pkgupd meta data found, checking for appctl one");
+                {
+                    auto [exitcode, _output] = rlx::sys::exec(
+                        io::format("tar -xaf \"", pkgpath, "\" .data/info -O"));
+                    if (exitcode != 0)
+                    {
+                        _error = "corrupt or invalid package, meta data is missing";
+                        return {nullptr, nullptr};
+                    }
+                    else
+                    {
+                        output = _output;
+                    }
+                }
+            }
+            else
+            {
+                output = _output;
+            }
+        }
 
         try
         {
-            io::writefile(tmpfile, data);
+            io::writefile(tmpfile, output);
             auto recipe = new pkgupd::recipe(tmpfile);
-            auto node = YAML::Load(data);
+            auto node = YAML::Load(output);
             pkgupd::package *pkg = nullptr;
 
             if (node["pkgid"])
@@ -89,9 +118,21 @@ public:
 
         return {nullptr, nullptr};
     }
+
+    bool getfile(string pkgpath, string path, string out)
+    {
+        auto [status, output] = rlx::sys::exec("tar -xhaf " + pkgpath + " " + path + " -O >" + out);
+        if (status != 0)
+        {
+            _error = status;
+            return false;
+        }
+
+        return true;
+    }
 };
 
 extern "C" plugin::installer *pkgupd_init(YAML::Node const &c)
 {
-    return new rlxpkg(c);
+    return new _rlx(c);
 }

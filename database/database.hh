@@ -39,7 +39,9 @@ namespace pkgupd
             _dir_work;
 
         std::vector<string> _repositories;
-        std::list<string> __depid;
+        std::vector<string> __depid;
+
+        std::vector<string> _visited;
 
     public:
         database(YAML::Node const &c)
@@ -96,7 +98,7 @@ namespace pkgupd
             return _dir_recipe + "/" + getrepo(rcp) + "/" + rcp + ".yml";
         }
 
-        std::list<string> resolve(string pkgid, bool compiletime = false)
+        std::vector<string> resolve(string pkgid, bool compiletime = false)
         {
 
             auto [rcp, p] = parse_pkgid(pkgid);
@@ -105,7 +107,10 @@ namespace pkgupd
             if (std::find(__depid.begin(), __depid.end(), pkgid) != __depid.end() || installed(pkgid))
                 return __depid;
 
-            __depid.push_front(pkgid);
+            if (std::find(_visited.begin(), _visited.end(), pkgid) == _visited.end())
+                _visited.push_back(pkgid);
+            else
+                return __depid;
 
             auto total_deps = pkg.runtime();
             if (compiletime)
@@ -118,9 +123,12 @@ namespace pkgupd
                     continue;
 
                 resolve(i, compiletime);
-                if (std::find(__depid.begin(), __depid.end(), pkgid) == __depid.end())
-                    __depid.push_front(i);
+                if (std::find(__depid.begin(), __depid.end(), i) == __depid.end())
+                    __depid.push_back(i);
             }
+
+            if (std::find(__depid.begin(), __depid.end(), pkgid) == __depid.end())
+                __depid.push_back(pkgid);
 
             return __depid;
         }
@@ -211,10 +219,12 @@ namespace pkgupd
             bool downloaded = false;
             for (auto const &mirror : mirrors)
             {
-                io::process("getting ", pkgid, " from ", mirror);
+                io::process("getting ", pkgid, " ", mirror, " ", repo);
                 string url = mirror + "/" + repo + "/" + pkgid;
                 if (!rlx::curl::download(url, output))
+                {
                     io::error("faild to get from ", mirror);
+                }
                 else
                 {
                     downloaded = true;

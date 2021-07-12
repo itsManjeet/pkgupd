@@ -43,8 +43,7 @@ int main(int ac, char **av)
 
         .arg(arg::create("compile")
             .long_id("compile")
-            .about("compile specified package if already compiled")
-            .required(true))
+            .about("compile specified package if already compiled"))
 
         .arg(arg::create("force")
             .long_id("force")
@@ -81,7 +80,9 @@ int main(int ac, char **av)
 
                 if (!cc.checkflag("no-depends"))
                 {
-                    for(auto i : database.resolve(pkgid, cc.checkflag("compile")))
+                    auto dep = database.resolve(pkgid, cc.checkflag("compile"));
+                    dep.pop_back();
+                    for(auto i : dep)
                     {
                         auto subcc = context(cc);
                         subcc.args({i});
@@ -137,7 +138,7 @@ int main(int ac, char **av)
                  */
                 else
                 {
-                    io::process("downloading ", color::MAGENTA, "'", pkgid,"'");
+                    // io::process("downloading ", color::MAGENTA, "'", pkgid,"'");
 
                     if (database.installed(pkgid) && !cc.checkflag("force"))
                     {
@@ -149,7 +150,7 @@ int main(int ac, char **av)
                     recipe = new pkgupd::recipe(database[_recipe_id]);
                     pkg = (*recipe)[_subpkg_id];
 
-                    if (cc.checkflag("compile"))
+                    if (cc.checkflag("compile") || recipe->compile())
                     {
                         io::process("compiling ", pkgid);
                         if (!compiler.compile(recipe, pkg))
@@ -205,8 +206,12 @@ int main(int ac, char **av)
                 try
                 {
                     for(auto const& pkg : cc.args())
-                        for(auto const& i : database.resolve(pkg, cc.checkflag("all")))
+                    {
+                        auto dep = database.resolve(pkg, cc.checkflag("all"));
+                        dep.pop_back();
+                        for(auto i : dep)
                             io::println(i);
+                    }                            
                 }
                 catch(pkgupd::database::exception e)
                 {

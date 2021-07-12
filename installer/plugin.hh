@@ -8,10 +8,10 @@
 namespace plugin
 {
     using std::string;
-    
+
     class installer : public rlx::obj
     {
-    private:
+    protected:
         YAML::Node const &_config;
 
     public:
@@ -25,6 +25,7 @@ namespace plugin
         virtual bool unpack(string pkgpath, string root_dir, std::vector<string> &fileslist) = 0;
 
         virtual std::tuple<pkgupd::recipe *, pkgupd::package *> get(string pkgpath) = 0;
+        virtual bool getfile(string pkgpath, string path, string out) = 0;
     };
 }
 

@@ -146,7 +146,7 @@ private:
 
     std::string get_install_args(builder b, string pkg_dir)
     {
-        return (b == builder::make ? "DESTDIR=" + pkg_dir : "") + "install";
+        return "install";
     }
 
 public:
@@ -236,6 +236,8 @@ public:
 
         io::info("found ", color::MAGENTA, "'", _builder, "'");
 
+        auto destdir = get_env(recipe, pkg, "DESTDIR", pkg_dir);
+
         auto args = get_install_args(_builder, pkg_dir);
 
         auto [_args, force] = get_flag_value(pkg, "compile");
@@ -244,7 +246,7 @@ public:
         else
             args += " " + _args;
 
-        string _cmd = io::format(_builder, " ", _args);
+        string _cmd = io::format("DESTDIR=", destdir, " ", _builder, " ", _args, " install");
 
         if (rlx::utils::exec::command(_cmd, build_dir, recipe->environ(pkg)))
         {
@@ -292,6 +294,14 @@ public:
     bool compile(pkgupd::recipe *recipe, pkgupd::package *pkg, string src_dir, string pkg_dir)
     {
         string _build_dir = src_dir + "/build_" + pkg->id();
+        std::error_code ec;
+        std::filesystem::create_directories(_build_dir, ec);
+        if (ec)
+        {
+            _error = ec.message();
+            return false;
+        }
+
         if (!configure(recipe, pkg, src_dir, _build_dir))
         {
             _error = "failed to configure";

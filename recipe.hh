@@ -143,7 +143,7 @@ namespace pkgupd
             GETVAL(id, n);
             OPTVAL(dir, n, "");
             OPTVAL(plugin, n, "auto");
-            OPTVAL(pack, n, "rlxpkg");
+            OPTVAL(pack, n, "");
 
             OPTVAL(prescript, n, "");
             OPTVAL(postscript, n, "");
@@ -202,7 +202,8 @@ namespace pkgupd
             _postinstall;
 
         bool _clean = true,
-             _strip = true;
+             _strip = true,
+             _compile = false;
 
         YAML::Node _node;
 
@@ -229,7 +230,7 @@ namespace pkgupd
             OPTVAL(prescript, _node, "");
             OPTVAL(postscript, _node, "");
 
-            OPTVAL(pack, _node, "none");
+            OPTVAL(pack, _node, "rlxpkg");
             OPTVAL_TYPE(clean, _node, false, bool);
             OPTVAL_TYPE(strip, _node, true, bool);
             OPTVAL(preinstall, _node, "");
@@ -238,6 +239,8 @@ namespace pkgupd
             OPTVAL(strip_script, _node, "");
 
             OPTVAL(port, _node, "");
+
+            OPTVAL_TYPE(compile, _node, false, bool);
 
             if (_node["sources"])
                 for (auto const &i : _node["sources"])
@@ -291,6 +294,7 @@ namespace pkgupd
         DEFINE_GET_METHOD(std::vector<group>, groups);
 
         DEFINE_GET_METHOD(bool, clean);
+        DEFINE_GET_METHOD(bool, compile);
 
         DEFINE_GET_METHOD(bool, strip);
         DEFINE_GET_METHOD(string, strip_script);
