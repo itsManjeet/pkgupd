@@ -280,6 +280,8 @@ namespace pkgupd
         {
             if (_recipe->pack(pkg) == "none")
             {
+                auto data_file = (_database.dir_data() + "/" + _database.pkgid(_recipe->id(), pkg->id()));
+                io::writefile(data_file, _recipe->node());
                 return true;
             }
 
@@ -378,6 +380,10 @@ namespace pkgupd
 
             for (auto p : _pkgs)
             {
+                if (_database.installed(*_recipe, p))
+                {
+                    continue;
+                }
                 if (!download(_recipe, p, _database.dir_src()))
                     return false;
 
