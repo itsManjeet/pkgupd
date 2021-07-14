@@ -178,7 +178,7 @@ int main(int ac, char **av)
                         if (!compiler.compile(recipe, pkg))
                         {
                             io::error(compiler.error());
-                            return 0;
+                            return 1;
                         }
                         packages = compiler.packages();
                     } 
