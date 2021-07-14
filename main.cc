@@ -43,7 +43,11 @@ int main(int ac, char **av)
 
         .arg(arg::create("compile")
             .long_id("compile")
-            .about("compile specified package if already compiled"))
+            .about("set compile flag, compile specified package"))
+
+        .arg(arg::create("compile-all")
+            .long_id("compile-all")
+            .about("set compile flag for all packages"))
 
         .arg(arg::create("force")
             .long_id("force")
@@ -80,7 +84,7 @@ int main(int ac, char **av)
 
                 if (!cc.checkflag("no-depends"))
                 {
-                    auto dep = database.resolve(pkgid, cc.checkflag("compile"));
+                    auto dep = database.resolve(pkgid, cc.checkflag("compile") || cc.checkflag("compile-all"));
                     if (dep.size() && dep.back() == pkgid)
                         dep.pop_back();
 
@@ -88,7 +92,12 @@ int main(int ac, char **av)
                     {
                         auto subcc = context(cc);
                         subcc.args({i});
-                        subcc.flags({"no-depends"});
+                        std::vector<string> flags;
+                        flags.push_back("no-depends");
+                        if (cc.checkflag("compile-all"))
+                            flags.push_back("compile-all");
+                        subcc.flags(flags);
+                            
                         if (cc.exec("install", subcc) != 0)
                         {
                             return 1;
@@ -163,7 +172,7 @@ int main(int ac, char **av)
 
                     pkg = (*recipe)[_subpkg_id];
 
-                    if (cc.checkflag("compile") || recipe->compile())
+                    if (cc.checkflag("compile") || cc.checkflag("compile-all") || recipe->compile())
                     {
                         io::process("compiling ", pkgid);
                         if (!compiler.compile(recipe, pkg))
