@@ -98,7 +98,7 @@ namespace pkgupd
             auto rpath = _dir_recipe + "/" + getrepo(rcp) + "/" + rcp + ".yml";
             if (!std::filesystem::exists(rpath))
                 throw std::runtime_error("recipe file for " + pkgid + " not exist");
-            
+
             return rpath;
         }
 
@@ -154,9 +154,6 @@ namespace pkgupd
          */
         bool const installed(string const &pkgid) const
         {
-            if (std::filesystem::exists(_dir_data + "/" + pkgid))
-                return true;
-
             if (pkgid.find(':') == string::npos)
             {
                 /* check if all the packages of recipe is installed or not */
@@ -167,8 +164,12 @@ namespace pkgupd
 
                 return _recipe.packages().size() != 0;
             }
+            else
+            {
+                if (std::filesystem::exists(_dir_data + "/" + pkgid))
+                    return true;
+            }
 
-            // check if recipe is a meta package
             return false;
         }
 

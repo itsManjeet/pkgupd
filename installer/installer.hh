@@ -231,7 +231,7 @@ namespace pkgupd
                 return false;
             }
 
-            if (!register_pkg(_recipe, fileslist, pkg->id(), !skip_scripts, !skip_usrgrp, !skip_triggers))
+            if (!register_pkg(_recipe, fileslist, _database.pkgid(_recipe->id(), pkg->id()) , !skip_scripts, !skip_usrgrp, !skip_triggers))
             {
                 return false;
             }
