@@ -139,6 +139,7 @@ namespace pkgupd
             assert(std::filesystem::exists(pkgpath));
             auto idx = pkgpath.find_last_of(".");
             string plugin = pkgpath.substr(idx, pkgpath.length() - (idx + 1));
+            io::debug(level::debug, "plugin: ", plugin);
             if (plugin.length() == 0)
             {
                 _error = io::format(pkgpath, " not a installable package");
