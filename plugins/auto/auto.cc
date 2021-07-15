@@ -240,7 +240,7 @@ public:
 
         auto args = get_install_args(_builder, pkg_dir);
 
-        auto [_args, force] = get_flag_value(pkg, "compile");
+        auto [_args, force] = get_flag_value(pkg, "install");
         if (force)
             args = _args;
         else
