@@ -137,9 +137,13 @@ namespace pkgupd
         plugin::installer *get_plugin_from_path(string const &pkgpath)
         {
             assert(std::filesystem::exists(pkgpath));
-            string plugin = pkgpath.substr(pkgpath.find_first_of(".") + 1);
+            auto idx = pkgpath.find_last_of(".");
+            string plugin = pkgpath.substr(idx, pkgpath.length() - (idx + 1));
             if (plugin.length() == 0)
-                throw installer::exception(io::format(pkgpath, " not a installable package"));
+            {
+                _error = io::format(pkgpath, " not a installable package");
+                return nullptr;
+            }
 
             return get_plugin(plugin);
         }
@@ -149,7 +153,10 @@ namespace pkgupd
 
             string plugin_path = utils::dlmodule::search(plugin, "/lib/pkgupd:/usr/lib/pkgupd", "PKGUPD_PLUGINS");
             if (plugin_path.length() == 0)
-                throw installer::exception(io::format("failed to find plugin '" + plugin + "'"));
+            {
+                _error = io::format("failed to find plugin '" + plugin + "'");
+                return nullptr;
+            }
 
             plugin_init _plug_init;
             try
