@@ -137,8 +137,7 @@ namespace pkgupd
         plugin::installer *get_plugin_from_path(string const &pkgpath)
         {
             assert(std::filesystem::exists(pkgpath));
-            string plugin = std::filesystem::path(pkgpath).extension();
-            plugin = plugin.substr(1, plugin.length() - 1);
+            string plugin = pkgpath.substr(pkgpath.find_first_of(".") + 1);
             if (plugin.length() == 0)
                 throw installer::exception(io::format(pkgpath, " not a installable package"));
 
@@ -231,7 +230,7 @@ namespace pkgupd
                 return false;
             }
 
-            if (!register_pkg(_recipe, fileslist, _database.pkgid(_recipe->id(), pkg->id()) , !skip_scripts, !skip_usrgrp, !skip_triggers))
+            if (!register_pkg(_recipe, fileslist, _database.pkgid(_recipe->id(), pkg->id()), !skip_scripts, !skip_usrgrp, !skip_triggers))
             {
                 return false;
             }

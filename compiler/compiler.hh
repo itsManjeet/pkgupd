@@ -309,6 +309,8 @@ namespace pkgupd
 
             auto package_path = _dir_pkgs + "/" + _recipe->id() + "-" + _recipe->version() + ":" + pkg->id() + "." + pack_id;
 
+            std::filesystem::create_directories(_dir_pkgs);
+
             if (!_installer_plug_->pack(*_recipe, pkg->id(), dir, package_path))
             {
                 _error = _installer_plug_->error();
