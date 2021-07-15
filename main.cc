@@ -91,7 +91,7 @@ int main(int ac, char **av)
                     for(auto i : dep)
                     {
                         auto subcc = context(cc);
-                        subcc.args({i});
+                        subcc.args(std::vector<string>{i});
                         std::vector<string> flags;
                         flags.push_back("no-depends");
                         if (cc.checkflag("compile-all"))
@@ -447,8 +447,8 @@ int main(int ac, char **av)
                         for(auto const& i : outdated)
                         {
                             auto subcc = context(cc);
-                            subcc.args({i});
-                            subcc.flags({"force"});
+                            subcc.args(std::vector<string>{i});
+                            subcc.flags(std::vector<string>{"force"});
 
                             int status;
                             if ((status = cc.exec("install", subcc)) != 0)
