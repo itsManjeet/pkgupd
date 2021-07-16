@@ -128,10 +128,6 @@ namespace pkgupd
 
                 auto [_rcp, _p] = parse_pkgid(i);
 
-                if (std::find(_visited.begin(), _visited.end(), i) == _visited.end())
-                    _visited.push_back(i);
-                else
-                    return __depid;
 
                 resolve(i, compiletime);
                 if (std::find(__depid.begin(), __depid.end(), i) == __depid.end() &&
