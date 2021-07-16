@@ -382,10 +382,9 @@ namespace pkgupd
 
             for (auto p : _pkgs)
             {
-                if (_database.installed(*_recipe, p))
+                if (_database.installed(*_recipe, p) && !force)
                 {
-                    if (!(_pkg != nullptr && p->id() == _pkg->id() && !force))
-                        continue;
+                    continue;
                 }
                 if (!download(_recipe, p, _database.dir_src()))
                     return false;
