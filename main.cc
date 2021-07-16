@@ -175,7 +175,7 @@ int main(int ac, char **av)
                     if (cc.checkflag("compile") || cc.checkflag("compile-all") || recipe->compile())
                     {
                         io::process("compiling ", pkgid);
-                        if (!compiler.compile(recipe, pkg))
+                        if (!compiler.compile(recipe, pkg, cc.checkflag("force")))
                         {
                             io::error(compiler.error());
                             return 1;
@@ -230,7 +230,9 @@ int main(int ac, char **av)
                     for(auto const& pkg : cc.args())
                     {
                         auto dep = database.resolve(pkg, cc.checkflag("all"));
-                        dep.pop_back();
+                        if (dep.size())
+                            dep.pop_back();
+                            
                         for(auto i : dep)
                             io::println(i);
                     }                            

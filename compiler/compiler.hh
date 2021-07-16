@@ -337,7 +337,7 @@ namespace pkgupd
             return true;
         }
 
-        bool compile(recipe *_recipe, package *_pkg)
+        bool compile(recipe *_recipe, package *_pkg, bool force = false)
         {
             assert(_recipe != nullptr);
 
@@ -384,7 +384,8 @@ namespace pkgupd
             {
                 if (_database.installed(*_recipe, p))
                 {
-                    continue;
+                    if (!(_pkg != nullptr && p->id() == _pkg->id() && !force))
+                        continue;
                 }
                 if (!download(_recipe, p, _database.dir_src()))
                     return false;

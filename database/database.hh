@@ -126,12 +126,21 @@ namespace pkgupd
                 if (std::find(__depid.begin(), __depid.end(), i) != __depid.end() || installed(i))
                     continue;
 
+                auto [_rcp, _p] = parse_pkgid(i);
+
+                if (std::find(_visited.begin(), _visited.end(), i) == _visited.end())
+                    _visited.push_back(i);
+                else
+                    return __depid;
+
                 resolve(i, compiletime);
-                if (std::find(__depid.begin(), __depid.end(), i) == __depid.end())
+                if (std::find(__depid.begin(), __depid.end(), i) == __depid.end() &&
+                    std::find(__depid.begin(), __depid.end(), _rcp) == __depid.end())
                     __depid.push_back(i);
             }
 
-            if (std::find(__depid.begin(), __depid.end(), pkgid) == __depid.end())
+            if (std::find(__depid.begin(), __depid.end(), pkgid) == __depid.end() &&
+                std::find(__depid.begin(), __depid.end(), rcp) == __depid.end())
                 __depid.push_back(pkgid);
 
             return __depid;
