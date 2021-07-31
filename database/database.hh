@@ -354,9 +354,9 @@ namespace pkgupd
         std::map<string, trigger> get_triggers(std::vector<string> const &fileslist)
         {
             std::map<string, trigger> _needed;
-            for (auto const &t : _triggers)
+            for (auto const &f : fileslist)
             {
-                for (auto const &f : fileslist)
+                for (auto const &t : _triggers)
                 {
                     auto cmd = t.exec(f);
                     if (cmd.length() != 0)
