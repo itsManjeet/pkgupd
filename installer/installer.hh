@@ -203,6 +203,12 @@ namespace pkgupd
             {
                 if (!execute_triggers(_recipe, pkg, fileslist))
                     return false;
+                    
+                for (auto const &i : _database.get_triggers(fileslist))
+                {
+                    io::message(color::CYAN, i.second.id(), i.second.message());
+                    sys::exec(i.second.exec(i.first));
+                }
             }
 
             if (!register_pkg(_recipe, fileslist, _database.pkgid(_recipe->id(), pkg->id()), !skip_triggers))
@@ -244,12 +250,6 @@ namespace pkgupd
                             io::warn("failed to create required user ", i.name());
                     }
                 }
-            }
-
-            for(auto const& i : _database.get_triggers(fileslist))
-            {
-                io::message(color::CYAN,i.second.id(), i.second.message());
-                sys::exec(i.second.exec(i.first));
             }
 
             return true;
