@@ -63,6 +63,10 @@ int main(int ac, char **av)
             .long_id("all")
             .about("Set ALL flag"))
 
+        .arg(arg::create("skip-triggers")
+            .long_id("skip-triggers")
+            .about("Skip Triggers"))
+
         .sub(app::create("install")
             .about("install specified package from recipe dir")
             .fn([](context const& cc) -> int
@@ -202,7 +206,7 @@ int main(int ac, char **av)
                 for(auto const& i : packages)
                 {
                     io::process("installing ", i);
-                    if (!installer.install(i, !cc.checkflag("skip-script"), !cc.checkflag("skip-triggers"), !cc.checkflag("skip-triggers")))
+                    if (!installer.install(i, cc.checkflag("skip-triggers")))
                     {
                         io::error(installer.error());
                         return 1;
@@ -466,6 +470,44 @@ int main(int ac, char **av)
                     }
                 }
                 return 0;
+            }))
+
+        .sub(app::create("trigger")
+            .about("Execute required triggers")
+            .fn([](context const& cc) -> int 
+            {
+                auto database = pkgupd::database(cc.config());
+                auto installer = pkgupd::installer(cc.config());
+                std::vector<string> pkgids;
+                if (cc.args().size() != 0)
+                    pkgids = cc.args();
+                else
+                {
+                    for(auto const& i : std::filesystem::directory_iterator(database.dir_data()))
+                    {
+                        if (i.path().extension() == ".files")
+                            pkgids.push_back(i.path().filename());
+                    }
+                }
+
+                int err = 0;
+                
+                for(auto const& i : pkgids)
+                {
+                    auto fileslist = database.installedfiles(i);
+                    auto [rcpid, pkgid] = database.parse_pkgid(i);
+                    auto recipe = database[rcpid];
+                    auto pkg = recipe[pkgid];
+                    io::process("executing triggers for ", color::MAGENTA, i, color::RESET);
+                    
+                    if (!installer.execute_triggers(&recipe, pkg, fileslist))
+                    {
+                        io::error(installer.error());
+                        err = 1;
+                    }
+                }
+
+                return err;
             }))
         
         .args(ac, av)

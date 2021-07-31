@@ -173,7 +173,7 @@ namespace pkgupd
             return _plug_init(_config);
         }
 
-        bool install(string const &pkgpath, bool skip_scripts = false, bool skip_usrgrp = false, bool skip_triggers = false)
+        bool install(string const &pkgpath, bool skip_triggers = false)
         {
             auto plug = get_plugin_from_path(pkgpath);
             if (plug == nullptr)
@@ -187,12 +187,6 @@ namespace pkgupd
                 return false;
             }
 
-            if (_recipe->preinstall().length() && !skip_scripts)
-            {
-                io::info("executing preinstallation script");
-                rlx::utils::exec::command("bash -euc '" + _recipe->preinstall() + "'", "/tmp", _recipe->environ(pkg));
-            }
-
             std::vector<string> fileslist;
             if (!plug->unpack(pkgpath, _database.dir_root(), fileslist))
             {
@@ -201,13 +195,33 @@ namespace pkgupd
                 return false;
             }
 
-            if (_recipe->postinstall().length() && !skip_scripts)
+            if (skip_triggers)
+            {
+                io::info("Skipping triggers");
+            }
+            else
+            {
+                if (!execute_triggers(_recipe, pkg, fileslist))
+                    return false;
+            }
+
+            if (!register_pkg(_recipe, fileslist, _database.pkgid(_recipe->id(), pkg->id()), !skip_triggers))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        bool execute_triggers(recipe *_recipe, package *pkg, std::vector<string> const &fileslist)
+        {
+            if (_recipe->postinstall().length())
             {
                 io::info("executing postinstallation script");
                 rlx::utils::exec::command("bash -euc '" + _recipe->postinstall() + "'", "/tmp", _recipe->environ(pkg));
             }
 
-            if (_recipe->groups().size() && !skip_usrgrp)
+            if (_recipe->groups().size())
             {
                 for (auto const &i : _recipe->groups())
                     if (!i.exists())
@@ -218,7 +232,7 @@ namespace pkgupd
                     }
             }
 
-            if (_recipe->users().size() && !skip_usrgrp)
+            if (_recipe->users().size())
             {
                 for (auto const &i : _recipe->users())
                 {
@@ -232,21 +246,16 @@ namespace pkgupd
                 }
             }
 
-            if (!_database.exec_triggers(fileslist) && !skip_triggers)
+            if (!_database.exec_triggers(fileslist))
             {
                 _error = _database.error();
-                return false;
-            }
-
-            if (!register_pkg(_recipe, fileslist, _database.pkgid(_recipe->id(), pkg->id()), !skip_scripts, !skip_usrgrp, !skip_triggers))
-            {
                 return false;
             }
 
             return true;
         }
 
-        bool register_pkg(recipe *_recipe, std::vector<string> fileslist, string pkgid, bool scripts_done = false, bool usrgrp_done = false, bool triggers_done = false)
+        bool register_pkg(recipe *_recipe, std::vector<string> fileslist, string pkgid, bool triggers_done = false)
         {
             string data_file = _dir_data + "/" + pkgid;
             string list_file = data_file + ".files";
@@ -281,9 +290,7 @@ namespace pkgupd
             auto node = _recipe->node();
             node["pkgid"] = pkgid;
             node["installed-on"] = string(buff);
-            node["script-done"] = scripts_done;
             node["triggers-done"] = triggers_done;
-            node["usrgrp-done"] = usrgrp_done;
 
             io::writefile(data_file, node);
             io::writefile(list_file, algo::str::join(fileslist, "\n"));
