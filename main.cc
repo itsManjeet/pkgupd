@@ -505,25 +505,31 @@ int main(int ac, char **av)
 
                 for(auto const& i : pkgids)
                 {
-                    auto fileslist = database.installedfiles(i);
-                    auto [rcpid, pkgid] = database.parse_pkgid(i);
-                    auto recipe = database[rcpid];
-                    auto pkg = recipe[pkgid];
-                    io::process("executing triggers for ", color::MAGENTA, i, color::RESET);
-                    
-                    if (!installer.execute_triggers(&recipe, pkg, fileslist))
+                    try 
                     {
-                        io::error(installer.error());
-                        err = 1;
-                    }
+                        auto fileslist = database.installedfiles(i);
+                        auto [rcpid, pkgid] = database.parse_pkgid(i);
+                        auto recipe = database[rcpid];
+                        auto pkg = recipe[pkgid];
+                        io::process("executing triggers for ", color::MAGENTA, i, color::RESET);
+                        
+                        if (!installer.execute_triggers(&recipe, pkg, fileslist))
+                        {
+                            io::error(installer.error());
+                            err = 1;
+                        }
 
-                    auto n = database.get_triggers(fileslist);
-                    for(auto const& j : n)
+                        auto n = database.get_triggers(fileslist);
+                        for(auto const& j : n)
+                        {
+                            if (_needed.find(j.first) == _needed.end())
+                                _needed.insert(j);
+                        }
+                    } 
+                    catch(std::exception const& e)
                     {
-                        if (_needed.find(j.first) == _needed.end())
-                            _needed.insert(j);
+                        io::error(e.what());
                     }
-                    
                 }
 
                 for(auto const& i : _needed)
