@@ -5,6 +5,7 @@
 #include "database/database.hh"
 
 #include <cli/cli.hh>
+#include <sys/exec.hh>
 #include <io.hh>
 #include <iostream>
 
@@ -100,6 +101,10 @@ int main(int ac, char **av)
                         flags.push_back("no-depends");
                         if (cc.checkflag("compile-all"))
                             flags.push_back("compile-all");
+                        
+                        if (cc.checkflag("skip-triggers"))
+                            flags.push_back("skip-triggers");
+
                         subcc.flags(flags);
                             
                         if (cc.exec("install", subcc) != 0)
@@ -496,6 +501,8 @@ int main(int ac, char **av)
 
                 int err = 0;
                 
+                std::map<string, pkgupd::database::trigger> _needed;
+
                 for(auto const& i : pkgids)
                 {
                     auto fileslist = database.installedfiles(i);
@@ -509,6 +516,20 @@ int main(int ac, char **av)
                         io::error(installer.error());
                         err = 1;
                     }
+
+                    auto n = database.get_triggers(fileslist);
+                    for(auto const& j : n)
+                    {
+                        if (_needed.find(j.first) == _needed.end())
+                            _needed.insert(j);
+                    }
+                    
+                }
+
+                for(auto const& i : _needed)
+                {
+                    io::message(color::CYAN, i.second.id(), i.second.message());
+                    rlx::sys::exec(i.second.exec(i.first));
                 }
 
                 return err;

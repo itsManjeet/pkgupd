@@ -53,7 +53,7 @@ namespace pkgupd
                     io::debug(level::trace, "  skipping non-empty dir ", fpath);
                     continue;
                 }
-                    
+
                 io::debug(level::trace, "  removing ", fpath);
                 if (!std::filesystem::remove(fpath))
                     io::warn("failed to remove, fpath");
@@ -65,10 +65,10 @@ namespace pkgupd
                 return false;
             }
 
-            if (!_database.exec_triggers(pkgfiles))
+            for (auto const &i : _database.get_triggers(pkgfiles))
             {
-                _error = _database.error();
-                return false;
+                io::message(color::CYAN, i.second.id(), i.second.message());
+                sys::exec(i.second.exec(i.first));
             }
 
             return true;

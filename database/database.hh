@@ -351,7 +351,7 @@ namespace pkgupd
             return recipe(data_file);
         }
 
-        bool exec_triggers(std::vector<string> const &fileslist)
+        std::map<string, trigger> get_triggers(std::vector<string> const &fileslist)
         {
             std::map<string, trigger> _needed;
             for (auto const &t : _triggers)
@@ -368,23 +368,7 @@ namespace pkgupd
                 }
             }
 
-            bool failed = false;
-            for (auto const &i : _needed)
-            {
-                io::message(color::CYAN, i.second.id(), i.second.message());
-                auto [status, error] = sys::exec(i.second.exec(i.first));
-                if (status != 0)
-                {
-                    failed = true;
-                    io::error(error);
-                }
-            }
-
-            if (failed)
-            {
-                _error = "failed to execute triggers";
-            }
-            return !failed;
+            return _needed;
         }
     };
 }
