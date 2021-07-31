@@ -485,8 +485,12 @@ int main(int ac, char **av)
                 {
                     for(auto const& i : std::filesystem::directory_iterator(database.dir_data()))
                     {
-                        if (i.path().extension() == ".files")
-                            pkgids.push_back(i.path().filename());
+                        if (i.path().extension() == ".trigger")
+                        {
+                            auto end_idx = i.path().filename().string().length() - 8;
+                            pkgids.push_back(i.path().filename().string().substr(0, end_idx));
+                        }
+                            
                     }
                 }
 

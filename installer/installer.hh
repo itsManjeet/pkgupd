@@ -290,7 +290,9 @@ namespace pkgupd
             auto node = _recipe->node();
             node["pkgid"] = pkgid;
             node["installed-on"] = string(buff);
-            node["triggers-done"] = triggers_done;
+
+            if (!triggers_done)
+                io::writefile(data_file + ".trigger", "");
 
             io::writefile(data_file, node);
             io::writefile(list_file, algo::str::join(fileslist, "\n"));

@@ -6,6 +6,7 @@
 #define DEFAULT_DIR_SRC "/var/cache/pkgupd/src"
 #define DEFAULT_DIR_RECIPE "/var/cache/pkgupd/recipes"
 #define DEFAULT_DIR_WORK "/tmp"
+#define DEFAULT_DIR_TRIGGERS "/usr/share/pkgupd/triggers"
 #define DEFAULT_MIRROR "https://rlxos.cloudtb.online/pkgs/"
 
 #endif

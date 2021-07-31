@@ -3,9 +3,11 @@
 
 #include <rlx.hh>
 #include <algo/algo.hh>
+#include <sys/exec.hh>
 #include <curl/curl.hh>
 #include "../recipe.hh"
 #include "../config.hh"
+#include <regex>
 
 namespace pkgupd
 {
@@ -29,6 +31,46 @@ namespace pkgupd
             }
         };
 
+        class trigger
+        {
+        private:
+            string _id;
+            string _message;
+            string _regex;
+            bool _ondir;
+            bool _args;
+            YAML::Node _node;
+            string _exec;
+
+        public:
+            trigger(string const &trigpath)
+            {
+                _node = YAML::LoadFile(trigpath);
+                GETVAL(id, _node);
+                GETVAL(message, _node);
+                GETVAL(regex, _node);
+                GETVAL(exec, _node);
+
+                OPTVAL_TYPE(args, _node, false, bool);
+                OPTVAL_TYPE(ondir, _node, true, bool);
+            }
+
+            DEFINE_GET_METHOD(string, id);
+            DEFINE_GET_METHOD(string, message);
+            DEFINE_GET_METHOD(string, regex);
+
+            string const exec(string path) const
+            {
+                if (path[0] == '.')
+                    path = path.substr(1, path.length() - 1);
+
+                if (!std::regex_match(path, std::regex(_regex)))
+                    return "";
+
+                return _exec + (_args ? " " + (_ondir ? std::filesystem::path(path).parent_path().string() : path) : "");
+            }
+        };
+
     private:
         YAML::Node _config;
         string _dir_data,
@@ -36,12 +78,14 @@ namespace pkgupd
             _dir_recipe,
             _dir_pkgs,
             _dir_src,
-            _dir_work;
+            _dir_work,
+            _dir_triggers;
 
         std::vector<string> _repositories;
         std::vector<string> __depid;
 
         std::vector<string> _visited;
+        std::vector<trigger> _triggers;
 
     public:
         database(YAML::Node const &c)
@@ -60,6 +104,7 @@ namespace pkgupd
             _dir_pkgs = get_dir("pkgs", DEFAULT_DIR_PKGS);
             _dir_work = get_dir("work", DEFAULT_DIR_WORK);
             _dir_src = get_dir("src", DEFAULT_DIR_SRC);
+            _dir_triggers = get_dir("triggers", DEFAULT_DIR_TRIGGERS);
 
             if (c["default"] && c["default"]["repositories"])
                 for (auto const &i : c["default"]["repositories"])
@@ -67,9 +112,19 @@ namespace pkgupd
             else
                 _repositories.push_back("core");
 
-            for (auto const &i : {_dir_root, _dir_data, _dir_recipe, _dir_pkgs, _dir_work, _dir_src})
+            for (auto const &i : {_dir_root, _dir_data, _dir_recipe,
+                                  _dir_pkgs, _dir_work, _dir_src,
+                                  _dir_triggers})
                 if (!std::filesystem::exists(i))
                     std::filesystem::create_directories(i);
+
+            for (auto const &i : std::filesystem::directory_iterator(dir_triggers()))
+            {
+                if (i.path().extension() == ".yml")
+                {
+                    _triggers.push_back(trigger(i.path().string()));
+                }
+            }
         }
 
         DEFINE_GET_METHOD(string, dir_root);
@@ -78,6 +133,7 @@ namespace pkgupd
         DEFINE_GET_METHOD(string, dir_pkgs);
         DEFINE_GET_METHOD(string, dir_work);
         DEFINE_GET_METHOD(string, dir_src);
+        DEFINE_GET_METHOD(string, dir_triggers);
         DEFINE_GET_METHOD(std::vector<string>, repositories);
 
         string const getrepo(string const &id) const
@@ -127,7 +183,6 @@ namespace pkgupd
                     continue;
 
                 auto [_rcp, _p] = parse_pkgid(i);
-
 
                 resolve(i, compiletime);
                 if (std::find(__depid.begin(), __depid.end(), i) == __depid.end() &&
@@ -298,7 +353,38 @@ namespace pkgupd
 
         bool exec_triggers(std::vector<string> const &fileslist)
         {
-            return true;
+            std::map<string, trigger> _needed;
+            for (auto const &t : _triggers)
+            {
+                for (auto const &f : fileslist)
+                {
+                    auto cmd = t.exec(f);
+                    if (cmd.length() != 0)
+                    {
+                        io::debug(level::debug, "Found trigger: ", t.id());
+                        _needed.insert(std::make_pair(f, t));
+                        break;
+                    }
+                }
+            }
+
+            bool failed = false;
+            for (auto const &i : _needed)
+            {
+                io::message(color::CYAN, i.second.id(), i.second.message());
+                auto [status, error] = sys::exec(i.second.exec(i.first));
+                if (status != 0)
+                {
+                    failed = true;
+                    io::error(error);
+                }
+            }
+
+            if (failed)
+            {
+                _error = "failed to execute triggers";
+            }
+            return !failed;
         }
     };
 }
