@@ -20,11 +20,10 @@ using level = rlx::io::debug_level;
 class app : public plugin::installer
 {
 private:
-    std::vector<string> _liblist;
-
     string desktop_file;
     string app_run;
     string appid;
+    std::set<string> _libraries;
 
 public:
     app(YAML::Node const &c)
@@ -78,43 +77,21 @@ public:
         return true;
     }
 
-    bool resolve_libraries(string const &binpath, string pkgdir)
+    void _resolve(string const &path, string const &pkgdir)
     {
-        auto [status, output] = rlx::sys::exec("LD_LIBRARY_PATH=" + pkgdir + " ldd " + binpath + " | awk '{print $3}'");
-        if (status != 0)
+        _libraries.insert(path);
+        auto [status, output] = rlx::sys::exec("LD_LIBRARY_PATH=" + pkgdir + " ldd " + path + " | awk '{print $3}'");
+        if (status == 0)
         {
-            _error = output;
-            return false;
-        }
-
-        if (std::find(_liblist.begin(), _liblist.end(), binpath) != _liblist.end())
-            return true;
-
-        auto liblist = rlx::algo::str::split(output, '\n');
-        for (auto const &i : liblist)
-        {
-            // skip if not a path
-            if (i.length() == 0)
-                continue;
-
-            if (i[0] != '/')
-                continue;
-
-            // return error if not exist
-            if (!std::filesystem::exists(i))
+            std::stringstream ss(output);
+            string l;
+            while (getline(ss, l, '\n'))
             {
-                io::error(i, " not exist");
+                if (l[0] == '/')
+                    if (_libraries.find(l) == _libraries.end())
+                        _resolve(l, pkgdir);
             }
-
-            // check if listing its own library
-            if (i.rfind(pkgdir, 0) == 0)
-                continue;
-
-            if (std::find(_liblist.begin(), _liblist.end(), i) == _liblist.end())
-                _liblist.push_back(i);
         }
-
-        return true;
     }
 
     bool pack(pkgupd::recipe const &recipe, string const &pkgid, string pkgdir, string out)
@@ -134,11 +111,13 @@ public:
             }
 
             for (auto const &i : rlx::algo::str::split(output, '\n'))
-                if (!resolve_libraries(i, pkgdir))
-                    return false;
+                _resolve(i, pkgdir);
 
-            for (auto i : _liblist)
+            for (auto i : _libraries)
             {
+                if (i == "/lib64/ld-linux-x86-64.so.2")
+                    continue;
+                    
                 if (std::filesystem::exists(pkgdir + "/" + i))
                     continue;
 
@@ -198,7 +177,7 @@ public:
         }
 
         {
-            auto [status, output] = rlx::sys::exec("appimagetool " + pkgdir + " " + out);
+            auto [status, output] = rlx::sys::exec("ARCH=$(uname -m) appimagetool " + pkgdir + " " + out);
             if (status != 0)
             {
                 _error = output;
