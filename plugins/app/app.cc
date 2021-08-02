@@ -9,8 +9,9 @@
 #include <sys/exec.hh>
 #include <fstream>
 #include <tar/tar.hh>
-
+#include <path/path.hh>
 #include <sys/stat.h>
+#include <regex>
 
 using std::string;
 using namespace rlx;
@@ -37,30 +38,58 @@ public:
     bool unpack(string pkgpath, string rootdir, std::vector<string> &fileslist)
     {
         string appname = basename((char *)pkgpath.c_str());
-        string new_path = rootdir + "/apps";
+        string _app_dir = rootdir + "/apps";
 
+        string _app_bin = _app_dir + "/" + appname;
         std::error_code ec;
+        std::filesystem::create_directories(_app_dir);
 
-        if (!std::filesystem::exists(new_path))
-        {
-            std::filesystem::create_directories(new_path, ec);
-            if (ec)
-            {
-                _error = ec.message();
-                return false;
-            }
-        }
-
-        ec.clear();
-
-        std::filesystem::copy(pkgpath, new_path + "/" + appname, ec);
+        std::filesystem::copy_file(pkgpath, _app_bin, std::filesystem::copy_options::update_existing, ec);
         if (ec)
         {
             _error = ec.message();
             return false;
         }
+        fileslist.push_back(_app_bin);
 
-        fileslist.push_back(new_path + "/" + appname);
+        auto [recipe, pkg] = get(pkgpath);
+        if (recipe == nullptr || pkg == nullptr)
+        {
+            return false;
+        }
+
+        // install icon file
+        string _icon_file = pkg->id() + ".png";
+        string _app_icon = _app_dir + "/share/pixmaps/" + appname + ".png";
+        std::filesystem::create_directories(_app_dir + "/share/pixmaps/");
+        if (!getfile(pkgpath, _icon_file, _app_icon))
+            return false;
+
+        fileslist.push_back(_app_icon);
+
+        // install desktop file
+        string _desktop_file = pkg->id() + ".desktop";
+        string _app_desktop = _app_dir + "/share/applications/" + appname + ".desktop";
+        std::filesystem::create_directories(_app_dir + "/share/applications");
+        if (!getfile(pkgpath, _desktop_file, _app_desktop))
+            return false;
+
+        fileslist.push_back(_app_desktop);
+
+        // patch desktop file
+        string content = io::readfile(_app_desktop);
+        auto replace = [&content](string const &i, string const &v)
+        {
+            auto start_idx = content.find(i);
+            auto end_idx = content.find_first_of("\n", start_idx);
+
+            content = content.substr(0, start_idx) +
+                      v + content.substr(end_idx, content.length() - end_idx);
+        };
+        replace("Exec=", "Exec=" + _app_bin);
+        replace("Icon=", "Icon=" + _app_icon);
+
+        io::writefile(_app_desktop, content);
 
         return true;
     }
@@ -117,7 +146,7 @@ public:
             {
                 if (i == "/lib64/ld-linux-x86-64.so.2")
                     continue;
-                    
+
                 if (std::filesystem::exists(pkgdir + "/" + i))
                     continue;
 
@@ -191,42 +220,48 @@ public:
     {
         string filepath = ".info";
 
-        chdir("/tmp");
+        auto _work_dir = rlx::utils::sys::tempdir("/tmp/", "pkgupd-app");
+        chdir(_work_dir.c_str());
 
         auto [status, output] = rlx::sys::exec(pkgpath + " --appimage-extract .info");
         if (status != 0)
         {
             _error = output;
+            std::filesystem::remove_all(_work_dir);
             return {nullptr, nullptr};
         }
 
         auto recipe = new pkgupd::recipe("squashfs-root/.info");
         auto pkg = new pkgupd::package(recipe->packages()[0]);
 
-        std::filesystem::remove_all("squashfs-root");
+        std::filesystem::remove_all(_work_dir);
 
         return {recipe, pkg};
     }
 
     bool getfile(string pkgpath, string path, string out)
     {
-        chdir("/tmp");
+        auto _work_dir = rlx::utils::sys::tempdir("/tmp/", "pkgupd-app");
+        chdir(_work_dir.c_str());
 
         auto [status, output] = rlx::sys::exec(pkgpath + " --appimage-extract " + path);
         if (status != 0)
         {
             _error = output;
+            std::filesystem::remove_all(_work_dir);
             return false;
         }
 
         std::error_code ec;
-        std::filesystem::copy("squashfs-root/" + path, out, ec);
-        if (!ec)
+        std::filesystem::copy("squashfs-root/" + path, out, std::filesystem::copy_options::update_existing, ec);
+        if (ec)
         {
             _error = ec.message();
+            std::filesystem::remove_all(_work_dir);
             return false;
         }
-        std::filesystem::remove_all("squashfs-root");
+
+        std::filesystem::remove_all(_work_dir);
 
         return true;
     }
