@@ -4,13 +4,17 @@ namespace rlxos::libpkgupd
 {
     bool ResolveDepends::toSkip(std::string const &pkgid)
     {
+        if ((std::find(data.begin(), data.end(), pkgid) != data.end()))
+            return true;
+
         if (skipper != nullptr)
         {
             if (skipper(pkgid))
                 return true;
         }
-
-        return (std::find(data.begin(), data.end(), pkgid) != data.end());
+        
+        data.push_back(pkgid);
+        return false;
     }
     bool ResolveDepends::Resolve(std::string const &pkgid, bool all)
     {
