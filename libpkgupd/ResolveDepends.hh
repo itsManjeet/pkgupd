@@ -12,7 +12,7 @@ namespace rlxos::libpkgupd
     {
     private:
         std::shared_ptr<Database> database;
-        std::vector<std::string> data;
+        std::vector<std::string> data, visited;
         std::function<bool(std::string const &pkgid)> skipper;
 
         bool toSkip(std::string const &pkgid);

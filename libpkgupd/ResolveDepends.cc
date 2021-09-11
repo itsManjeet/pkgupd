@@ -12,12 +12,16 @@ namespace rlxos::libpkgupd
             if (skipper(pkgid))
                 return true;
         }
-        
-        data.push_back(pkgid);
+
+        if ((std::find(visited.begin(), visited.end(), pkgid) != visited.end()))
+            return true;
+
+        visited.push_back(pkgid);
         return false;
     }
     bool ResolveDepends::Resolve(std::string const &pkgid, bool all)
     {
+
         if (toSkip(pkgid))
             return true;
 
@@ -36,6 +40,9 @@ namespace rlxos::libpkgupd
                 return false;
             }
         }
+
+        if ((std::find(data.begin(), data.end(), pkgid) == data.end()))
+            data.push_back(pkgid);
 
         return true;
     }
