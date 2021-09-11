@@ -52,6 +52,7 @@ namespace rlxos::libpkgupd
         std::shared_ptr<RepositoryDatabase> mRepositoryDatabase;
         std::shared_ptr<Downloader> mDownloader;
         std::shared_ptr<Installer> mInstaller;
+        std::shared_ptr<Remover> mRemover;
         std::shared_ptr<Builder> mBuilder;
 
         std::shared_ptr<ResolveDepends> mResolveDepends;

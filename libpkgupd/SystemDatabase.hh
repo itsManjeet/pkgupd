@@ -19,6 +19,11 @@ namespace rlxos::libpkgupd
 
         public:
             FileInfo(YAML::Node const &data, std::string const &file);
+
+            std::string const &Path() const
+            {
+                return path;
+            }
         };
 
     private:
@@ -56,6 +61,11 @@ namespace rlxos::libpkgupd
             return depends;
         }
 
+        std::vector<std::shared_ptr<FileInfo>> Files() const
+        {
+            return files;
+        }
+
         std::string const &InstalledOn() const
         {
             return installedon;
@@ -88,6 +98,8 @@ namespace rlxos::libpkgupd
         bool IsOutDated(std::shared_ptr<PackageInfo> pkginfo);
 
         bool Register(std::shared_ptr<PackageInfo> pkginfo, std::vector<std::string> const &files, std::string root, bool update = false);
+        
+        bool UnRegister(std::shared_ptr<PackageInfo> pkginfo);
     };
 }
 

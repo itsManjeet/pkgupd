@@ -4,5 +4,6 @@
 #include "Colors.hh"
 #include "Installer.hh"
 #include "Builder.hh"
+#include "Remover.hh"
 #include "ResolveDepends.hh"
 #endif

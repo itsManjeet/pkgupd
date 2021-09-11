@@ -10,8 +10,6 @@ namespace rlxos::libpkgupd
     private:
         std::vector<std::string> urls;
 
-        bool performCurl(std::string const &url, std::string const &outdir);
-
         bool isExist(std::string const &url);
 
         static size_t writeData(void *ptr, size_t size, size_t nmemb, FILE *fstream);
@@ -27,6 +25,8 @@ namespace rlxos::libpkgupd
         }
 
         bool Download(std::string const &file, std::string const &outdir);
+        
+        bool PerformCurl(std::string const &url, std::string const &outdir);
     };
 
 }

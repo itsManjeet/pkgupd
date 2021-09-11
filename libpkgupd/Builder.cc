@@ -22,7 +22,7 @@ namespace rlxos::libpkgupd
         for (auto const &i : sources)
         {
             std::string pkgfile = std::filesystem::path(i).filename().string();
-            std::string url = std::filesystem::path(i).parent_path().string();
+            std::string url = i;
 
             size_t idx = i.rfind("::");
             if (idx != std::string::npos)
@@ -34,11 +34,10 @@ namespace rlxos::libpkgupd
             std::string outfile = srcdir + "/" + pkgfile;
 
             auto downloader = Downloader();
-            downloader.AddURL(url);
 
             if (!std::filesystem::exists(outfile))
             {
-                if (!downloader.Download(pkgfile, outfile))
+                if (!downloader.PerformCurl(url, outfile))
                 {
                     error = downloader.Error();
                     return false;

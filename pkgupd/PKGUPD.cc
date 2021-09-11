@@ -158,9 +158,26 @@ namespace rlxos::libpkgupd
 
             configfile = values["config"];
         }
+        else
+        {
+            for (auto const &i : {"pkgupd.yml", "/etc/pkgupd.yml"})
+            {
+                if (std::filesystem::exists(i))
+                {
+                    configfile = i;
+                    break;
+                }
+            }
+        }
 
-        if (std::filesystem::exists(values["config"]))
+        if (std::filesystem::exists(configfile))
             mConfigurations = YAML::LoadFile(configfile);
+
+        if (mConfigurations["environ"])
+        {
+            for (auto const &e : mConfigurations["environ"])
+                putenv((char *)e.as<string>().c_str());
+        }
 
         mSystemDatabase = std::make_shared<SystemDatabase>(getValue(SYS_DB, DEFAULT_DATA_DIR));
         mRepositoryDatabase = std::make_shared<RepositoryDatabase>(getValue(REPO_DB, DEFAULT_REPO_DIR));
@@ -179,6 +196,9 @@ namespace rlxos::libpkgupd
         mBuilder = std::make_shared<Builder>();
         mBuilder->SetPackageDir(getValue(PKG_DIR, DEFAULT_PKGS_DIR));
         mBuilder->SetWorkDir(getValue("work-dir", "/tmp"));
+
+        mRemover = std::make_shared<Remover>(getValue(ROOT_DIR, DEFAULT_ROOT_DIR));
+        mRemover->SetSystemDatabase(mSystemDatabase);
 
         mInstaller = std::make_shared<Installer>();
         mInstaller->SetRepositoryDatabase(mRepositoryDatabase);
@@ -277,6 +297,22 @@ namespace rlxos::libpkgupd
                 return 0;
             }
             break;
+
+        case TaskType::REMOVE:
+            if (!checkAlteast(1))
+                return 1;
+            {
+                mRemover->SkipTriggers(isFlag(FlagType::SKIP_TRIGGER));
+                if (!mRemover->Remove(arguments))
+                {
+                    ERROR(mRemover->Error());
+                    return 2;
+                }
+
+                return 0;
+            }
+            break;
+
         case TaskType::DEPTEST:
             if (!checkSize(1))
                 return 1;

@@ -43,7 +43,7 @@ namespace rlxos::libpkgupd
         return 0;
     }
 
-    bool Downloader::performCurl(std::string const &url, std::string const &outfile)
+    bool Downloader::PerformCurl(std::string const &url, std::string const &outfile)
     {
         CURL *curl;
         CURLcode res;
@@ -68,10 +68,12 @@ namespace rlxos::libpkgupd
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, fwrite);
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, fptr);
-        curl_easy_setopt(curl, CURLOPT_VERBOSE, (getenv("DEBUG") == nullptr ? 0L : 1L));
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, (getenv("CURL_DEBUG") == nullptr ? 0L : 1L));
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_NOPROGRESS, false);
         curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progress_func);
+        curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1000);
+        curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 10);
 
         res = curl_easy_perform(curl);
 
@@ -109,12 +111,20 @@ namespace rlxos::libpkgupd
 
         curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
         curl_easy_setopt(curl, CURLOPT_NOBODY, 1);
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, (getenv("CURL_DEBUG") == nullptr ? 0L : 1L));
         curl_easy_setopt(curl, CURLOPT_FAILONERROR, true);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1000);
+        curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 10);
+
         resp = curl_easy_perform(curl);
+
+        long http_code = 0;
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 
         curl_easy_cleanup(curl);
 
-        return (resp == CURLE_OK);
+        return (resp == CURLE_OK) && http_code == 200;
     }
 
     bool Downloader::Download(std::string const &file, std::string const &outdir)
@@ -130,13 +140,15 @@ namespace rlxos::libpkgupd
         {
             std::cout << "=> checking " << url << " " << file << std::endl;
             std::string fileurl = url + "/" + file;
-            if (!isExist(fileurl))
-                continue;
 
-            return performCurl(fileurl, outdir);
+            if (!getenv("NO_CURL_CHECK"))
+                if (!isExist(fileurl))
+                    continue;
+
+            return PerformCurl(fileurl, outdir);
         }
 
-        error = file + " is missing on server, please report to admin at " + BUG_URL;
+        error = file + " is missing on server";
 
         return isDownloaded;
     }

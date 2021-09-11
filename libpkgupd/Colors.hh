@@ -15,4 +15,8 @@
 #define ERROR(mesg) std::cout << RED("ERROR " << mesg) << std::endl;
 #define PROCESS(mesg) MESSAGE(GREEN("=>"), mesg)
 #define INFO(mesg) MESSAGE(BLUE("INFO"), mesg)
+#define DEBUG(mesg)                 \
+    if (getenv("DEBUG") != nullptr) \
+    MESSAGE(BLUE("DEBUG"), mesg)
+
 #endif
