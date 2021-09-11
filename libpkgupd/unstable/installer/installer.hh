@@ -1,30 +1,29 @@
-#ifndef __INSTALLER__
-#define __INSTALLER__
+#ifndef _LIBPKGUPD_UNSTABLE_INSTALLER_HH_
+#define _LIBPKGUPD_UNSTABLE_INSTALLER_HH_
 
-#include <rlx.hh>
-#include <algo/algo.hh>
 #include "../recipe.hh"
 #include "../config.hh"
 #include "../database/database.hh"
+#include <dlfcn.h>
+
+#include <yaml-cpp/yaml.h>
 #include "plugin.hh"
 #include <chrono>
 #include <ctime>
-namespace pkgupd
-{
-    using namespace rlx;
-    using color = rlx::io::color;
-    using level = rlx::io::debug_level;
 
-    class installer : public obj
+namespace rlxos::libpkgupd::unstable
+{
+
+    class installer : public Object
     {
     public:
         using plugin_init = plugin::installer *(*)(YAML::Node const &);
 
-        typedef recipe (*getrecipe)(YAML::Node const &, string pkgpath);
-        typedef std::tuple<bool, string> (*unpack)(YAML::Node const &, string pkgpath, string root_dir);
+        typedef recipe (*getrecipe)(YAML::Node const &, std::string pkgpath);
+        typedef std::tuple<bool, std::string> (*unpack)(YAML::Node const &, std::string pkgpath, std::string root_dir);
 
-        typedef std::tuple<bool, string, std::vector<string>> (*unpack_func)(recipe const &, YAML::Node const &, package *, string pkgpath, string rootdir);
-        typedef std::tuple<bool, string, recipe, package *> (*getrecipe_func)(string path);
+        typedef std::tuple<bool, std::string, std::vector<std::string>> (*unpack_func)(recipe const &, YAML::Node const &, package *, string pkgpath, string rootdir);
+        typedef std::tuple<bool, std::string, recipe, package *> (*getrecipe_func)(string path);
 
     private:
         YAML::Node _config;
@@ -40,11 +39,11 @@ namespace pkgupd
 
             if (getenv("NO_CLEAN") == nullptr && std::filesystem::exists(_dir_work))
             {
-                io::process("clearing cache");
+                std::cout << "clearing cache" << std::endl;
                 std::filesystem::remove_all(_dir_work);
             }
             else
-                io::debug(level::warn, "NO_CLEAN environ set, skip cleaning");
+                std::cout << "NO_CLEAN environ set, skipped cleaning" << std::endl;
         }
 
     public:
@@ -63,7 +62,7 @@ namespace pkgupd
             _dir_root = get_dir("root", "/");
             _dir_data = get_dir("data", DEFAULT_DIR_DATA);
 
-            _dir_work = rlx::utils::sys::tempdir(_dir_work, "pkgupd");
+            _dir_work = std::filesystem::path(_dir_work) / "pkgupd";
         }
 
         ~installer()
@@ -85,7 +84,7 @@ namespace pkgupd
 
             if (pkg == nullptr)
             {
-                _error = _recipe.id() + "has no package with id '" + _sub_pkg + "'";
+                error = _recipe.id() + "has no package with id '" + _sub_pkg + "'";
                 return {};
             }
 
@@ -97,18 +96,17 @@ namespace pkgupd
             std::filesystem::create_directory(std::filesystem::path(pkgpath).parent_path(), ec);
             if (ec)
             {
-                _error = ec.message();
+                error = ec.message();
                 return {};
             }
 
-            io::debug(level::debug, "pkgpath: ", pkgpath);
             if (std::filesystem::exists(pkgpath))
-                io::info(pkgid, " found in cache");
+                std::cout << "Found in cache" << std::endl;
             else
             {
                 if (!_database.get_from_server(_database.getrepo(_recipe.id()), pkgfile, pkgpath))
                 {
-                    _error = _database.error();
+                    error = _database.Error();
                     return {};
                 }
             }
@@ -139,10 +137,9 @@ namespace pkgupd
             assert(std::filesystem::exists(pkgpath));
             auto idx = pkgpath.find_last_of(".");
             string plugin = pkgpath.substr(idx + 1, pkgpath.length() - (idx + 1));
-            io::debug(level::debug, "plugin: ", plugin);
             if (plugin.length() == 0)
             {
-                _error = io::format(pkgpath, " not a installable package");
+                error = (pkgpath + " not a installable package");
                 return nullptr;
             }
 
@@ -152,22 +149,49 @@ namespace pkgupd
         plugin::installer *get_plugin(string const &plugin)
         {
 
-            string plugin_path = utils::dlmodule::search(plugin, "/lib/pkgupd:/usr/lib/pkgupd", "PKGUPD_PLUGINS");
-            if (plugin_path.length() == 0)
+            std::string pathToSearch = "/lib/pkgupd:/opt/lib/pkgupd";
+
+            auto ENV_PATH = getenv("PKGUPD_PLUGINS");
+            if (ENV_PATH != nullptr)
+                pathToSearch += std::string(ENV_PATH);
+
+            std::stringstream iter(pathToSearch);
+            std::string path;
+
+            std::string pluginPath;
+
+            while (std::getline(iter, path, ':'))
             {
-                _error = io::format("failed to find plugin '" + plugin + "'");
+                std::string pluginTempPath = path + "/lib" + plugin + ".so";
+                if (std::filesystem::exists(pluginPath))
+                {
+                    pluginPath = pluginTempPath;
+                    break;
+                }
+            }
+
+            if (pluginPath.length() == 0)
+            {
+                error = ("failed to find plugin '" + plugin + "'");
                 return nullptr;
             }
 
             plugin_init _plug_init;
-            try
+
             {
-                _plug_init = utils::dlmodule::load<plugin_init>(plugin_path, "pkgupd_init");
-            }
-            catch (std::runtime_error const &e)
-            {
-                _error = e.what();
-                return nullptr;
+                void *handler = dlopen(pluginPath.c_str(), RTLD_LAZY);
+                if (!handler)
+                {
+                    error = dlerror();
+                    return nullptr;
+                }
+
+                _plug_init = (plugin_init)dlsym(handler, "pkgupd_init");
+                if (!_plug_init)
+                {
+                    error = dlerror();
+                    return nullptr;
+                }
             }
 
             return _plug_init(_config);
@@ -183,31 +207,33 @@ namespace pkgupd
 
             if (_recipe == nullptr)
             {
-                _error = plug->error();
+                error = plug->Error();
                 return false;
             }
 
             std::vector<string> fileslist;
             if (!plug->unpack(pkgpath, _database.dir_root(), fileslist))
             {
-                _error = plug->error();
+                error = plug->Error();
                 delete plug;
                 return false;
             }
 
             if (skip_triggers)
             {
-                io::info("Skipping triggers");
+                std::cout << "Skipping triggers" << std::endl;
             }
             else
             {
                 if (!execute_triggers(_recipe, pkg, fileslist))
                     return false;
-                    
+
                 for (auto const &i : _database.get_triggers(fileslist))
                 {
-                    io::message(color::CYAN, i.second.id(), i.second.message());
-                    sys::exec(i.second.exec(i.first));
+                    if (int status = WEXITSTATUS(system(i.second.exec(i.first).c_str())); status != 0)
+                    {
+                        std::cerr << "Error while executing trigger" << std::endl;
+                    }
                 }
             }
 
@@ -223,8 +249,7 @@ namespace pkgupd
         {
             if (_recipe->postinstall().length())
             {
-                io::info("executing postinstallation script");
-                rlx::utils::exec::command("bash -euc '" + _recipe->postinstall() + "'", "/tmp", _recipe->environ(pkg));
+                int status = WEXITSTATUS(system(("bash -euc '" + _recipe->postinstall() + "'", "/tmp", _recipe->environ(pkg)).c_str()));
             }
 
             if (_recipe->groups().size())

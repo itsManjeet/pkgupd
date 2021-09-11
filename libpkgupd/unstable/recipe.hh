@@ -1,9 +1,5 @@
-#ifndef __RECIPE__
-#define __RECIPE__
-
-#include <yaml-cpp/yaml.h>
-#include <utils/utils.hh>
-#include <path/path.hh>
+#ifndef _LIBPKGUPD_UNSTABLE_RECIPE_HH_
+#define _LIBPKGUPD_UNSTABLE_RECIPE_HH_
 
 #include <string>
 #include <vector>
@@ -12,12 +8,41 @@
 #include <pwd.h>
 #include <grp.h>
 
-namespace pkgupd
+#define _CHECK_VALUE(node, type, variable) \
+    if (node[#variable])                   \
+        _##variable = node[#variable].as<type>();
+
+#define _THROW_ERROR(variable) \
+    else throw std::runtime_error(#variable " is missing in recipe file");
+
+#define _USE_FALLBACK(variable, fallback) \
+    else _##variable = fallback;
+
+#define GETVAL_TYPE(variable, node, type) \
+    _CHECK_VALUE(node, type, variable)    \
+    _THROW_ERROR(variable)
+
+#define GETVAL(variable, node)                \
+    _CHECK_VALUE(node, std::string, variable) \
+    _THROW_ERROR(variable)
+
+#define OPTVAL(variable, node, value)         \
+    _CHECK_VALUE(node, std::string, variable) \
+    _USE_FALLBACK(variable, value)
+
+#define OPTVAL_TYPE(variable, node, value, type) \
+    _CHECK_VALUE(node, type, variable)           \
+    _USE_FALLBACK(variable, value)
+
+#define DEFINE_GET_METHOD(type, variable) \
+    type const &variable() const          \
+    {                                     \
+        return _##variable;               \
+    }
+
+namespace rlxos::libpkgupd::unstable
 {
     using std::string;
-    using namespace rlx;
-    using color = rlx::io::color;
-    using level = rlx::io::debug_level;
 
     class user
     {
@@ -47,14 +72,14 @@ namespace pkgupd
         DEFINE_GET_METHOD(string, shell);
         DEFINE_GET_METHOD(string, dir);
 
-        string const command() const
+        std::vector<string> const command() const
         {
-            return io::format(
-                "useradd ", _name, " -u ", _id,
-                (_about.length() ? " -c \"" + _about + "\" " : ""),
-                (_dir.length() ? " -d " + _dir : ""),
-                (_shell.length() ? " -s " + _shell : ""),
-                (_group.length() ? " -g " + _group : ""));
+            return {"/bin/useradd", _name,
+                    "-u", std::to_string(_id),
+                    "-c", _about,
+                    "-d", _dir,
+                    "-s", _shell,
+                    "-g", _group};
         }
 
         bool exists() const
@@ -79,10 +104,9 @@ namespace pkgupd
         DEFINE_GET_METHOD(unsigned, id);
         DEFINE_GET_METHOD(string, name);
 
-        string const command() const
+        std::vector<string> const command() const
         {
-            return io::format(
-                "groupadd ", _name, " -g ", _id);
+            return {"/bin/groupadd", _name, "-g", std::to_string(_id)};
         }
 
         bool exists() const
@@ -111,16 +135,6 @@ namespace pkgupd
         DEFINE_GET_METHOD(string, value);
         DEFINE_GET_METHOD(bool, only);
     };
-
-    inline string get_dir(string const &url)
-    {
-        string dir = rlx::path::basename(url);
-        size_t idx = dir.find_first_of('.');
-        if (idx == string::npos)
-            return dir;
-
-        return dir.substr(0, idx);
-    }
 
     class package
     {
@@ -174,16 +188,7 @@ namespace pkgupd
         DEFINE_GET_METHOD(std::vector<string>, sources);
         DEFINE_GET_METHOD(std::vector<string>, environ);
 
-        string const dir() const
-        {
-            if (_dir.length() == 0)
-                if (_sources.size() == 0)
-                    return "";
-                else
-                    return get_dir(_sources[0]);
-
-            return _dir;
-        }
+        DEFINE_GET_METHOD(std::string, dir);
     };
 
     class recipe
@@ -353,13 +358,7 @@ namespace pkgupd
         {
             assert(pkg != nullptr);
 
-            if (pkg->dir().length() != 0)
-                return pkg->dir();
-
-            if (_sources.size())
-                return get_dir(_sources[0]);
-
-            return "";
+            return pkg->dir();
         }
 
         friend std::ostream &operator<<(std::ostream &os, recipe const &rcp)

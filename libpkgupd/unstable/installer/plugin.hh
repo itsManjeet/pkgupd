@@ -1,15 +1,18 @@
 #ifndef __INSTALLER_PLUGIN__
 #define __INSTALLER_PLUGIN__
 
-#include <rlx.hh>
 #include "../recipe.hh"
 #include "../config.hh"
+
+#include "../../Defines.hh"
+
+#include <yaml-cpp/yaml.h>
 
 namespace plugin
 {
     using std::string;
 
-    class installer : public rlx::obj
+    class installer : public rlxos::libpkgupd::Object
     {
     protected:
         YAML::Node const &_config;

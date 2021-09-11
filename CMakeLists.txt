@@ -1,19 +1,27 @@
 cmake_minimum_required(VERSION 3.10)
-project(pkgupd)
+set(PROJECT "PKGUPD")
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+project(${PROJECT})
 
-find_package(yaml-cpp REQUIRED)
-include_directories(lib ${YAML_CPP_INCLUDE_DIRS} /usr/include/rlx)
+set(CMAKE_CXX_STANDARD 17) # using std::filesystem
+set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-add_subdirectory(plugins)
+find_package(YAML-CPP REQUIRED)
+include_directories(${YAML_CPP_INCLUDE_DIRS})
 
-add_executable(pkgupd main.cc)
-target_link_libraries(pkgupd yaml-cpp curlcpp dl curl)
-target_compile_options(pkgupd PUBLIC -fpermissive)
+find_library(LIBCURL curl REQUIRED)
+
+file(GLOB LIBPKGUPD_Src "libpkgupd/*.cc" "libpkgupd/*.hh")
+add_library(libpkgupd ${LIBPKGUPD_Src})
+target_link_libraries(libpkgupd ${LIBCURL} ${YAML_CPP_LIBRARIES})
+
+file(GLOB PKGUPD_Src "pkgupd/*.cc" "pkgupd/*.hh")
+add_executable(pkgupd ${PKGUPD_Src})
+add_dependencies(pkgupd libpkgupd)
+target_link_libraries(pkgupd libpkgupd)
+
+set_target_properties(pkgupd PROPERTIES SUFFIX "-new")
+
 
 install(TARGETS pkgupd
-    RUNTIME DESTINATION bin)
-
-install(FILES port-compiler DESTINATION bin PERMISSIONS OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+    DESTINATION bin)

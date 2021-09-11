@@ -1,4 +1,0 @@
-id: ldconfig
-message: Updating library cache
-regex: ^\/(\w+)\/lib\/$
-exec: ldconfig

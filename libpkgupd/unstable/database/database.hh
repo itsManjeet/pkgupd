@@ -1,36 +1,20 @@
-#ifndef __DATABASE__
-#define __DATABASE__
+#ifndef _LIBPKGUPD_UNSTABLE_DATABASE_HH_
+#define _LIBPKGUPD_UNSTABLE_DATABASE_HH_
 
-#include <rlx.hh>
-#include <algo/algo.hh>
-#include <sys/exec.hh>
-#include <curl/curl.hh>
 #include "../recipe.hh"
 #include "../config.hh"
 #include <regex>
+#include <iostream>
+#include <fstream>
+#include <string>
 
-namespace pkgupd
+#include "../../Downloader.hh"
+
+namespace rlxos::libpkgupd::unstable
 {
-    class database : public rlx::obj
+    class database : public Object
     {
     public:
-        class exception : public std::exception
-        {
-        private:
-            string _what;
-
-        public:
-            exception(string const &c)
-                : _what(c)
-            {
-            }
-
-            const char *what() const noexcept
-            {
-                return _what.c_str();
-            }
-        };
-
         class trigger
         {
         private:
@@ -140,12 +124,11 @@ namespace pkgupd
         {
             for (auto const &i : _repositories)
             {
-                io::debug(level::trace, "checking ", i, " for ", id);
                 string rcp_path = _dir_recipe + "/" + i + "/" + id + ".yml";
                 if (std::filesystem::exists(rcp_path))
                     return i;
             }
-            return "temp";
+            throw std::runtime_error("No repository found");
         }
 
         recipe const operator[](std::string pkgid) const
@@ -174,7 +157,10 @@ namespace pkgupd
 
             auto total_deps = pkg.runtime();
             if (compiletime)
-                total_deps = rlx::algo::merge(total_deps, pkg.buildtime());
+            {
+                for (auto const &b : pkg.buildtime())
+                    total_deps.push_back(b);
+            }
 
             for (auto const &i : total_deps)
             {
@@ -278,9 +264,9 @@ namespace pkgupd
                     if (_recipe.version() != _installed.version())
                         outdatedlist.push_back(i.path().filename().string());
                 }
-                catch (database::exception e)
+                catch (std::exception const &err)
                 {
-                    io::warn(e.what());
+                    std::cerr << err.what() << std::endl;
                     continue;
                 }
             }
@@ -301,37 +287,41 @@ namespace pkgupd
                 mirrors.push_back(DEFAULT_MIRROR);
 
             bool downloaded = false;
+
+            Downloader mDownloader;
             for (auto const &mirror : mirrors)
+                mDownloader.AddURL(mirror + "/" + repo);
+
+            if (!mDownloader.Download(pkgid, output))
             {
-                io::process("getting ", pkgid, " ", mirror, " ", repo);
-                string url = mirror + "/" + repo + "/" + pkgid;
-                if (!rlx::curl::download(url, output))
-                {
-                    io::error("faild to get from ", mirror);
-                }
-                else
-                {
-                    downloaded = true;
-                    break;
-                }
+                error = mDownloader.Error();
+                return false;
             }
 
-            if (!downloaded)
-                _error = "failed to download " + pkgid;
-
-            return downloaded;
+            return true;
         }
 
         std::vector<string> installedfiles(string pkgid) const
         {
             if (!installed(pkgid))
-                throw database::exception(pkgid + " is not already installed");
+                throw std::runtime_error(pkgid + " is not already installed");
 
             string _list_file = _dir_data + "/" + pkgid + ".files";
             if (!std::filesystem::exists(_list_file))
-                throw database::exception("no file list exist for " + pkgid);
+                throw std::runtime_error("no file list exist for " + pkgid);
 
-            return algo::str::split(io::readfile(_list_file), '\n');
+            std::ifstream file(_list_file);
+            if (!file.good())
+                throw std::runtime_error("failed to open file for read " + pkgid);
+
+            std::vector<std::string> fileslist;
+            {
+                std::string line;
+                while (std::getline(file, line, '\n'))
+                    fileslist.push_back(line);
+            }
+
+            return fileslist;
         }
 
         std::vector<string> installedfiles(recipe const &_recipe, package *pkg) const
@@ -342,11 +332,11 @@ namespace pkgupd
         recipe const installed_recipe(string const &id) const
         {
             if (!installed(id))
-                throw database::exception(id + " is not already installed");
+                throw std::runtime_error(id + " is not already installed");
 
             string data_file = _dir_data + "/" + id;
             if (!std::filesystem::exists(data_file))
-                throw database::exception("no data exist for " + id);
+                throw std::runtime_error("no data exist for " + id);
 
             return recipe(data_file);
         }
@@ -361,7 +351,6 @@ namespace pkgupd
                     auto cmd = t.exec(f);
                     if (cmd.length() != 0)
                     {
-                        io::debug(level::debug, "Found trigger: ", t.id());
                         _needed.insert(std::make_pair(f, t));
                         break;
                     }
