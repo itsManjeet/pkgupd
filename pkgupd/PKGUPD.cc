@@ -196,6 +196,7 @@ namespace rlxos::libpkgupd
         mBuilder = std::make_shared<Builder>();
         mBuilder->SetPackageDir(getValue(PKG_DIR, DEFAULT_PKGS_DIR));
         mBuilder->SetWorkDir(getValue("work-dir", "/tmp"));
+        mBuilder->SetForceFlag(isFlag(FlagType::FORCE));
 
         mRemover = std::make_shared<Remover>(getValue(ROOT_DIR, DEFAULT_ROOT_DIR));
         mRemover->SetSystemDatabase(mSystemDatabase);
@@ -204,6 +205,8 @@ namespace rlxos::libpkgupd
         mInstaller->SetRepositoryDatabase(mRepositoryDatabase);
         mInstaller->SetSystemDatabase(mSystemDatabase);
         mInstaller->SetDownloader(mDownloader);
+        mInstaller->SetSkipTriggers(isFlag(FlagType::SKIP_TRIGGER));
+        mInstaller->SetForced(isFlag(FlagType::FORCE));
 
         mInstaller->SetPackagesDir(getValue(PKG_DIR, DEFAULT_PKGS_DIR));
 
@@ -284,10 +287,6 @@ namespace rlxos::libpkgupd
                 }
 
                 mInstaller->SetPackages(arguments);
-
-                mInstaller->SetSkipTriggers(isFlag(FlagType::SKIP_TRIGGER));
-                mInstaller->SetForced(isFlag(FlagType::FORCE));
-
                 if (!mInstaller->Install(getValue(ROOT_DIR, DEFAULT_ROOT_DIR)))
                 {
                     ERROR(mInstaller->Error());
