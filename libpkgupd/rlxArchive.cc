@@ -34,15 +34,15 @@ namespace rlxos::libpkgupd
     {
         std::ofstream fileptr(srcdir + "/.info");
 
-        fileptr << "id: " << pkginfo->ID() << std::endl
-                << "version: " << pkginfo->Version() << std::endl
-                << "about: " << pkginfo->About() << std::endl;
+        fileptr << "id: " << pkginfo->ID() << "\n"
+                << "version: " << pkginfo->Version() << "\n"
+                << "about: " << pkginfo->About() << "\n";
 
         if (pkginfo->Depends(false).size())
         {
-            fileptr << "depends:" << std::endl;
+            fileptr << "depends:" << "\n";
             for (auto const &i : pkginfo->Depends(false))
-                fileptr << " - " << i << std::endl;
+                fileptr << " - " << i << "\n";
         }
 
         fileptr.close();
