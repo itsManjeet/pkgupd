@@ -15,6 +15,8 @@ namespace rlxos::libpkgupd
         std::string workingDirectory,
             packagesDirectory;
 
+        bool isForceFlagSet = false;
+
         bool Prepare(std::vector<std::string> const &sources, std::string const &srcdir);
 
         bool Compile(std::string const &srcdir, std::string const &pkgdir, std::shared_ptr<RecipePackageInfo> package);
@@ -32,6 +34,11 @@ namespace rlxos::libpkgupd
         void SetPackageDir(std::string const &pkgdir)
         {
             packagesDirectory = pkgdir;
+        }
+
+        void SetForceFlag(bool value)
+        {
+            isForceFlagSet = value;
         }
 
         bool Build(std::shared_ptr<RecipePackageInfo> package);

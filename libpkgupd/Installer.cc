@@ -28,10 +28,13 @@ namespace rlxos::libpkgupd
 
             try
             {
-                if (mSystemDatabase->IsRegistered(pkginfo) && !mSystemDatabase->IsOutDated(pkginfo) && !isForced)
+                if (!isForced)
                 {
-                    std::cout << ":: " + pkginfo->ID() + " Latest version is already installed ::" << std::endl;
-                    continue;
+                    if (mSystemDatabase->IsRegistered(pkginfo) && !mSystemDatabase->IsOutDated(pkginfo))
+                    {
+                        std::cout << ":: " + pkginfo->ID() + " Latest version is already installed ::" << std::endl;
+                        continue;
+                    }
                 }
             }
             catch (...)

@@ -74,7 +74,7 @@ namespace rlxos::libpkgupd
         std::string packagePkgDir = packageWorkDir + "/pkg";
 
         std::string outputPackage = packagesDirectory + "/" + package->PackageFile(package->Pack());
-        if (std::filesystem::exists(outputPackage) && getenv("FORCE") == nullptr)
+        if (std::filesystem::exists(outputPackage) && !isForceFlagSet)
         {
             std::cout << "Found in cache, skipping" << std::endl;
             return true;
