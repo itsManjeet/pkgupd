@@ -66,8 +66,6 @@ namespace rlxos::libpkgupd
 
         fileptr.close();
 
-        setenv("XZ_OPT","-9", 1);
-
         return Compress(srcdir);
     }
 
