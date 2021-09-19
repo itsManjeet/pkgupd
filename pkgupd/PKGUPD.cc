@@ -176,7 +176,12 @@ namespace rlxos::libpkgupd
         if (mConfigurations["environ"])
         {
             for (auto const &e : mConfigurations["environ"])
-                putenv((char *)e.as<string>().c_str());
+            {
+                DEBUG("exporting " << e.as<string>());
+                auto env = e.as<string>();
+                size_t idx = env.find_first_of("=");
+                setenv(env.substr(0, idx).c_str(), env.substr(idx + 1, env.length() - (idx + 1)).c_str(), 1);
+            }
         }
 
         mSystemDatabase = std::make_shared<SystemDatabase>(getValue(SYS_DB, DEFAULT_DATA_DIR));
@@ -196,6 +201,7 @@ namespace rlxos::libpkgupd
         mBuilder = std::make_shared<Builder>();
         mBuilder->SetPackageDir(getValue(PKG_DIR, DEFAULT_PKGS_DIR));
         mBuilder->SetWorkDir(getValue("work-dir", "/tmp"));
+        mBuilder->SetSourceDir(getValue(SRC_DIR, DEFAULT_SRC_DIR));
         mBuilder->SetForceFlag(isFlag(FlagType::FORCE));
 
         mRemover = std::make_shared<Remover>(getValue(ROOT_DIR, DEFAULT_ROOT_DIR));

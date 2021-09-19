@@ -21,6 +21,8 @@ namespace rlxos::libpkgupd
             return nullptr;
         }
 
+        DEBUG("Input Data: " << data);
+
         auto sysPkgInfo = std::make_shared<rlxArchiveInfo>(YAML::Load(data), pkgfile);
         return sysPkgInfo;
     }
@@ -28,6 +30,21 @@ namespace rlxos::libpkgupd
     bool rlxArchive::IsArchive(std::string const &pkgpath)
     {
         return (std::filesystem::exists(pkgpath));
+    }
+
+    bool rlxArchive::Extract(std::string const &outdir, std::vector<std::string> excludefile)
+    {
+        for (auto const &i : std::filesystem::recursive_directory_iterator(outdir))
+        {
+            if (i.is_regular_file() && i.path().filename().extension() == "la")
+            {
+                DEBUG("removing " + i.path().string());
+                std::filesystem::remove(i);
+            }
+        }
+        AddArgs("-h");
+        AddArgs("-p");
+        return Archive::Extract(outdir, excludefile);
     }
 
     bool rlxArchive::Pack(std::string const &srcdir, std::shared_ptr<PackageInfo> const &pkginfo)
@@ -40,7 +57,8 @@ namespace rlxos::libpkgupd
 
         if (pkginfo->Depends(false).size())
         {
-            fileptr << "depends:" << "\n";
+            fileptr << "depends:"
+                    << "\n";
             for (auto const &i : pkginfo->Depends(false))
                 fileptr << " - " << i << "\n";
         }

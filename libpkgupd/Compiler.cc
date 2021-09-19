@@ -65,13 +65,7 @@ namespace rlxos::libpkgupd
 
         if (package->Script().size() != 0)
         {
-            auto binary = "/bin/sh";
-            std::vector<std::string> args = {"-e", "-u", "-c", package->Script()};
-            auto cmd = Command(binary, args);
-            cmd.SetDirectory(srcdir);
-            cmd.SetEnviron(package->Environ());
-
-            if (int status = cmd.Execute(); status != 0)
+            if (int status = Command::ExecuteScript(package->Script(), srcdir, package->Environ()); status != 0)
             {
                 error = "Script failed with exit code: " + std::to_string(status);
                 return false;
@@ -177,23 +171,27 @@ namespace rlxos::libpkgupd
 
         std::vector<std::string> environ = package->Environ();
 
+        std::string DESTDIR = "DESTDIR=" + destdir;
+        if (package->Pack() == "none")
+            DESTDIR = "";
+        else
+            environ.push_back(DESTDIR);
+
         switch (builder)
         {
         case Builder::MAKE:
             binary = "make";
-            args = getargs("compile", {"DESTDIR=" + destdir,"install"});
+            args = getargs("install", {DESTDIR, "install"});
             break;
         case Builder::NINJA:
             binary = "ninja";
-            args = getargs("compile", {"install"});
+            args = getargs("install", {"install"});
             break;
 
         default:
             error = "No known configurator found";
             return false;
         }
-
-        environ.push_back("DESTDIR=" + destdir);
 
         {
             auto exec = Command(binary, args);

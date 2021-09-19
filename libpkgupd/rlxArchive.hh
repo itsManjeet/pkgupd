@@ -45,12 +45,15 @@ namespace rlxos::libpkgupd
         rlxArchive(std::string const &filepath)
             : Archive(filepath)
         {
+            archiveTool = "tar";
             AddArgs("--zstd");
         }
 
         std::shared_ptr<rlxArchiveInfo> GetInfo();
 
         bool Pack(std::string const &srcdir, std::shared_ptr<PackageInfo> const &pkginfo);
+
+        bool Extract(std::string const &outdir, std::vector<std::string> excludefile = {});
 
         static bool IsArchive(std::string const &pkgpath);
     };

@@ -12,14 +12,17 @@ namespace rlxos::libpkgupd
         std::vector<std::shared_ptr<RecipePackageInfo>> packages;
         std::vector<std::string> packagesArchiveList;
 
-        std::string workingDirectory,
-            packagesDirectory;
+        std::string workingDirectory = "/tmp",
+                    packagesDirectory = DEFAULT_PKGS_DIR,
+                    sourcesDirectory = DEFAULT_SRC_DIR;
 
         bool isForceFlagSet = false;
 
         bool Prepare(std::vector<std::string> const &sources, std::string const &srcdir);
 
         bool Compile(std::string const &srcdir, std::string const &pkgdir, std::shared_ptr<RecipePackageInfo> package);
+
+        bool Build(std::shared_ptr<RecipePackageInfo> package);
 
     public:
         Builder() {}
@@ -36,12 +39,15 @@ namespace rlxos::libpkgupd
             packagesDirectory = pkgdir;
         }
 
+        void SetSourceDir(std::string const &srcdir)
+        {
+            sourcesDirectory = srcdir;
+        }
+
         void SetForceFlag(bool value)
         {
             isForceFlagSet = value;
         }
-
-        bool Build(std::shared_ptr<RecipePackageInfo> package);
 
         std::vector<std::string> const &PackagesList() const
         {
@@ -50,9 +56,27 @@ namespace rlxos::libpkgupd
 
         bool Build()
         {
+            workingDirectory += "/" + packages[0]->ID();
+
+            for (auto const &dir : {packagesDirectory, sourcesDirectory, workingDirectory})
+            {
+                if (!std::filesystem::exists(dir))
+                {
+                    std::error_code err;
+                    std::filesystem::create_directories(dir, err);
+                    if (err)
+                    {
+                        error = err.message();
+                        return false;
+                    }
+                }
+            }
             for (auto const &pkg : packages)
                 if (!Build(pkg))
+                {
+                    std::filesystem::remove_all(workingDirectory);
                     return false;
+                }
 
             return true;
         }

@@ -106,8 +106,9 @@ namespace rlxos::libpkgupd
             struct stat info;
             if (stat((root + i).c_str(), &info) == -1)
             {
-                error = "Failed to read attributes of " + root + i + ", " + std::string(strerror(errno));
-                return false;
+                ERROR("Failed to read attributes of " + root + i + ", " + std::string(strerror(errno)));
+                fileptr << " - path: " << i << std::endl;
+                continue;
             }
 
             fileptr << " - path: " << i << std::endl

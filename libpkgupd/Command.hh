@@ -38,6 +38,8 @@ namespace rlxos::libpkgupd
         std::tuple<int, std::string> GetOutput();
 
         int Execute();
+        
+        static int ExecuteScript(std::string const &script, std::string dir, std::vector<std::string> environ);
     };
 }
 

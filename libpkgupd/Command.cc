@@ -40,71 +40,56 @@ namespace rlxos::libpkgupd
             if (fgets(buffer.data(), 128, pipe) != nullptr)
                 result += buffer.data();
 
-        if (pclose(pipe) == EXIT_FAILURE)
-            return {1, result};
+        // cleaning last '\n'
+        result = result.substr(0, result.length() - 1);
 
-        return {0, result};
+        return {WEXITSTATUS(pclose(pipe)), result};
     }
 
     int Command::Execute()
     {
-        std::vector<char const *> argv;
-        argv.push_back(binary.c_str());
+        std::string script = binary;
         for (auto const &i : args)
-            argv.push_back(i.c_str());
-        argv.push_back(nullptr);
+            script += " " + i;
 
-        std::vector<char const *> env;
-        for (char **e = ::environ; *e != 0; e++)
-            env.push_back(*e);
-
-        for (auto const &i : environ)
-            env.push_back(i.c_str());
-        env.push_back(nullptr);
-
-        if (getenv("DEBUG"))
-        {
-            std::cout << binary;
-            for (auto const &a : argv)
-                std::cout << " " << a;
-            std::cout << std::endl;
-
-            if (environ.size())
-            {
-                std::cout << "Environ: " << std::endl;
-                for (auto const &a : env)
-                    std::cout << "  " << a << std::endl;
-            }
-        }
-
-        if (dir.length())
-        {
-            if (!std::filesystem::exists(dir))
-            {
-                error = dir + " not exists";
-                return 1;
-            }
-        }
-
-        pid_t pid = fork();
-
-        if (pid == 0) // check
-        {
-            if (dir.length())
-                chdir(dir.c_str());
-
-            execvpe(argv[0], (char *const *)argv.data(), (char *const *)env.data());
-            printf("Failed to execute %s\n", argv[0]);
-            exit(EXIT_FAILURE);
-        }
-        else if (pid > 0) // parent
-        {
-            int waitstatus;
-            wait(&waitstatus);
-            return WEXITSTATUS(waitstatus);
-        }
-
-        error = "fork() failed";
-        return -1;
+        return ExecuteScript(script, dir, environ);
     }
+
+    int Command::ExecuteScript(std::string const &script, std::string dir, std::vector<std::string> env)
+    {
+        std::string cmd = "set -e; set -u\n";
+
+        auto env_iter = ::environ;
+
+        for (char **e = env_iter; *e != 0; e++)
+        {
+            std::string environ_variable(*e);
+
+            size_t idx = environ_variable.find_first_of('=');
+            if (environ_variable.length() == 0 ||
+                idx == std::string::npos)
+                continue;
+
+            auto val = environ_variable.substr(idx + 1, environ_variable.length() - (idx + 1));
+            if (val[0] == '"' || val[0] == '\'')
+            {
+            }
+            else
+                val = "\"" + val + "\"";
+
+            cmd += "export " + environ_variable.substr(0, idx) + "=" + val + "\n";
+        }
+
+        for (auto const &i : env)
+            cmd += "export " + i + "\n";
+
+        if (dir != ".")
+            cmd += "cd " + dir + "\n";
+
+        cmd += script;
+
+        DEBUG("Executing '" << cmd << "'");
+        return WEXITSTATUS(system(cmd.c_str()));
+    }
+
 }

@@ -30,7 +30,7 @@ namespace rlxos::libpkgupd
         auto cmd = Command("/bin/sh", {"-e", "-u", "-c", script});
         cmd.SetDirectory(dir);
 
-        if (int status = cmd.Execute(); status != 0)
+        if (int status = Command::ExecuteScript(script, dir, {}); status != 0)
         {
             error = "Strip script failed with exit code: " + std::to_string(status);
             return false;

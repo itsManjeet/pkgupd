@@ -31,7 +31,7 @@ namespace rlxos::libpkgupd
                 url = i.substr(idx + 2, i.length() - (idx + 2));
             }
 
-            std::string outfile = srcdir + "/" + pkgfile;
+            std::string outfile = sourcesDirectory + "/" + pkgfile;
 
             auto downloader = Downloader();
 
@@ -45,10 +45,54 @@ namespace rlxos::libpkgupd
             }
 
             auto archiver = Archive(outfile);
-            if (!archiver.Extract(srcdir))
+
+            auto endswith = [](std::string const &fullString, std::string const &ending)
             {
-                error = archiver.Error();
-                return false;
+                if (fullString.length() >= ending.length())
+                {
+                    return (0 == fullString.compare(fullString.length() - ending.length(), ending.length(), ending));
+                }
+                else
+                {
+                    return false;
+                }
+            };
+
+            bool extracted = false;
+
+            for (auto const &i : {".tar", ".gz", ".tgz", ".xz", ".txz", ".bzip2", ".bz", ".bz2", ".lzma"})
+            {
+                if (endswith(outfile, i))
+                {
+                    if (Command::ExecuteScript("tar -xaf " + outfile + " -C " + srcdir, "", {}) != 0)
+                    {
+                        error = "failed to extract " + outfile + " with tar";
+                        return false;
+                    }
+                    extracted = true;
+                    break;
+                }
+            }
+
+            if (endswith(outfile, "zip"))
+            {
+                if (Command::ExecuteScript("unzip " + outfile + " -d " + srcdir, "", {}) != 0)
+                {
+                    error = "failed to extract " + outfile + " with tar";
+                    return false;
+                }
+                extracted = true;
+            }
+
+            if (!extracted)
+            {
+                std::error_code err;
+                std::filesystem::copy(outfile, srcdir + "/" + std::filesystem::path(outfile).filename().string(), err);
+                if (err)
+                {
+                    error = err.message();
+                    return false;
+                }
             }
         }
 
@@ -77,14 +121,12 @@ namespace rlxos::libpkgupd
         if (std::filesystem::exists(outputPackage) && !isForceFlagSet)
         {
             std::cout << "Found in cache, skipping" << std::endl;
+            if (package->Pack() != "none")
+            {
+                packagesArchiveList.push_back(outputPackage);
+            }
             return true;
         }
-
-        auto cleanup = [&]()
-        {
-            if (getenv("NOCLEAN") == nullptr)
-                std::filesystem::remove_all(packageWorkDir);
-        };
 
         for (auto const &dir : {packageSrcDir})
         {
@@ -93,7 +135,6 @@ namespace rlxos::libpkgupd
             if (err)
             {
                 error = err.message();
-                cleanup();
                 return false;
             }
         }
@@ -102,7 +143,6 @@ namespace rlxos::libpkgupd
 
         if (!Prepare(allSources, packageSrcDir))
         {
-            cleanup();
             return false;
         }
 
@@ -112,14 +152,7 @@ namespace rlxos::libpkgupd
 
         if (package->PreScript().size())
         {
-            std::cout << "=> Executing Pre Script" << std::endl;
-            auto binary = "/bin/sh";
-            std::vector<std::string> args = {"-e", "-u", "-c", package->PreScript()};
-            auto cmd = Command(binary, args);
-            cmd.SetEnviron(package->Environ());
-            cmd.SetDirectory(packageSrcDir + "/" + package->Dir());
-
-            if (int status = cmd.Execute(); status != 0)
+            if (int status = Command::ExecuteScript(package->PreScript(), packageSrcDir + "/" + package->Dir(), package->Environ()); status != 0)
             {
                 error = "prescript failed to exit code: " + std::to_string(status);
                 return false;
@@ -129,20 +162,12 @@ namespace rlxos::libpkgupd
         std::cout << "=> Compiling source code" << std::endl;
         if (!Compile(packageSrcDir + "/" + package->Dir(), packagePkgDir, package))
         {
-            cleanup();
             return false;
         }
 
         if (package->PostScript().size())
         {
-            std::cout << "=> Executing Post Script" << std::endl;
-            auto binary = "/bin/sh";
-            std::vector<std::string> args = {"-e", "-u", "-c", package->PostScript()};
-            auto cmd = Command(binary, args);
-            cmd.SetEnviron(package->Environ());
-            cmd.SetDirectory(packageSrcDir + "/" + package->Dir());
-
-            if (int status = cmd.Execute(); status != 0)
+            if (int status = Command::ExecuteScript(package->PostScript(), packageSrcDir + "/" + package->Dir(), package->Environ()); status != 0)
             {
                 error = "postscript failed to exit code: " + std::to_string(status);
                 return false;
@@ -174,7 +199,6 @@ namespace rlxos::libpkgupd
             if (!archive.Pack(packagePkgDir, package))
             {
                 error = archive.Error();
-                cleanup();
                 return false;
             }
 
@@ -182,7 +206,6 @@ namespace rlxos::libpkgupd
             packagesArchiveList.push_back(outputPackage);
         }
 
-        cleanup();
         return true;
     }
 }

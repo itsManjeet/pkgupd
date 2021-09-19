@@ -64,12 +64,13 @@ namespace rlxos::libpkgupd
 
 #define DEFAULT_DATA_DIR "/var/lib/pkgupd/data"
 #define DEFAULT_PKGS_DIR "/var/cache/pkgupd/pkgs"
+#define DEFAULT_SRC_DIR "/var/cache/pkgupd/src"
 #define DEFAULT_REPO_DIR "/var/cache/pkgupd/recipes"
 #define DEFAULT_ROOT_DIR "/"
 #define DEFAULT_URL "https://rlxos.cloudtb.online/pkgs"
 #define DEFAULT_SECONDARY_URL "https://apps.rlxos.dev/pkgs"
 
-#define DEFAULT_ARCHIVE_TOOL "/bin/bsdtar"
+#define DEFAULT_ARCHIVE_TOOL "tar"
 #define BUG_URL "https://rlxos.dev/bugs"
 
 #define DEFAULT_EXTENSION "rlx"
