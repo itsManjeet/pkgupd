@@ -46,7 +46,7 @@ namespace rlxos::libpkgupd
             : Archive(filepath)
         {
             archiveTool = "tar";
-            AddArgs("--zstd");
+            AddArgs("-J"); // using xz compression
         }
 
         std::shared_ptr<rlxArchiveInfo> GetInfo();
