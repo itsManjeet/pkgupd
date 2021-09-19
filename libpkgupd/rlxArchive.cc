@@ -34,14 +34,6 @@ namespace rlxos::libpkgupd
 
     bool rlxArchive::Extract(std::string const &outdir, std::vector<std::string> excludefile)
     {
-        for (auto const &i : std::filesystem::recursive_directory_iterator(outdir))
-        {
-            if (i.is_regular_file() && i.path().filename().extension() == "la")
-            {
-                DEBUG("removing " + i.path().string());
-                std::filesystem::remove(i);
-            }
-        }
         AddArgs("-h");
         AddArgs("-p");
         return Archive::Extract(outdir, excludefile);
@@ -49,6 +41,15 @@ namespace rlxos::libpkgupd
 
     bool rlxArchive::Pack(std::string const &srcdir, std::shared_ptr<PackageInfo> const &pkginfo)
     {
+        for (auto const &i : std::filesystem::recursive_directory_iterator(srcdir))
+        {
+            if (i.is_regular_file() && i.path().filename().extension() == "la")
+            {
+                DEBUG("removing " + i.path().string());
+                std::filesystem::remove(i);
+            }
+        }
+
         std::ofstream fileptr(srcdir + "/.info");
 
         fileptr << "id: " << pkginfo->ID() << "\n"
