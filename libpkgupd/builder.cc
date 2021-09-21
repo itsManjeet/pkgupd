@@ -147,7 +147,7 @@ namespace rlxos::libpkgupd
         }
 
         PROCESS("compiling source code")
-        
+
         if (!_compile(pkg_src_dir + "/" + package->dir(), pkg_pkg_dir, package))
         {
             return false;
@@ -159,6 +159,15 @@ namespace rlxos::libpkgupd
             {
                 _error = "postscript failed to exit code: " + std::to_string(status);
                 return false;
+            }
+        }
+
+        for (auto const &i : std::filesystem::recursive_directory_iterator(pkg_pkg_dir))
+        {
+            if (i.is_regular_file() && i.path().filename().extension() == ".la")
+            {
+                DEBUG("removing " + i.path().string());
+                std::filesystem::remove(i);
             }
         }
 
@@ -190,7 +199,7 @@ namespace rlxos::libpkgupd
             }
 
             INFO("Package generated at " + pkgfile)
-            
+
             _archive_list.push_back(pkgfile);
         }
 

@@ -255,6 +255,14 @@ namespace rlxos::libpkgupd
                 ERROR(builder_.error());
                 return 2;
             }
+
+            if (!installer_.install(builder_.archive_list(), _get_value(ROOT_DIR, DEFAULT_ROOT_DIR), _is_flag(flag::SKIP_TRIGGER), _is_flag(flag::FORCE)))
+            {
+                ERROR(installer_.error());
+                return 2;
+            }
+
+            return 0;
         }
         break;
         case task::INFO:
@@ -340,7 +348,7 @@ namespace rlxos::libpkgupd
             for (auto const &i : _args)
             {
                 auto resolver_ = resolver(repodb_, sysdb_);
-                if (!resolver_.resolve(i))
+                if (!resolver_.resolve(i, _is_flag(flag::FORCE)))
                 {
                     ERROR(resolver_.error());
                     return 2;
@@ -350,6 +358,8 @@ namespace rlxos::libpkgupd
 
             for(auto const& i : list)
                 std::cout << "-> " << i << std::endl;
+
+            return 0;
         }
         break;
 
@@ -407,7 +417,10 @@ namespace rlxos::libpkgupd
                 ERROR(ee.what());
                 return 2;
             }
+
+            return 0;
         }
+        break;
         }
 
         return 2;

@@ -33,6 +33,13 @@ namespace rlxos::libpkgupd
               _src_dir{sdir},
               _force{force} {}
 
+        ~builder()
+        {
+            std::filesystem::remove_all(_work_dir);
+        }
+
+        GET_METHOD(std::vector<std::string>, archive_list);
+
         bool build(std::shared_ptr<recipe> const &recipe_)
         {
             _work_dir += "/" + recipe_->id();

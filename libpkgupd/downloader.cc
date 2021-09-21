@@ -123,8 +123,11 @@ namespace rlxos::libpkgupd
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 
         curl_easy_cleanup(curl);
-
-        return (resp == CURLE_OK) && http_code == 200;
+        if ((resp == CURLE_OK) && http_code == 200)
+            return true;
+        
+        _error = "invalid url " + url;
+        return false;
     }
 
     bool downloader::get(std::string const &file, std::string const &outdir)
