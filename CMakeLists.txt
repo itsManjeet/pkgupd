@@ -26,26 +26,26 @@ target_link_libraries(pkgupd libpkgupd)
 
 option(BUILD_TESTS "Build Test programs" ON)
 
-if (BUILD_TESTS)
-  enable_testing()
+# if (BUILD_TESTS)
+#   enable_testing()
   
- include(FetchContent)
-  FetchContent_Declare(
-    googletest
-    URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
-  )
-  FetchContent_MakeAvailable(googletest)
-  add_compile_definitions(TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/tests/data")
+#  include(FetchContent)
+#   FetchContent_Declare(
+#     googletest
+#     URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+#   )
+#   FetchContent_MakeAvailable(googletest)
+#   add_compile_definitions(TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}/tests/data")
 
   
-  file(GLOB UnitTest_Src "tests/*.cc")
-  add_executable(unittest ${UnitTest_Src})
-  add_dependencies(unittest libpkgupd)
-  target_link_libraries(unittest libpkgupd gtest_main)
+#   file(GLOB UnitTest_Src "tests/*.cc")
+#   add_executable(unittest ${UnitTest_Src})
+#   add_dependencies(unittest libpkgupd)
+#   target_link_libraries(unittest libpkgupd gtest_main)
 
-  include(GoogleTest)
-  gtest_discover_tests(unittest)
-endif (BUILD_TESTS)
+#   include(GoogleTest)
+#   gtest_discover_tests(unittest)
+# endif (BUILD_TESTS)
 
 install(TARGETS pkgupd
     DESTINATION bin)

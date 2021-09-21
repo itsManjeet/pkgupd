@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/pkgupd",
-            "args": ["info", "acl","sys-db=${PWD}/tests/data/sysdb/","repo-db=/media/itsmanjeet/8d2fd8b3-eed9-4b45-afc6-88ec7d5c91d1/recipes/core"],
+            "args": ["info", "/home/itsmanjeet/pkgs/bc-1.07.1.rlx"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

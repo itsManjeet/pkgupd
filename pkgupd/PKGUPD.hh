@@ -13,7 +13,7 @@ namespace rlxos::libpkgupd
     class PKGUPD
     {
     public:
-        enum class TaskType : int
+        enum class task : int
         {
             INVLAID,
             INSTALL,
@@ -25,7 +25,7 @@ namespace rlxos::libpkgupd
             INFO
         };
 
-        enum class FlagType : int
+        enum class flag : int
         {
             FORCE,
             SKIP_TRIGGER,
@@ -34,28 +34,20 @@ namespace rlxos::libpkgupd
         };
 
     private:
-        TaskType task;
-        std::map<std::string, FlagType> avaliableFlags{
-            {"force", FlagType::FORCE},
-            {"skip-triggers", FlagType::SKIP_TRIGGER},
-            {"skip-depends", FlagType::SKIP_DEPENDS},
-            {"no-install", FlagType::NO_INSTALL},
+        task _task;
+
+        std::map<std::string, flag> _aval_flags{
+            {"force", flag::FORCE},
+            {"skip-triggers", flag::SKIP_TRIGGER},
+            {"skip-depends", flag::SKIP_DEPENDS},
+            {"no-install", flag::NO_INSTALL},
         };
 
-        std::vector<FlagType> flags;
-        std::vector<std::string> arguments;
-        std::map<std::string, std::string> values;
+        std::vector<flag> _flags;
+        std::vector<std::string> _args;
+        std::map<std::string, std::string> _values;
 
-        YAML::Node mConfigurations;
-
-        std::shared_ptr<SystemDatabase> mSystemDatabase;
-        std::shared_ptr<RepositoryDatabase> mRepositoryDatabase;
-        std::shared_ptr<Downloader> mDownloader;
-        std::shared_ptr<Installer> mInstaller;
-        std::shared_ptr<Remover> mRemover;
-        std::shared_ptr<Builder> mBuilder;
-
-        std::shared_ptr<ResolveDepends> mResolveDepends;
+        YAML::Node _config;
 
         std::string SYS_DB = "sys-db";
         std::string REPO_DB = "repo-db";
@@ -63,24 +55,24 @@ namespace rlxos::libpkgupd
         std::string SRC_DIR = "src-dir";
         std::string ROOT_DIR = "root-dir";
 
-        std::string configfile = "/etc/pkgupd.yml";
+        std::string _config_file = "/etc/pkgupd.yml";
 
-        void printHelp(char const *path);
+        void _print_help(char const *path);
 
-        void parseArguments(int ac, char **av);
+        void _parse_args(int ac, char **av);
 
-        bool checkAlteast(int size);
-        bool checkSize(int size);
+        bool _need_atleast(int size);
+        bool _need_args(int size);
 
-        std::string getValue(std::string var, std::string def);
+        std::string _get_value(std::string var, std::string def);
 
-        bool isFlag(FlagType f)
+        bool _is_flag(flag f)
         {
-            return (std::find(flags.begin(), flags.end(), f) != flags.end());
+            return (std::find(_flags.begin(), _flags.end(), f) != _flags.end());
         }
 
     public:
-        int Execute(int ac, char **av);
+        int exec(int ac, char **av);
     };
 
 }

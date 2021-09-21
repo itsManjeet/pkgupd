@@ -6,9 +6,9 @@ using namespace std;
 namespace rlxos::libpkgupd
 {
 
-    bool PKGUPD::checkAlteast(int size)
+    bool PKGUPD::_need_atleast(int size)
     {
-        if (arguments.size() < size)
+        if (_args.size() < size)
         {
             ERROR("Need alteast " << std::to_string(size) << " arguments");
             return false;
@@ -17,9 +17,9 @@ namespace rlxos::libpkgupd
         return true;
     }
 
-    bool PKGUPD::checkSize(int size)
+    bool PKGUPD::_need_args(int size)
     {
-        if (arguments.size() != size)
+        if (_args.size() != size)
         {
             ERROR("Need " << size << " arguments");
             return false;
@@ -27,7 +27,7 @@ namespace rlxos::libpkgupd
 
         return true;
     }
-    void PKGUPD::printHelp(char const *path)
+    void PKGUPD::_print_help(char const *path)
     {
         cout << "Usage: " << path << " [TASK] [ARGS]... [PKGS]..\n"
              << "PKGUPD is a system package manager for rlxos.\n"
@@ -58,45 +58,45 @@ namespace rlxos::libpkgupd
              << endl;
     }
 
-    void PKGUPD::parseArguments(int ac, char **av)
+    void PKGUPD::_parse_args(int ac, char **av)
     {
 
         switch (av[1][0])
         {
         case 'i':
             !(strcmp(av[1], "in") && (strcmp(av[1], "install")))
-                ? task = TaskType::INSTALL
+                ? _task = task::INSTALL
                 : (!(strcmp(av[1], "info"))
-                       ? task = TaskType::INFO
-                       : task = TaskType::INVLAID);
+                       ? _task = task::INFO
+                       : _task = task::INVLAID);
             break;
         case 'r':
             !(strcmp(av[1], "rm") && (strcmp(av[1], "remove")))
-                ? task = TaskType::REMOVE
+                ? _task = task::REMOVE
                 : (!(strcmp(av[1], "rf") && strcmp(av[1], "refresh"))
-                       ? task = TaskType::REFRESH
-                       : task = TaskType::INVLAID);
+                       ? _task = task::REFRESH
+                       : _task = task::INVLAID);
             break;
         case 'u':
             !(strcmp(av[1], "up") && (strcmp(av[1], "update")))
-                ? task = TaskType::UPDATE
-                : task = TaskType::INVLAID;
+                ? _task = task::UPDATE
+                : _task = task::INVLAID;
             break;
 
         case 'd':
             !(strcmp(av[1], "deptest"))
-                ? task = TaskType::DEPTEST
-                : task = TaskType::INVLAID;
+                ? _task = task::DEPTEST
+                : _task = task::INVLAID;
             break;
 
         case 'c':
             !(strcmp(av[1], "co") && (strcmp(av[1], "compile")))
-                ? task = TaskType::COMPILE
-                : task = TaskType::INVLAID;
+                ? _task = task::COMPILE
+                : _task = task::INVLAID;
             break;
 
         default:
-            task = TaskType::INVLAID;
+            _task = task::INVLAID;
         }
 
         for (int i = 2; i < ac; i++)
@@ -104,43 +104,43 @@ namespace rlxos::libpkgupd
             string arg(av[i]);
 
             if (arg[0] == '-' && arg[1] == '-' && arg.length() > 2)
-                if (avaliableFlags.find(arg.substr(2, arg.length() - 2)) == avaliableFlags.end())
+                if (_aval_flags.find(arg.substr(2, arg.length() - 2)) == _aval_flags.end())
                     throw std::runtime_error("invalid flag " + arg);
                 else
-                    flags.push_back(avaliableFlags[arg.substr(2, arg.length() - 2)]);
+                    _flags.push_back(_aval_flags[arg.substr(2, arg.length() - 2)]);
             else
             {
                 size_t idx = arg.find_first_of('=');
                 if (idx == string::npos)
-                    arguments.push_back(arg);
+                    _args.push_back(arg);
                 else
-                    values[arg.substr(0, idx)] = arg.substr(idx + 1, arg.length() - (idx + 1));
+                    _values[arg.substr(0, idx)] = arg.substr(idx + 1, arg.length() - (idx + 1));
             }
         }
     }
 
-    string PKGUPD::getValue(string var, string def)
+    string PKGUPD::_get_value(string var, string def)
     {
-        if (values.find(var) != values.end())
-            return values[var];
+        if (_values.find(var) != _values.end())
+            return _values[var];
 
-        if (mConfigurations[var])
-            return mConfigurations[var].as<string>();
+        if (_config[var])
+            return _config[var].as<std::string>();
 
         return def;
     }
 
-    int PKGUPD::Execute(int ac, char **av)
+    int PKGUPD::exec(int ac, char **av)
     {
         if (ac == 1)
         {
-            printHelp(av[0]);
+            _print_help(av[0]);
             return 0;
         }
 
         try
         {
-            parseArguments(ac, av);
+            _parse_args(ac, av);
         }
         catch (std::exception const &ee)
         {
@@ -148,15 +148,15 @@ namespace rlxos::libpkgupd
             return 1;
         }
 
-        if (values.find("config") != values.end())
+        if (_values.find("config") != _values.end())
         {
-            if (!std::filesystem::exists(values["config"]))
+            if (!std::filesystem::exists(_values["config"]))
             {
-                ERROR("Error! provided configuration file '" + values["config"] + "' not exist");
+                ERROR("Error! provided configuration file '" + _values["config"] + "' not exist");
                 return 1;
             }
 
-            configfile = values["config"];
+            _config_file = _values["config"];
         }
         else
         {
@@ -164,18 +164,18 @@ namespace rlxos::libpkgupd
             {
                 if (std::filesystem::exists(i))
                 {
-                    configfile = i;
+                    _config_file = i;
                     break;
                 }
             }
         }
 
-        if (std::filesystem::exists(configfile))
-            mConfigurations = YAML::LoadFile(configfile);
+        if (std::filesystem::exists(_config_file))
+            _config = YAML::LoadFile(_config_file);
 
-        if (mConfigurations["environ"])
+        if (_config["environ"])
         {
-            for (auto const &e : mConfigurations["environ"])
+            for (auto const &e : _config["environ"])
             {
                 DEBUG("exporting " << e.as<string>());
                 auto env = e.as<string>();
@@ -184,184 +184,232 @@ namespace rlxos::libpkgupd
             }
         }
 
-        mSystemDatabase = std::make_shared<SystemDatabase>(getValue(SYS_DB, DEFAULT_DATA_DIR));
-        mRepositoryDatabase = std::make_shared<RepositoryDatabase>(getValue(REPO_DB, DEFAULT_REPO_DIR));
+        auto sysdb_ = sysdb(_get_value(SYS_DB, DEFAULT_DATA_DIR));
+        auto repodb_ = repodb(_get_value(REPO_DB, DEFAULT_REPO_DIR));
 
-        mResolveDepends = std::make_shared<ResolveDepends>(mRepositoryDatabase);
-        mResolveDepends->SetSkipper(
-            [&](std::string const &pkgid) -> bool
-            {
-                return ((*this->mSystemDatabase)[pkgid] != nullptr);
-            });
+        auto downloader_ = downloader();
 
-        mDownloader = std::make_shared<Downloader>();
-        mDownloader->AddURL(getValue("download-url", DEFAULT_URL));
-        mDownloader->AddURL(getValue("secondary-download-url", DEFAULT_SECONDARY_URL));
+        downloader_.urls({DEFAULT_URL, DEFAULT_SECONDARY_URL});
 
-        mBuilder = std::make_shared<Builder>();
-        mBuilder->SetPackageDir(getValue(PKG_DIR, DEFAULT_PKGS_DIR));
-        mBuilder->SetWorkDir(getValue("work-dir", "/tmp"));
-        mBuilder->SetSourceDir(getValue(SRC_DIR, DEFAULT_SRC_DIR));
-        mBuilder->SetForceFlag(isFlag(FlagType::FORCE));
+        auto installer_ = installer(sysdb_, repodb_, downloader_, _get_value(PKG_DIR, DEFAULT_PKGS_DIR));
 
-        mRemover = std::make_shared<Remover>(getValue(ROOT_DIR, DEFAULT_ROOT_DIR));
-        mRemover->SetSystemDatabase(mSystemDatabase);
-
-        mInstaller = std::make_shared<Installer>();
-        mInstaller->SetRepositoryDatabase(mRepositoryDatabase);
-        mInstaller->SetSystemDatabase(mSystemDatabase);
-        mInstaller->SetDownloader(mDownloader);
-        mInstaller->SetSkipTriggers(isFlag(FlagType::SKIP_TRIGGER));
-        mInstaller->SetForced(isFlag(FlagType::FORCE));
-
-        mInstaller->SetPackagesDir(getValue(PKG_DIR, DEFAULT_PKGS_DIR));
-
-        switch (task)
+        switch (_task)
         {
-        case TaskType::INVLAID:
-            ERROR("Invalid task: " << av[1]);
-            printHelp(av[0]);
-            return 1;
-
-        case TaskType::COMPILE:
-            if (!checkAlteast(1))
+        case task::INSTALL:
+        {
+            if (!_need_atleast(1))
                 return 1;
 
+            std::vector<std::string> to_install;
+            if (!_is_flag(flag::SKIP_DEPENDS))
             {
-                std::vector<std::shared_ptr<RecipePackageInfo>> packagesList;
-                for (auto const &i : arguments)
+                PROCESS("resolving dependencies")
+                for (auto const &i : _args)
                 {
-                    auto pkginfo = (*mRepositoryDatabase)[i];
-                    if (pkginfo == nullptr)
+                    auto resolver_ = resolver(repodb_, sysdb_);
+                    if (!resolver_.resolve(i))
                     {
-                        ERROR(mRepositoryDatabase->Error());
-                        return 1;
+                        ERROR(resolver_.error());
+                        return 2;
                     }
-
-                    packagesList.push_back(std::dynamic_pointer_cast<RecipePackageInfo>(pkginfo));
+                    to_install.insert(to_install.end(), resolver_.data().begin(), resolver_.data().end());
                 }
-
-                mBuilder->SetPackages(packagesList);
-
-                if (!mBuilder->Build())
-                {
-                    ERROR("[COMPILATION] " << mBuilder->Error());
-                    return 1;
-                }
-
-                if (!isFlag(FlagType::NO_INSTALL))
-                {
-                    mInstaller->SetPackages(mBuilder->PackagesList());
-                    if (!mInstaller->Install(getValue(ROOT_DIR, DEFAULT_ROOT_DIR)))
-                    {
-                        ERROR("[INSTALLATION] " << mInstaller->Error());
-                        return 1;
-                    }
-                }
-
-                return 0;
             }
-            break;
-
-        case TaskType::INSTALL:
-            if (!checkAlteast(1))
-                return 1;
+            else
             {
-                std::vector<std::string> pkgs;
-                if (!isFlag(FlagType::SKIP_DEPENDS))
+                to_install = _args;
+            }
+
+            if (!installer_.install(to_install, _get_value(ROOT_DIR, DEFAULT_ROOT_DIR), _is_flag(flag::SKIP_TRIGGER), _is_flag(flag::FORCE)))
+            {
+                ERROR(installer_.error());
+                return 2;
+            }
+
+            return 0;
+        }
+        break;
+        case task::COMPILE:
+        {
+            if (!_need_args(1))
+                return 1;
+
+            std::shared_ptr<recipe> recipe_;
+            if (std::filesystem::exists(_args[0]))
+                recipe_ = recipe::from_filepath(_args[0]);
+            else
+            {
+                auto pkg = repodb_[_args[0]];
+                if (pkg == nullptr)
                 {
-                    PROCESS("resolving dependencies");
-
-                    for (auto const &i : arguments)
-                    {
-                        if (!mResolveDepends->Resolve(i))
-                        {
-                            ERROR(mResolveDepends->Error())
-                            return 2;
-                        }
-                    }
-
-                    auto depends = mResolveDepends->GetData();
-                    if (depends.size())
-                    {
-                        INFO("Required Dependencies")
-                        for (auto const &i : depends)
-                            std::cout << i << " ";
-
-                        std::cout << std::endl;
-                    }
-                }
-
-                mInstaller->SetPackages(arguments);
-                if (!mInstaller->Install(getValue(ROOT_DIR, DEFAULT_ROOT_DIR)))
-                {
-                    ERROR(mInstaller->Error());
+                    ERROR(repodb_.error());
                     return 2;
                 }
 
+                recipe_ = std::dynamic_pointer_cast<recipe::package>(pkg)->parent();
+            }
+            auto builder_ = builder(_get_value("work-dir", "/tmp"), _get_value(PKG_DIR, DEFAULT_PKGS_DIR), _get_value(SRC_DIR, DEFAULT_SRC_DIR), _is_flag(flag::FORCE));
+
+            if (!builder_.build(recipe_))
+            {
+                ERROR(builder_.error());
+                return 2;
+            }
+        }
+        break;
+        case task::INFO:
+        {
+            _need_args(1);
+
+            std::shared_ptr<pkginfo> pkginfo_;
+            pkginfo_ = sysdb_[_args[0]];
+            if (pkginfo_ != nullptr)
+            {
+                auto sys_pkginfo = std::dynamic_pointer_cast<sysdb::package>(pkginfo_);
+                cout << "id            : " << sys_pkginfo->id() << "\n"
+                     << "version       : " << sys_pkginfo->version() << "\n"
+                     << "about         : " << sys_pkginfo->about() << "\n"
+                     << "installed on  : " << sys_pkginfo->installed_on() << "\n"
+                     << "files         : " << sys_pkginfo->files().size() << endl;
+
                 return 0;
             }
-            break;
 
-        case TaskType::REMOVE:
-            if (!checkAlteast(1))
-                return 1;
+            pkginfo_ = repodb_[_args[0]];
+            if (pkginfo_ == nullptr)
             {
-                mRemover->SkipTriggers(isFlag(FlagType::SKIP_TRIGGER));
-                if (!mRemover->Remove(arguments))
+                if (std::filesystem::exists(_args[0]))
                 {
-                    ERROR(mRemover->Error());
+                    auto archive_ = archive(_args[0]);
+                    pkginfo_ = archive_.info();
+                    if (pkginfo_ == nullptr)
+                    {
+                        ERROR(archive_.error());
+                        return 2;
+                    }
+
+                    auto archive_pkginfo = std::dynamic_pointer_cast<archive::package>(pkginfo_);
+                    cout << "id            : " << archive_pkginfo->id() << "\n"
+                         << "version       : " << archive_pkginfo->version() << "\n"
+                         << "about         : " << archive_pkginfo->about() << endl;
+
+                    return 0;
+                }
+                else
+                {
+                    ERROR(repodb_.error());
                     return 2;
                 }
-
-                return 0;
             }
-            break;
 
-        case TaskType::DEPTEST:
-            if (!checkSize(1))
-                return 1;
+            auto repo_pkginfo = std::dynamic_pointer_cast<recipe::package>(pkginfo_);
+            cout << "id            : " << repo_pkginfo->id() << "\n"
+                 << "version       : " << repo_pkginfo->version() << "\n"
+                 << "about         : " << repo_pkginfo->about() << "\n"
+                 << "provided by   : " << repo_pkginfo->parent()->id() << endl;
+
+            return 0;
+        }
+        break;
+
+        case task::REMOVE:
+        {
+            auto remover_ = remover(sysdb_, _get_value(ROOT_DIR, DEFAULT_ROOT_DIR));
+            std::vector<std::string> _to_remove;
+            for (auto const &i : _args)
             {
-                PROCESS("calculating dependencies for " << arguments[0]);
-                if (!mResolveDepends->Resolve(arguments[0]))
-                {
-                    ERROR(mResolveDepends->Error())
-                    return 1;
-                }
-
-                for (auto const &i : mResolveDepends->GetData())
-                {
-                    cout << " -> " << i << std::endl;
-                }
-                return 0;
+                if (sysdb_[i] != nullptr)
+                    _to_remove.push_back(i);
+                else
+                    INFO(i << " is not already installed");
             }
-            break;
-
-        case TaskType::INFO:
-            if (!checkSize(1))
-                return 1;
-
+            if (!remover_.remove(_to_remove, _is_flag(flag::SKIP_TRIGGER)))
             {
-                auto packageInfo = (*mSystemDatabase)[arguments[0]];
-                if (packageInfo == nullptr)
+                ERROR(remover_.error());
+                return 2;
+            }
+
+            return 0;
+        }
+        break;
+
+        case task::DEPTEST:
+        {
+            std::vector<std::string> list;
+            PROCESS("checking dependencies")
+            for (auto const &i : _args)
+            {
+                auto resolver_ = resolver(repodb_, sysdb_);
+                if (!resolver_.resolve(i))
                 {
-                    packageInfo = (*mRepositoryDatabase)[arguments[0]];
-                    if (packageInfo == nullptr)
+                    ERROR(resolver_.error());
+                    return 2;
+                }
+                list.insert(list.end(), resolver_.data().begin(), resolver_.data().end());
+            }
+
+            for(auto const& i : list)
+                std::cout << "-> " << i << std::endl;
+        }
+        break;
+
+        case task::REFRESH:
+        {
+            PROCESS("refreshing repository");
+            if (!downloader_.get("recipe", "/tmp/.rcp"))
+            {
+                ERROR(downloader_.error());
+                return 2;
+            }
+
+            try
+            {
+                auto node = YAML::LoadFile("/tmp/.rcp");
+                std::error_code ee;
+                if (std::filesystem::exists(repodb_.data_dir()))
+                {
+                    std::filesystem::remove_all(repodb_.data_dir(), ee);
+                    if (ee)
                     {
-                        ERROR(mRepositoryDatabase->Error())
+                        ERROR(ee.message());
+                        return 2;
+                    }
+
+                    std::filesystem::create_directories(repodb_.data_dir(), ee);
+                    if (ee)
+                    {
+                        ERROR(ee.message());
                         return 2;
                     }
                 }
 
-                cout << " ID            :    " << packageInfo->ID() << std::endl
-                     << " Version       :    " << packageInfo->Version() << std::endl
-                     << " About         :    " << packageInfo->About() << std::endl;
+                for (auto const &i : node["recipes"])
+                {
 
-                return 0;
+                    if (i["id"])
+                    {
+                        std::string id = i["id"].as<string>();
+                        DEBUG("found " << id);
+                        std::ofstream file(repodb_.data_dir() + "/" + id + ".yml");
+                        if (!file.is_open())
+                        {
+                            ERROR("failed to open file in " + repodb_.data_dir() + " to write recipe file for " + id);
+                            return 2;
+                        }
+
+                        file << i << std::endl;
+                        file.close();
+                    }
+                }
             }
-            break;
+            catch (YAML::Exception const &ee)
+            {
+                ERROR(ee.what());
+                return 2;
+            }
+        }
         }
 
-        return 0;
+        return 2;
     }
 }
