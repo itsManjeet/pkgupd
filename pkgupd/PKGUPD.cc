@@ -343,6 +343,8 @@ namespace rlxos::libpkgupd
 
         case task::DEPTEST:
         {
+            _need_atleast(1);
+
             std::vector<std::string> list;
             PROCESS("checking dependencies")
             for (auto const &i : _args)
@@ -353,11 +355,16 @@ namespace rlxos::libpkgupd
                     ERROR(resolver_.error());
                     return 2;
                 }
-                list.insert(list.end(), resolver_.data().begin(), resolver_.data().end());
+
+                // TODO do it better,
+                // Mostprobably need to pop the last element from resolver_.data
+                for (auto const &j : resolver_.data())
+                    if (std::find(list.begin(), list.end(), j) == list.end())
+                        list.push_back(j);
             }
 
-            for(auto const& i : list)
-                std::cout << "-> " << i << std::endl;
+            for (auto const &i : list)
+                std::cout << i << std::endl;
 
             return 0;
         }

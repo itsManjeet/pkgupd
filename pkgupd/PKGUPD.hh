@@ -31,6 +31,7 @@ namespace rlxos::libpkgupd
             SKIP_TRIGGER,
             SKIP_DEPENDS,
             NO_INSTALL,
+            REPOSITORY,
         };
 
     private:
@@ -41,6 +42,7 @@ namespace rlxos::libpkgupd
             {"skip-triggers", flag::SKIP_TRIGGER},
             {"skip-depends", flag::SKIP_DEPENDS},
             {"no-install", flag::NO_INSTALL},
+            {"repository", flag::REPOSITORY},
         };
 
         std::vector<flag> _flags;
