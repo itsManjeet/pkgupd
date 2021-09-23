@@ -25,19 +25,19 @@ namespace rlxos::libpkgupd
 
         // create the "meter"
         int ii = 0;
-        printf("%3.0f%% [", fractiondownloaded * 100);
+        printf("%3.0f%% \033[1m[\033[0m", fractiondownloaded * 100);
         // part  that's full already
         for (; ii < dotz; ii++)
         {
-            printf("=");
+            printf("\033[32;1m■\033[0m");
         }
         // remaining part (spaces)
         for (; ii < totaldotz; ii++)
         {
-            printf(" ");
+            printf("\033[1m \033[0m");
         }
         // and back to line begin - do not forget the fflush to avoid output buffering problems!
-        printf("]\r");
+        printf("\033[1m]\033[0m\r");
         fflush(stdout);
         // if you don't return 0, the transfer will be aborted - see the documentation
         return 0;
@@ -70,8 +70,11 @@ namespace rlxos::libpkgupd
         curl_easy_setopt(curl, CURLOPT_WRITEDATA, fptr);
         curl_easy_setopt(curl, CURLOPT_VERBOSE, (getenv("CURL_DEBUG") == nullptr ? 0L : 1L));
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-        curl_easy_setopt(curl, CURLOPT_NOPROGRESS, false);
-        curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progress_func);
+        if (getenv("PKGUPD_NO_PROGRESS") == nullptr)
+        {
+            curl_easy_setopt(curl, CURLOPT_NOPROGRESS, false);
+            curl_easy_setopt(curl, CURLOPT_PROGRESSFUNCTION, progress_func);
+        }
         curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1000);
         curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 10);
 
@@ -125,7 +128,7 @@ namespace rlxos::libpkgupd
         curl_easy_cleanup(curl);
         if ((resp == CURLE_OK) && http_code == 200)
             return true;
-        
+
         _error = "invalid url " + url;
         return false;
     }
