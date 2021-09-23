@@ -133,6 +133,11 @@ namespace rlxos::libpkgupd
 
             std::vector<std::string> environ();
 
+            void prepand_environ(std::string const &env)
+            {
+                _environ.insert(_environ.begin(), env);
+            }
+
             void append_environ(std::string const &env)
             {
                 _environ.push_back(env);

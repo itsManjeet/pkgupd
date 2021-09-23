@@ -134,8 +134,8 @@ namespace rlxos::libpkgupd
         }
 
         // Inserting required environment variables
-        package->append_environ("pkgupd_srcdir=" + pkg_src_dir);
-        package->append_environ("pkgupd_pkgdir=" + pkg_pkg_dir);
+        package->prepand_environ("pkgupd_srcdir=" + pkg_src_dir);
+        package->prepand_environ("pkgupd_pkgdir=" + pkg_pkg_dir);
 
         if (package->prescript().size())
         {
