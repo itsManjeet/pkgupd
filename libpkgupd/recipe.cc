@@ -46,7 +46,7 @@ namespace rlxos::libpkgupd
         OPTIONAL_VALUE(string, pack, "rlx");
 
         READ_LIST(string, skipstrip);
-        OPTIONAL_VALUE(bool, strip, false);
+        OPTIONAL_VALUE(bool, strip, true);
 
         READ_OBJECT_LIST(flag, flags);
     }
