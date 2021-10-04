@@ -1,34 +1,31 @@
 #ifndef _LIBPKGUPD_RESOLVEDEPENDS_HH_
 #define _LIBPKGUPD_RESOLVEDEPENDS_HH_
 
-#include "defines.hh"
-#include "sysdb.hh"
-#include "repodb.hh"
-
 #include <functional>
 
-namespace rlxos::libpkgupd
-{
-    class resolver : public object
-    {
-    private:
-        repodb &_repodb;
-        sysdb &_sysdb;
-        std::vector<std::string> _data, _visited;
+#include "defines.hh"
+#include "repodb.hh"
+#include "sysdb.hh"
 
-        bool _to_skip(std::string const &pkgid);
+namespace rlxos::libpkgupd {
+class resolver : public object {
+   private:
+    repodb &_repodb;
+    sysdb &_sysdb;
+    std::vector<std::string> _data, _visited;
 
-    public:
-        resolver(repodb &rp, sysdb &sd)
-            : _repodb{rp},
-              _sysdb{sd}
-        {
-        }
+    bool _to_skip(std::string const &pkgid);
 
-        bool resolve(std::string const &pkgid, bool all = false);
+   public:
+    resolver(repodb &rp, sysdb &sd)
+        : _repodb{rp},
+          _sysdb{sd} {
+    }
 
-        GET_METHOD(std::vector<std::string>, data);
-    };
-}
+    bool resolve(std::string const &pkgid, bool all = false);
+
+    GET_METHOD(std::vector<std::string>, data);
+};
+}  // namespace rlxos::libpkgupd
 
 #endif

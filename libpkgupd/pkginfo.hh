@@ -3,22 +3,19 @@
 
 #include "defines.hh"
 
-namespace rlxos::libpkgupd
-{
-    class pkginfo
-    {
-    public:
-        virtual std::string id() const = 0;
-        virtual std::string version() const = 0;
-        virtual std::string about() const = 0;
+namespace rlxos::libpkgupd {
+class pkginfo {
+   public:
+    virtual std::string id() const = 0;
+    virtual std::string version() const = 0;
+    virtual std::string about() const = 0;
 
-        virtual std::string packagefile(std::string ext = DEFAULT_EXTENSION) const
-        {
-            return id() + "-" + version() + "." + ext;
-        }
+    virtual std::string packagefile(std::string ext = DEFAULT_EXTENSION) const {
+        return id() + "-" + version() + "." + ext;
+    }
 
-        virtual std::vector<std::string> depends(bool) const = 0;
-    };
-}
+    virtual std::vector<std::string> depends(bool) const = 0;
+};
+}  // namespace rlxos::libpkgupd
 
 #endif

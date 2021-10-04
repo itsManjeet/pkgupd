@@ -1,40 +1,36 @@
 #ifndef _LIBPKGUPD_DEFINES_HH_
 #define _LIBPKGUPD_DEFINES_HH_
 
+#include <assert.h>
+
+#include <filesystem>
+#include <memory>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <memory>
-#include <assert.h>
-#include <stdexcept>
-#include <filesystem>
 
 #include "colors.hh"
 
-namespace rlxos::libpkgupd
-{
-    class object
-    {
-    protected:
-        std::string _error;
+namespace rlxos::libpkgupd {
+class object {
+   protected:
+    std::string _error;
 
-    public:
-        std::string const &error() const
-        {
-            return _error;
-        }
-    };
+   public:
+    std::string const &error() const {
+        return _error;
+    }
+};
 
-}
+}  // namespace rlxos::libpkgupd
 
 #define GET_METHOD(type, var) \
-    type const &var() const   \
-    {                         \
+    type const &var() const { \
         return _##var;        \
     }
 
 #define SET_METHOD(type, val) \
-    void val(type val)        \
-    {                         \
+    void val(type val) {      \
         _##val = val;         \
     }
 
