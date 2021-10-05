@@ -14,6 +14,8 @@ archive::package::package(YAML::Node const &data, std::string const &file) {
 
     READ_OBJECT_LIST(pkginfo::user, users);
     READ_OBJECT_LIST(pkginfo::group, groups);
+
+    OPTIONAL_VALUE(std::string, install_script, "");
 }
 
 std::tuple<int, std::string> archive::getdata(std::string const &filepath) {
@@ -105,6 +107,14 @@ bool archive::compress(std::string const &srcdir, std::shared_ptr<pkginfo> const
         for (auto const &i : info->groups()) {
             i->print(fileptr);
         }
+    }
+
+    if (info->install_script().size()) {
+        fileptr << "install_script: | " << std::endl;
+        std::stringstream ss(info->install_script());
+        std::string line;
+        while (std::getline(ss, line, '\n'))
+            fileptr << "  " << line;
     }
 
     fileptr.close();

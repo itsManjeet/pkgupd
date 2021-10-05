@@ -96,6 +96,7 @@ class pkginfo {
    protected:
     std::vector<std::shared_ptr<pkginfo::user>> _users;
     std::vector<std::shared_ptr<pkginfo::group>> _groups;
+    std::string _install_script;
 
    public:
     virtual std::string id() const = 0;
@@ -110,6 +111,8 @@ class pkginfo {
     }
 
     virtual std::vector<std::string> depends(bool) const = 0;
+
+    std::string const &install_script() const { return _install_script; };
 };
 }  // namespace rlxos::libpkgupd
 

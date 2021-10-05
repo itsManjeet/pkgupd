@@ -20,6 +20,8 @@ sysdb::package::package(YAML::Node const &data, std::string const &file) {
 
     READ_OBJECT_LIST(pkginfo::user, users);
     READ_OBJECT_LIST(pkginfo::group, groups);
+
+    OPTIONAL_VALUE(std::string, install_script, "");
 }
 
 std::shared_ptr<pkginfo> sysdb::operator[](std::string const &pkgid) {
@@ -121,6 +123,14 @@ bool sysdb::add(std::shared_ptr<pkginfo> const &pkginfo, std::vector<std::string
         for (auto const &i : pkginfo->groups()) {
             i->print(fileptr);
         }
+    }
+
+    if (pkginfo->install_script().size()) {
+        fileptr << "install_script: | " << std::endl;
+        std::stringstream ss(pkginfo->install_script());
+        std::string line;
+        while (std::getline(ss, line, '\n'))
+            fileptr << "  " << line;
     }
 
     std::time_t t = std::time(0);

@@ -29,8 +29,6 @@ class archive : public object {
         std::string version() const { return _version; }
         std::string about() const { return _about; }
         std::vector<std::string> depends(bool) const { return _depends; }
-
-        std::string const &script() const { return _script; }
     };
 
    private:
