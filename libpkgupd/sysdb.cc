@@ -130,7 +130,7 @@ bool sysdb::add(std::shared_ptr<pkginfo> const &pkginfo, std::vector<std::string
         std::stringstream ss(pkginfo->install_script());
         std::string line;
         while (std::getline(ss, line, '\n'))
-            fileptr << "  " << line;
+            fileptr << "  " << line << std::endl;
     }
 
     std::time_t t = std::time(0);

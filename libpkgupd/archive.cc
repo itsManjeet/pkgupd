@@ -114,7 +114,7 @@ bool archive::compress(std::string const &srcdir, std::shared_ptr<pkginfo> const
         std::stringstream ss(info->install_script());
         std::string line;
         while (std::getline(ss, line, '\n'))
-            fileptr << "  " << line;
+            fileptr << "  " << line << std::endl;
     }
 
     fileptr.close();
