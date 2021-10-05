@@ -202,6 +202,28 @@ std::vector<triggerer::type> triggerer::_get(std::vector<std::vector<std::string
     return requiredTriggers;
 }
 
+bool triggerer::trigger(std::vector<std::shared_ptr<pkginfo>> const &pkgs) {
+    bool status = true;
+    for (auto const &i : pkgs) {
+        for (auto const &grp : i->groups()) {
+            PROCESS("creating group " + grp->name());
+            if (!grp->create()) {
+                ERROR("failed to create " + grp->name() + " group");
+                status = false;
+            }
+        }
+        for (auto const &usr : i->users()) {
+            PROCESS("creating user " + usr->name());
+            if (!usr->create()) {
+                ERROR("failed to create " + usr->name() + " user");
+                status = false;
+            }
+        }
+    }
+
+    return status;
+}
+
 bool triggerer::trigger(std::vector<std::vector<std::string>> const &fileslist) {
     if (fileslist.size() == 0)
         return true;

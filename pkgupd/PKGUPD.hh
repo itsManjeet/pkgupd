@@ -21,7 +21,8 @@ class PKGUPD {
         REFRESH,
         UPDATE,
         DEPTEST,
-        INFO
+        INFO,
+        TRIGGERS,
     };
 
     enum class flag : int {

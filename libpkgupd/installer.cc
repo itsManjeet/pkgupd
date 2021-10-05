@@ -77,6 +77,16 @@ bool installer::_install(std::vector<std::string> const &pkgs,
         }
     }
 
+    if (skip_triggers) {
+        INFO("skipped creating users account")
+    } else {
+        auto triggerer_ = triggerer();
+        if (!triggerer_.trigger(pkginfo_list)) {
+            _error = triggerer_.error();
+            return false;
+        }
+    }
+
     return true;
 }
 bool installer::install(std::vector<std::string> const &pkgs,

@@ -17,6 +17,9 @@ sysdb::package::package(YAML::Node const &data, std::string const &file) {
 
     READ_LIST(std::string, depends);
     READ_LIST(std::string, files);
+
+    READ_OBJECT_LIST(pkginfo::user, users);
+    READ_OBJECT_LIST(pkginfo::group, groups);
 }
 
 std::shared_ptr<pkginfo> sysdb::operator[](std::string const &pkgid) {
@@ -62,6 +65,21 @@ bool sysdb::remove(std::shared_ptr<pkginfo> const &pkginfo) {
     return true;
 }
 
+std::vector<std::shared_ptr<pkginfo>> sysdb::all() {
+    if (!std::filesystem::exists(_data_dir)) {
+        _error = "no packages database found";
+        return {};
+    }
+
+    std::vector<std::shared_ptr<pkginfo>> pkgs;
+    for (auto const &i : std::filesystem::directory_iterator(_data_dir)) {
+        YAML::Node data = YAML::LoadFile(i.path().string());
+        pkgs.push_back(std::make_shared<sysdb::package>(data, i.path().string()));
+    }
+
+    return pkgs;
+}
+
 bool sysdb::add(std::shared_ptr<pkginfo> const &pkginfo, std::vector<std::string> const &files, std::string root, bool toupdate) {
     try {
         if (is_installed(pkginfo) && !outdated(pkginfo) && !toupdate) {
@@ -89,6 +107,20 @@ bool sysdb::add(std::shared_ptr<pkginfo> const &pkginfo, std::vector<std::string
         fileptr << "depends:" << std::endl;
         for (auto const &i : pkginfo->depends(false))
             fileptr << " - " << i << std::endl;
+    }
+
+    if (pkginfo->users().size()) {
+        fileptr << "users: " << std::endl;
+        for (auto const &i : pkginfo->users()) {
+            i->print(fileptr);
+        }
+    }
+
+    if (pkginfo->groups().size()) {
+        fileptr << "groups: " << std::endl;
+        for (auto const &i : pkginfo->groups()) {
+            i->print(fileptr);
+        }
     }
 
     std::time_t t = std::time(0);

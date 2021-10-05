@@ -12,51 +12,6 @@ namespace rlxos::libpkgupd {
 
 class recipe : public std::enable_shared_from_this<recipe> {
    public:
-    class user {
-       private:
-        unsigned int _id;
-        std::string _name, _about, _dir, _shell, _group;
-
-       public:
-        user(unsigned int id,
-             std::string const &name,
-             std::string const &about,
-             std::string const &dir,
-             std::string const &shell,
-             std::string const &group)
-            : _id(id),
-              _name(name),
-              _about(about),
-              _dir(dir),
-              _shell(shell),
-              _group(group) {
-        }
-
-        user(YAML::Node const &data, std::string const &file);
-
-        bool exists() const;
-
-        bool create() const;
-    };
-
-    class group {
-       private:
-        unsigned int _id;
-        std::string _name;
-
-       public:
-        group(unsigned int id,
-              std::string const &name)
-            : _id(id),
-              _name(name) {}
-
-        group(YAML::Node const &data, std::string const &file);
-
-        bool exists() const;
-
-        bool create() const;
-    };
-
     class package : public pkginfo {
        public:
         class flag {
@@ -151,8 +106,8 @@ class recipe : public std::enable_shared_from_this<recipe> {
 
     std::vector<std::string> _environ;
 
-    std::vector<std::shared_ptr<user>> _users;
-    std::vector<std::shared_ptr<group>> _groups;
+    std::vector<std::shared_ptr<pkginfo::user>> _users;
+    std::vector<std::shared_ptr<pkginfo::group>> _groups;
 
     std::vector<std::shared_ptr<package>> _packages;
 

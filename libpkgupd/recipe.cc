@@ -22,8 +22,8 @@ recipe::recipe(YAML::Node const &data, std::string const &file) {
 
     READ_COMMON();
 
-    READ_OBJECT_LIST(user, users);
-    READ_OBJECT_LIST(group, groups);
+    READ_OBJECT_LIST(pkginfo::user, users);
+    READ_OBJECT_LIST(pkginfo::group, groups);
 
     OPTIONAL_VALUE(bool, split, false);
 
@@ -60,19 +60,6 @@ recipe::package::flag::flag(YAML::Node const &data, std::string const &file) {
     }
 }
 
-recipe::user::user(YAML::Node const &data, std::string const &file) {
-    READ_VALUE(unsigned int, id);
-    READ_VALUE(string, name);
-    READ_VALUE(string, about);
-    READ_VALUE(string, group);
-    READ_VALUE(string, dir);
-    READ_VALUE(string, shell);
-}
-
-recipe::group::group(YAML::Node const &data, std::string const &file) {
-    READ_VALUE(unsigned int, id);
-    READ_VALUE(string, name);
-}
 
 std::string recipe::package::id() const {
     if (_id == "lib" ||

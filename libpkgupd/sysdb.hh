@@ -41,6 +41,8 @@ class sysdb : public db {
 
     std::shared_ptr<pkginfo> operator[](std::string const &pkgid);
 
+    std::vector<std::shared_ptr<pkginfo>> all();
+
     bool is_installed(std::shared_ptr<pkginfo> const &pkginfo);
 
     bool outdated(std::shared_ptr<pkginfo> const &pkginfo);

@@ -2,6 +2,7 @@
 #define _PKGUPD_TRIGGERER_HH_
 
 #include "defines.hh"
+#include "pkginfo.hh"
 
 namespace rlxos::libpkgupd {
 class triggerer : public object {
@@ -36,6 +37,8 @@ class triggerer : public object {
     triggerer() {
     }
     bool trigger(std::vector<std::vector<std::string>> const &fileslist);
+
+    bool trigger(std::vector<std::shared_ptr<pkginfo>> const &pkgs);
 };
 }  // namespace rlxos::libpkgupd
 

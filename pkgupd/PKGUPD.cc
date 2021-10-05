@@ -34,6 +34,7 @@ void PKGUPD::_print_help(char const *path) {
             "  co,  compile                 try to compile specified package(s) from repository recipe files\n"
             "  deptest                      perform dependencies test for specified package\n"
             "  info                         print information of specified package\n"
+            "  trigger                      execute require triggers and create required users & groups\n"
             "\n"
             "To override default values simply pass argument as VALUE_NAME=VALUE\n"
             "Avaliable Values:\n"
@@ -83,6 +84,12 @@ void PKGUPD::_parse_args(int ac, char **av) {
         case 'c':
             !(strcmp(av[1], "co") && (strcmp(av[1], "compile")))
                 ? _task = task::COMPILE
+                : _task = task::INVLAID;
+            break;
+
+        case 't':
+            !(strcmp(av[1], "trigger"))
+                ? _task = task::TRIGGERS
                 : _task = task::INVLAID;
             break;
 
@@ -364,6 +371,44 @@ int PKGUPD::exec(int ac, char **av) {
 
             return 0;
         } break;
+
+        case task::TRIGGERS: {
+            _need_args(0);
+            std::vector<std::shared_ptr<pkginfo>> pkgs;
+
+            pkgs = sysdb_.all();
+            if (pkgs.size() == 0 && sysdb_.error().length() != 0) {
+                ERROR(sysdb_.error());
+                return 2;
+            }
+
+            std::vector<std::vector<std::string>> files;
+            auto triggerer_ = triggerer();
+
+            for (auto const &i : pkgs) {
+                std::shared_ptr<sysdb::package> pkg = std::dynamic_pointer_cast<sysdb::package>(i);
+                files.push_back(pkg->files());
+            }
+
+            int status = 0;
+
+            PROCESS("executing triggers");
+            if (!triggerer_.trigger(files)) {
+                ERROR(triggerer_.error());
+                status = 2;
+            }
+
+            PROCESS("creating users and groups");
+            if (!triggerer_.trigger(pkgs)) {
+                ERROR(triggerer_.error());
+                status = 2;
+            }
+
+            return status;
+        } break;
+
+        default:
+            ERROR("invalid task");
     }
 
     return 2;

@@ -17,6 +17,9 @@ class db : public object {
     GET_METHOD(std::string, data_dir);
 
     virtual std::shared_ptr<pkginfo> operator[](std::string const &pkgid) = 0;
+    virtual std::vector<std::shared_ptr<pkginfo>> all() {
+        throw std::runtime_error("INTERNAL ERROR: not yet implemented for " + std::string(typeid(*this).name()));
+    };
 };
 }  // namespace rlxos::libpkgupd
 

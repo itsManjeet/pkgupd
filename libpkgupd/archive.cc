@@ -11,6 +11,9 @@ archive::package::package(YAML::Node const &data, std::string const &file) {
     READ_VALUE(std::string, version);
     READ_VALUE(std::string, about);
     READ_LIST(std::string, depends);
+
+    READ_OBJECT_LIST(pkginfo::user, users);
+    READ_OBJECT_LIST(pkginfo::group, groups);
 }
 
 std::tuple<int, std::string> archive::getdata(std::string const &filepath) {
@@ -88,6 +91,20 @@ bool archive::compress(std::string const &srcdir, std::shared_ptr<pkginfo> const
                 << "\n";
         for (auto const &i : info->depends(false))
             fileptr << " - " << i << "\n";
+    }
+
+    if (info->users().size()) {
+        fileptr << "users: " << std::endl;
+        for (auto const &i : info->users()) {
+            i->print(fileptr);
+        }
+    }
+
+    if (info->groups().size()) {
+        fileptr << "groups: " << std::endl;
+        for (auto const &i : info->groups()) {
+            i->print(fileptr);
+        }
     }
 
     fileptr.close();
