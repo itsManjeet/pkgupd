@@ -4,6 +4,7 @@
 #include <iostream>
 
 #include "archive.hh"
+#include "exec.hh"
 #include "triggerer.hh"
 
 namespace rlxos::libpkgupd {
@@ -52,6 +53,17 @@ bool installer::_install(std::vector<std::string> const &pkgs,
         if (!_sysdb.add(pkginfo_list[i], all_pkgs_fileslist[i], root_dir, force)) {
             _error = _sysdb.error();
             return false;
+        }
+
+        if (!skip_triggers) {
+            std::string script_ = std::dynamic_pointer_cast<archive::package>(pkginfo_list[i])->script();
+            PROCESS("executing install script");
+            if (script_.size()) {
+                if (int status = exec().execute(script_); status != 0) {
+                    _error = "install script failed to exit code: " + std::to_string(status);
+                    return false;
+                }
+            }
         }
     }
 

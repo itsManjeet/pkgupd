@@ -25,6 +25,8 @@ recipe::recipe(YAML::Node const &data, std::string const &file) {
     READ_OBJECT_LIST(user, users);
     READ_OBJECT_LIST(group, groups);
 
+    OPTIONAL_VALUE(bool, split, false);
+
     READ_OBJECT_LIST(package, packages);
 }
 
@@ -37,8 +39,7 @@ recipe::package::package(YAML::Node const &data, std::string const &file) {
     OPTIONAL_VALUE(string, prescript, "");
     OPTIONAL_VALUE(string, postscript, "");
     OPTIONAL_VALUE(string, script, "");
-    OPTIONAL_VALUE(string, preinstall, "");
-    OPTIONAL_VALUE(string, postscript, "");
+    OPTIONAL_VALUE(string, install_script, "");
 
     OPTIONAL_VALUE(string, pack, "rlx");
 

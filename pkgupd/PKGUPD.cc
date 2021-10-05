@@ -211,7 +211,13 @@ int PKGUPD::exec(int ac, char **av) {
 
                 recipe_ = std::dynamic_pointer_cast<recipe::package>(pkg)->parent();
             }
-            auto builder_ = builder(_get_value("work-dir", "/tmp"), _get_value(PKG_DIR, DEFAULT_PKGS_DIR), _get_value(SRC_DIR, DEFAULT_SRC_DIR), _is_flag(flag::FORCE));
+            auto builder_ = builder(_get_value("work-dir", "/tmp"),
+                                    _get_value(PKG_DIR, DEFAULT_PKGS_DIR),
+                                    _get_value(SRC_DIR, DEFAULT_SRC_DIR),
+                                    _get_value(ROOT_DIR, "/"),
+                                    installer_,
+                                    _is_flag(flag::FORCE),
+                                    _is_flag(flag::SKIP_TRIGGER));
 
             if (!builder_.build(recipe_)) {
                 ERROR(builder_.error());

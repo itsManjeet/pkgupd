@@ -168,7 +168,14 @@ bool builder::_build(std::shared_ptr<recipe::package> package) {
 
         INFO("Package generated at " + pkgfile)
 
-        _archive_list.push_back(pkgfile);
+        if (package->parent()->split()) {
+            if (!_installer.install({pkgfile}, _root_dir, _skip_triggers, _force)) {
+                _error = _installer.error();
+                return false;
+            }
+        } else {
+            _archive_list.push_back(pkgfile);
+        }
     }
 
     return true;

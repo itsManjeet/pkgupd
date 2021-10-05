@@ -1,6 +1,7 @@
 #ifndef _LIBPKGUPD_BUILDER_HH_
 #define _LIBPKGUPD_BUILDER_HH_
 
+#include "installer.hh"
 #include "recipe.hh"
 
 namespace rlxos::libpkgupd {
@@ -9,11 +10,15 @@ class builder : public object {
     std::vector<std::shared_ptr<recipe::package>> _packages;
     std::vector<std::string> _archive_list;
 
+    installer &_installer;
+
     std::string _work_dir,
         _pkgs_dir,
-        _src_dir;
+        _src_dir,
+        _root_dir;
 
-    bool _force = false;
+    bool _force;
+    bool _skip_triggers;
 
     bool _prepare(std::vector<std::string> const &sources, std::string const &srcdir);
 
@@ -25,11 +30,16 @@ class builder : public object {
     builder(std::string const &wdir,
             std::string const &pdir,
             std::string const &sdir,
-            bool force)
+            std::string const &root_dir,
+            installer &_installer,
+            bool force = false,
+            bool triggers = false)
         : _work_dir{wdir},
           _pkgs_dir{pdir},
           _src_dir{sdir},
-          _force{force} {}
+          _force{force},
+          _skip_triggers{triggers},
+          _installer{_installer} {}
 
     ~builder() {
         std::filesystem::remove_all(_work_dir);

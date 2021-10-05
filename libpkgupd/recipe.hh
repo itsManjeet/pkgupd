@@ -91,7 +91,7 @@ class recipe : public std::enable_shared_from_this<recipe> {
 
         std::string _script;
         std::string _prescript, _postscript;
-        std::string _preinstall, _postinstall;
+        std::string _install_script;
 
         std::vector<std::shared_ptr<flag>> _flags;
 
@@ -115,6 +115,8 @@ class recipe : public std::enable_shared_from_this<recipe> {
         GET_METHOD(std::string, script);
         GET_METHOD(std::string, prescript);
         GET_METHOD(std::string, postscript);
+
+        GET_METHOD(std::string, install_script);
 
         GET_METHOD(std::vector<std::shared_ptr<flag>>, flags);
 
@@ -154,6 +156,8 @@ class recipe : public std::enable_shared_from_this<recipe> {
 
     std::vector<std::shared_ptr<package>> _packages;
 
+    bool _split = false;
+
    public:
     recipe(YAML::Node const &node, std::string const &file);
 
@@ -177,6 +181,7 @@ class recipe : public std::enable_shared_from_this<recipe> {
 
     GET_METHOD(std::vector<std::shared_ptr<package>>, packages);
     GET_METHOD(std::string, id);
+    GET_METHOD(bool, split);
 
     friend class recipe::package;
 };
