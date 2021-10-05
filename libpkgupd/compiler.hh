@@ -30,7 +30,6 @@ class compiler : public object {
     std::map<std::string, configurator> _configurators =
         {
             {"configure", configurator::AUTOCONF},
-            {"autogen.sh", configurator::AUTOGEN},
             {"CMakeLists.txt", configurator::CMAKE},
             {"meson.build", configurator::MESON},
             {"setup.py", configurator::PYSETUP},

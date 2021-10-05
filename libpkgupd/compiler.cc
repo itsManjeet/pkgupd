@@ -83,15 +83,40 @@ bool compiler::compile(std::string const &srcdir, std::string const &destdir) {
 
     switch (config) {
         case configurator::AUTOCONF:
-            cmd = srcdir + "/configure " + getargs("configure", "--prefix=/usr");
+            cmd = srcdir + "/configure " + getargs("configure",
+                                                   " --prefix=/usr "
+                                                   " --sysconfdir=/etc"
+                                                   " --libdir=/usr/lib"
+                                                   " --libexecdir=/usr/lib"
+                                                   " --bindir=/usr/bin"
+                                                   " --sbindir=/usr/bin"
+                                                   " --localstatedir=/var"
+                                                   " --datadir=/usr/share");
             break;
 
         case configurator::MESON:
-            cmd = "meson " + getargs("configure", "--prefix=/usr");
+            cmd = "meson " + getargs("configure",
+                                     "--prefix=/usr "
+                                     " --sysconfdir=/etc"
+                                     " --libdir=/usr/lib"
+                                     " --libexecdir=/usr/lib"
+                                     " --bindir=/usr/bin"
+                                     " --sbindir=/usr/bin"
+                                     " --localstatedir=/var"
+                                     " --datadir=/usr/share") +
+                  " " + builddir;
             break;
 
         case configurator::CMAKE:
-            cmd = "cmake -S " + srcdir + " " + getargs("configure", "-DCMAKE_INSTALL_PREFIX=/usr");
+            cmd = "cmake -S " + srcdir + " -B " + builddir + " " + getargs("configure",
+                                                                           "-DCMAKE_INSTALL_PREFIX=/usr "
+                                                                           " -DCMAKE_INSTALL_SYSCONFDIR=/etc"
+                                                                           " -DCMAKE_INSTALL_LIBDIR=/usr/lib"
+                                                                           " -DCMAKE_INSTALL_LIBEXECDIR=/usr/lib"
+                                                                           " -DCMAKE_INSTALL_BINDIR=/usr/bin"
+                                                                           " -DCMAKE_INSTALL_SBINDIR=/usr/bin"
+                                                                           " -DCMAKE_INSTALL_DATADIR=/usr/share"
+                                                                           " -DCMAKE_INSTALL_LOCALSTATEDIR=/var");
 
             break;
 
