@@ -293,7 +293,6 @@ int PKGUPD::exec(int ac, char **av) {
             _need_atleast(1);
 
             std::vector<std::string> list;
-            PROCESS("checking dependencies")
             for (auto const &i : _args) {
                 auto resolver_ = resolver(repodb_, sysdb_);
                 if (!resolver_.resolve(i, _is_flag(flag::FORCE))) {

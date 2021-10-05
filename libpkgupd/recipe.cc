@@ -54,7 +54,7 @@ recipe::package::flag::flag(YAML::Node const &data, std::string const &file) {
 
     OPTIONAL_VALUE(bool, force, false);
     if (data["only"]) {
-        INFO("Use of 'only' in flags is deprecated, use 'force'")
+        DEBUG("Use of 'only' in flags is deprecated, use 'force'")
         _force = data["only"].as<bool>();
     }
 }
