@@ -37,6 +37,7 @@ class builder : public object {
         : _work_dir{wdir},
           _pkgs_dir{pdir},
           _src_dir{sdir},
+          _root_dir{root_dir},
           _force{force},
           _skip_triggers{triggers},
           _installer{_installer} {}
