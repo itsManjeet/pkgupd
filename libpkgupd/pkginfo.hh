@@ -56,6 +56,7 @@ class pkginfo {
             os << " - id: " << _id << "\n"
                << "   name: " << _name << "\n"
                << "   about: " << _about << "\n"
+               << "   group: " << _group << "\n"
                << "   dir: " << _dir << "\n"
                << "   shell: " << _shell << std::endl;
         }

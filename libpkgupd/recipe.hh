@@ -46,7 +46,6 @@ class recipe : public std::enable_shared_from_this<recipe> {
 
         std::string _script;
         std::string _prescript, _postscript;
-        std::string _install_script;
 
         std::vector<std::shared_ptr<flag>> _flags;
 
@@ -68,14 +67,14 @@ class recipe : public std::enable_shared_from_this<recipe> {
         std::vector<std::string> sources() const;
 
         std::vector<std::shared_ptr<pkginfo::user>> users() const { return _parent->_users; }
-        
+
         std::vector<std::shared_ptr<pkginfo::group>> groups() const { return _parent->_groups; }
 
         GET_METHOD(std::string, script);
-        GET_METHOD(std::string, prescript);
-        GET_METHOD(std::string, postscript);
 
-        GET_METHOD(std::string, install_script);
+        GET_METHOD(std::string, prescript);
+
+        GET_METHOD(std::string, postscript);
 
         GET_METHOD(std::vector<std::shared_ptr<flag>>, flags);
 
