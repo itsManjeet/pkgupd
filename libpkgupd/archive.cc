@@ -20,7 +20,7 @@ archive::package::package(YAML::Node const &data, std::string const &file) {
 
 std::tuple<int, std::string> archive::getdata(std::string const &filepath) {
     std::string cmd = _archive_tool;
-    cmd += " --zstd -O -xf " + _pkgfile + " " + filepath;
+    cmd += " --zstd -O -xPf " + _pkgfile + " " + filepath;
 
     auto [status, output] = exec().output(cmd);
     if (status != 0) {
@@ -52,7 +52,7 @@ std::shared_ptr<archive::package> archive::info() {
 
 std::vector<std::string> archive::list() {
     std::string cmd = _archive_tool;
-    cmd += " --zstd -tf " + _pkgfile;
+    cmd += " --zstd -tPf " + _pkgfile;
 
     auto [status, output] = exec().output(cmd);
     if (status != 0) {
@@ -121,7 +121,7 @@ bool archive::compress(std::string const &srcdir, std::shared_ptr<pkginfo> const
 
     std::string command = _archive_tool;
 
-    command += " --zstd -cf " + _pkgfile + " -C " + srcdir + " . ";
+    command += " --zstd -cPf " + _pkgfile + " -C " + srcdir + " . ";
     if (exec().execute(command) != 0) {
         _error = "failed to execute command for compression '" + command + "'";
         return false;
@@ -138,7 +138,7 @@ bool archive::extract(std::string const &outdir) {
 
     std::string cmd = _archive_tool;
 
-    cmd += " --zstd --exclude './info' -xhpf " + _pkgfile + " -C " + outdir;
+    cmd += " --zstd --exclude './info' -xPhpf " + _pkgfile + " -C " + outdir;
     if (exec().execute(cmd) != 0) {
         _error = "failed to execute extraction command";
         return false;

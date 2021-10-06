@@ -43,7 +43,7 @@ bool builder::_prepare(std::vector<std::string> const &sources, std::string cons
 
         for (auto const &i : {".tar", ".gz", ".tgz", ".xz", ".txz", ".bzip2", ".bz", ".bz2", ".lzma"}) {
             if (endswith(outfile, i)) {
-                if (int status = exec().execute("tar -xaf " + outfile + " -C " + srcdir); status != 0) {
+                if (int status = exec().execute("tar -xPf " + outfile + " -C " + srcdir); status != 0) {
                     _error = "failed to extract " + outfile + " with tar, exit status: " + std::to_string(status);
                     return false;
                 }
