@@ -26,7 +26,7 @@ bool triggerer::_exec(type t) {
 
     switch (t) {
         case type::MIME:
-            cmd = "update-mime-database + /usr/share/mime";
+            cmd = "update-mime-database /usr/share/mime";
             break;
 
         case type::DESKTOP:
@@ -265,8 +265,12 @@ bool triggerer::trigger() {
              type::FONTS_CACHE,
          }) {
         PROCESS(_mesg(i));
-        if (!_exec(i)) {
-            ERROR(_error);
+        try {
+            if (!_exec(i)) {
+                ERROR(_error);
+            }
+        } catch (std::exception &e) {
+            ERROR(e.what());
         }
     }
 
