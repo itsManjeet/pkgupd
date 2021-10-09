@@ -252,11 +252,9 @@ bool triggerer::trigger(std::vector<std::vector<std::string>> const &fileslist) 
 
 bool triggerer::trigger() {
     for (auto i : {
-             type::INVALID,
              type::MIME,
              type::DESKTOP,
              type::FONTS_SCALE,
-             type::HARDWARE,
              type::UDEV,
              type::ICONS,
              type::GTK3_INPUT_MODULES,
