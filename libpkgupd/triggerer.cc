@@ -46,7 +46,7 @@ bool triggerer::_exec(type t) {
             break;
 
         case type::GLIB_SCHEMAS:
-            cmd = "glib-compile-scheams /usr/share/glib-2.0/schemas";
+            cmd = "glib-compile-schemas /usr/share/glib-2.0/schemas";
             break;
 
         case type::GIO_MODULES:
