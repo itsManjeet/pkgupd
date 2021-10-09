@@ -39,6 +39,8 @@ class triggerer : public object {
     bool trigger(std::vector<std::vector<std::string>> const &fileslist);
 
     bool trigger(std::vector<std::shared_ptr<pkginfo>> const &pkgs);
+
+    bool trigger();
 };
 }  // namespace rlxos::libpkgupd
 

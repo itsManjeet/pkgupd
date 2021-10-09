@@ -382,18 +382,12 @@ int PKGUPD::exec(int ac, char **av) {
                 return 2;
             }
 
-            std::vector<std::vector<std::string>> files;
             auto triggerer_ = triggerer();
-
-            for (auto const &i : pkgs) {
-                std::shared_ptr<sysdb::package> pkg = std::dynamic_pointer_cast<sysdb::package>(i);
-                files.push_back(pkg->files());
-            }
 
             int status = 0;
 
             PROCESS("executing triggers");
-            if (!triggerer_.trigger(files)) {
+            if (!triggerer_.trigger()) {
                 ERROR(triggerer_.error());
                 status = 2;
             }

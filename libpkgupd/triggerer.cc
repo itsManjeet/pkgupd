@@ -249,4 +249,29 @@ bool triggerer::trigger(std::vector<std::vector<std::string>> const &fileslist) 
     }
     return status;
 }
+
+bool triggerer::trigger() {
+    for (auto i : {
+             type::INVALID,
+             type::MIME,
+             type::DESKTOP,
+             type::FONTS_SCALE,
+             type::HARDWARE,
+             type::UDEV,
+             type::ICONS,
+             type::GTK3_INPUT_MODULES,
+             type::GTK2_INPUT_MODULES,
+             type::GLIB_SCHEMAS,
+             type::GIO_MODULES,
+             type::GDK_PIXBUF,
+             type::FONTS_CACHE,
+         }) {
+        PROCESS(_mesg(i));
+        if (!_exec(i)) {
+            ERROR(_error);
+        }
+    }
+
+    return true;
+}
 }  // namespace rlxos::libpkgupd
