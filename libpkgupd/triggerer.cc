@@ -64,12 +64,13 @@ bool triggerer::_exec(type t) {
         case type::FONTS_SCALE: {
             bool status = true;
             for (auto const &i : std::filesystem::directory_iterator("/usr/share/fonts")) {
-                std::filesystem::remove(i.path() / "fonts.scale");
-                std::filesystem::remove(i.path() / "fonts.dir");
-                std::filesystem::remove(i.path() / ".uuid");
+                std::error_code ee;
+                std::filesystem::remove(i.path() / "fonts.scale", ee);
+                std::filesystem::remove(i.path() / "fonts.dir", ee);
+                std::filesystem::remove(i.path() / ".uuid", ee);
 
                 if (std::filesystem::is_empty(i.path()))
-                    std::filesystem::remove(i.path());
+                    std::filesystem::remove(i.path(), ee);
 
                 if (int status = exec().execute("mkfontdir " + i.path().string()); status != 0) {
                     _error += "mkfontdir failed with exit code: " + std::to_string(status);
