@@ -12,6 +12,11 @@ class db : public object {
    public:
     db(std::string const &datadir)
         : _data_dir{datadir} {
+        if (!std::filesystem::exists(_data_dir)) {
+            std::error_code ec;
+            DEBUG("Creating database directory " << _data_dir);
+            std::filesystem::create_directories(_data_dir, ec);
+        }
     }
 
     GET_METHOD(std::string, data_dir);
