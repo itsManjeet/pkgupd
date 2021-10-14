@@ -208,16 +208,20 @@ bool triggerer::trigger(std::vector<std::shared_ptr<pkginfo>> const &pkgs) {
     for (auto const &i : pkgs) {
         for (auto const &grp : i->groups()) {
             PROCESS("creating group " + grp->name());
-            if (!grp->create()) {
-                ERROR("failed to create " + grp->name() + " group");
-                status = false;
+            if (!grp->exists()) {
+                if (!grp->create()) {
+                    ERROR("failed to create " + grp->name() + " group");
+                    status = false;
+                }
             }
         }
         for (auto const &usr : i->users()) {
             PROCESS("creating user " + usr->name());
-            if (!usr->create()) {
-                ERROR("failed to create " + usr->name() + " user");
-                status = false;
+            if (!usr->exists()) {
+                if (!usr->create()) {
+                    ERROR("failed to create " + usr->name() + " user");
+                    status = false;
+                }
             }
         }
     }
