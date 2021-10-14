@@ -39,8 +39,6 @@ void PKGUPD::_print_help(char const *path) {
             "To override default values simply pass argument as VALUE_NAME=VALUE\n"
             "Avaliable Values:\n"
             "  config                       override default configuration files path\n"
-            "  download-url                 override primary repository url\n"
-            "  secondary-download-url       override secondary repository url\n"
          << "  " << SYS_DB << "                       override default system database\n"
          << "  " << REPO_DB << "                      override default repository database path\n"
          << "\n"
@@ -171,7 +169,16 @@ int PKGUPD::exec(int ac, char **av) {
 
     auto downloader_ = downloader();
 
-    downloader_.urls({DEFAULT_URL, DEFAULT_SECONDARY_URL});
+    std::vector<std::string> _urls;
+    if (_config["mirrors"]) {
+        for (auto const &m : _config["mirrors"]) {
+            _urls.push_back(m.as<std::string>());
+        }
+    } else {
+        _urls = std::vector<std::string>{DEFAULT_URL, DEFAULT_SECONDARY_URL};
+    }
+
+    downloader_.urls(_urls);
 
     auto installer_ = installer(sysdb_, repodb_, downloader_, _get_value(PKG_DIR, DEFAULT_PKGS_DIR));
 
