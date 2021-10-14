@@ -44,7 +44,7 @@ bool downloader::download(std::string const &url, std::string const &outfile) {
     CURLcode res;
     FILE *fptr;
 
-    PROCESS("download " << url);
+    DEBUG("download " << url);
 
     curl = curl_easy_init();
     if (!curl) {
@@ -128,7 +128,7 @@ bool downloader::get(std::string const &file, std::string const &outdir) {
     }
 
     for (auto const &url : _urls) {
-        PROCESS("checking " << url << " " << file);
+        DEBUG("checking " << url << " " << file);
 
         std::string fileurl = url + "/" + file;
 

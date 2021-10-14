@@ -19,7 +19,7 @@ bool installer::_install(std::vector<std::string> const &pkgs,
     for (auto const &i : pkgs) {
         auto archive_ = archive(i);
 
-        PROCESS("Getting information from " << std::filesystem::path(i).filename().string());
+        DEBUG("getting information from " << std::filesystem::path(i).filename().string());
 
         auto info = archive_.info();
         if (info == nullptr) {
@@ -37,7 +37,12 @@ bool installer::_install(std::vector<std::string> const &pkgs,
         } catch (...) {
         }
 
-        PROCESS("extracting " << info->id() << " into " << root_dir);
+        if (root_dir == "/") {
+            PROCESS("installing " << BLUE(info->id()));
+        } else {
+            PROCESS("installing " << BLUE(info->id()) << " into " << RED(root_dir));
+        }
+
         if (!archive_.extract(root_dir)) {
             _error = archive_.error();
             return false;
@@ -48,8 +53,15 @@ bool installer::_install(std::vector<std::string> const &pkgs,
 
     assert(all_pkgs_fileslist.size() == pkginfo_list.size());
 
+    bool _with_pkgname = pkginfo_list.size() != 1;
+
     for (int i = 0; i < pkginfo_list.size(); i++) {
-        PROCESS("Registering " << pkginfo_list[i]->id() << " into system database");
+        if (_with_pkgname) {
+            PROCESS("registering into database " << BLUE(pkginfo_list[i]->id()));
+        } else {
+            PROCESS("registering into database");
+        }
+
         if (!_sysdb.add(pkginfo_list[i], all_pkgs_fileslist[i], root_dir, force)) {
             _error = _sysdb.error();
             return false;
@@ -57,7 +69,12 @@ bool installer::_install(std::vector<std::string> const &pkgs,
 
         if (!skip_triggers) {
             if (pkginfo_list[i]->install_script().size()) {
-                PROCESS("executing install script");
+                if (_with_pkgname) {
+                    PROCESS("post install script " << BLUE(pkginfo_list[i]->id()));
+                } else {
+                    PROCESS("post installation script");
+                }
+
                 if (int status = exec().execute(pkginfo_list[i]->install_script()); status != 0) {
                     _error = "install script failed to exit code: " + std::to_string(status);
                     return false;
@@ -67,7 +84,7 @@ bool installer::_install(std::vector<std::string> const &pkgs,
     }
 
     if (skip_triggers) {
-        INFO("Skipping Triggers")
+        INFO("skipping triggers")
     } else {
         auto triggerer_ = triggerer();
         if (!triggerer_.trigger(all_pkgs_fileslist)) {
