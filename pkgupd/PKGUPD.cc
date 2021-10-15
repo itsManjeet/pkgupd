@@ -410,7 +410,7 @@ int PKGUPD::exec(int ac, char **av) {
 
         default:
             ERROR("invalid task");
-            _print_help();
+            _print_help(av[0]);
     }
 
     return 2;
