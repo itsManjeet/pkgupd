@@ -132,6 +132,7 @@ bool installer::install(std::vector<std::string> const &pkgs,
         auto pkgpath = _pkg_dir + "/" + pkgfile;
 
         if (!std::filesystem::exists(pkgpath)) {
+            PROCESS("getting " << pkgfile);
             if (!_downloader.get(pkgfile, pkgpath)) {
                 _error = _downloader.error();
                 return false;
