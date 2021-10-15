@@ -30,7 +30,7 @@ void PKGUPD::_print_help(char const *path) {
             "  in,  install                 download and install specified package(s) from repository into the system\n"
             "  rm,  remove                  remove specified package(s) from the system if already installed\n"
             "  rf,  refresh                 synchronize local data with repositories\n"
-            "  up,  update                  upgarde specified package(s) to their latest avaliable version\n"
+            //           "  up,  update                  upgarde specified package(s) to their latest avaliable version\n"
             "  co,  compile                 try to compile specified package(s) from repository recipe files\n"
             "  deptest                      perform dependencies test for specified package\n"
             "  info                         print information of specified package\n"
@@ -41,13 +41,15 @@ void PKGUPD::_print_help(char const *path) {
             "  config                       override default configuration files path\n"
          << "  " << SYS_DB << "                       override default system database\n"
          << "  " << REPO_DB << "                      override default repository database path\n"
+         << "  " << PKG_DIR << "                      override default package directory path\n"
+         << "  " << SRC_DIR << "                      override default source directory path\n"
+         << "  " << ROOT_DIR << "                     override default root directory path\n"
          << "\n"
          << "Exit Status:\n"
             "  0  if OK\n"
             "  1  if issue with input data provided.\n"
             "\n"
             "Full documentation <https://docs.rlxos.dev/pkgupd>\n"
-            "or local manual: man pkgupd"
          << endl;
 }
 
