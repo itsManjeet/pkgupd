@@ -150,8 +150,7 @@ bool builder::_build(std::shared_ptr<recipe::package> package) {
 
         PROCESS("stripping " + package->id());
         if (!stripper_.strip(pkg_pkg_dir)) {
-            _error = stripper_.error();
-            return false;
+            ERROR(stripper_.error());
         }
     }
 
