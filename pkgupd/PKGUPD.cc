@@ -190,8 +190,10 @@ int PKGUPD::exec(int ac, char **av) {
                 return 1;
 
             std::vector<std::string> to_install;
-            if (!_is_flag(flag::SKIP_DEPENDS)) {
-                PROCESS("resolving dependencies")
+            if (_args.size() == 1 && std::filesystem::exists(_args[0])) {
+                to_install = {_args[0]};
+            } else if (!_is_flag(flag::SKIP_DEPENDS)) {
+                DEBUG("resolving dependencies")
                 for (auto const &i : _args) {
                     auto resolver_ = resolver(repodb_, sysdb_);
                     if (!resolver_.resolve(i)) {
@@ -204,11 +206,17 @@ int PKGUPD::exec(int ac, char **av) {
                 to_install = _args;
             }
 
+            if (to_install.size() == 0) {
+                INFO("no action required");
+                return 0;
+            }
+
             if (!installer_.install(to_install, _get_value(ROOT_DIR, DEFAULT_ROOT_DIR), _is_flag(flag::SKIP_TRIGGER), _is_flag(flag::FORCE))) {
                 ERROR(installer_.error());
                 return 2;
             }
 
+            INFO("Done")
             return 0;
         } break;
         case task::COMPILE: {
