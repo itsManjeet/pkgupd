@@ -5,6 +5,8 @@
 
 #include "archive.hh"
 #include "exec.hh"
+#include "image.hh"
+#include "tar.hh"
 #include "triggerer.hh"
 
 namespace rlxos::libpkgupd {
@@ -17,13 +19,22 @@ bool installer::_install(std::vector<std::string> const &pkgs,
     std::vector<std::vector<std::string>> all_pkgs_fileslist;
 
     for (auto const &i : pkgs) {
-        auto archive_ = archive(i);
+        std::shared_ptr<archive> archive_;
+        std::string ext = std::filesystem::path(i).extension();
+        if (ext == ".rlx") {
+            archive_ = std::make_shared<tar>(i);
+        } else if (ext == ".app") {
+            archive_ = std::make_shared<image>(i);
+        } else {
+            _error = "unsupport package of type '" + ext + "'";
+            return false;
+        }
 
         DEBUG("getting information from " << std::filesystem::path(i).filename().string());
 
-        auto info = archive_.info();
+        auto info = archive_->info();
         if (info == nullptr) {
-            _error = archive_.error();
+            _error = archive_->error();
             return false;
         }
 
@@ -43,11 +54,11 @@ bool installer::_install(std::vector<std::string> const &pkgs,
             PROCESS("installing " << BLUE(info->id()) << " into " << RED(root_dir));
         }
 
-        if (!archive_.extract(root_dir)) {
-            _error = archive_.error();
+        if (!archive_->extract(root_dir)) {
+            _error = archive_->error();
             return false;
         }
-        all_pkgs_fileslist.push_back(archive_.list());
+        all_pkgs_fileslist.push_back(archive_->list());
         pkginfo_list.push_back(info);
     }
 

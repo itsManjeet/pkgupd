@@ -6,7 +6,9 @@
 #include "compiler.hh"
 #include "downloader.hh"
 #include "exec.hh"
+#include "image.hh"
 #include "stripper.hh"
+#include "tar.hh"
 
 namespace rlxos::libpkgupd {
 
@@ -157,11 +159,20 @@ bool builder::_build(std::shared_ptr<recipe::package> package) {
     if (package->pack() == "none") {
         INFO("No packaging done");
     } else {
-        PROCESS("packaging rlx archive");
+        std::shared_ptr<archive> archive_;
+        if (package->pack() == "rlx") {
+            PROCESS("packaging rlx archive");
+            archive_ = std::make_shared<tar>(pkgfile);
+        } else if (package->pack() == "image") {
+            PROCESS("packaging app image");
+            archive_ = std::make_shared<image>(pkgfile);
+        } else {
+            _error = "unsupport packaging format specified '" + package->pack() + "'";
+            return false;
+        }
 
-        auto archive_ = archive(pkgfile);
-        if (!archive_.compress(pkg_pkg_dir, package)) {
-            _error = archive_.error();
+        if (!archive_->compress(pkg_pkg_dir, package)) {
+            _error = archive_->error();
             return false;
         }
 

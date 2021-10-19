@@ -15,7 +15,7 @@ using std::string;
 
 namespace rlxos::libpkgupd {
 
-recipe::recipe(YAML::Node const &data, std::string const &file) {
+recipe::recipe(YAML::Node const &data, std::string const &file) : _node{data} {
     READ_VALUE(string, id);
     READ_VALUE(string, version);
     READ_VALUE(string, about);
@@ -59,7 +59,6 @@ recipe::package::flag::flag(YAML::Node const &data, std::string const &file) {
         _force = data["only"].as<bool>();
     }
 }
-
 
 std::string recipe::package::id() const {
     if (_id == "lib" ||

@@ -8,8 +8,11 @@
             "name": "g++-10 - Build and debug active file",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/pkgupd",
-            "args": ["info", "/home/itsmanjeet/pkgs/bc-1.07.1.rlx"],
+            "program": "${workspaceFolder}/build/apbupd",
+            "args": [
+                "temp/AppDir",
+                "temp/pkgupd.yml"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

@@ -116,6 +116,8 @@ class recipe : public std::enable_shared_from_this<recipe> {
 
     bool _split = false;
 
+    YAML::Node _node;
+
    public:
     recipe(YAML::Node const &node, std::string const &file);
 
@@ -140,6 +142,8 @@ class recipe : public std::enable_shared_from_this<recipe> {
     GET_METHOD(std::vector<std::shared_ptr<package>>, packages);
     GET_METHOD(std::string, id);
     GET_METHOD(bool, split);
+
+    GET_METHOD(YAML::Node, node);
 
     friend class recipe::package;
 };

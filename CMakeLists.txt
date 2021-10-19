@@ -24,6 +24,7 @@ add_executable(pkgupd ${PKGUPD_Src})
 add_dependencies(pkgupd libpkgupd)
 target_link_libraries(pkgupd libpkgupd)
 
+
 option(BUILD_TESTS "Build Test programs" ON)
 
 # if (BUILD_TESTS)

@@ -31,16 +31,13 @@ class archive : public object {
         std::vector<std::string> depends(bool) const { return _depends; }
     };
 
-   private:
+   protected:
     std::string _pkgfile;
-    std::string _archive_tool;
     std::shared_ptr<archive::package> _package;
 
    public:
-    archive(std::string const &packagefile,
-            std::string const &archivetool = DEFAULT_ARCHIVE_TOOL)
-        : _pkgfile{packagefile},
-          _archive_tool{archivetool} {
+    archive(std::string const &packagefile)
+        : _pkgfile{packagefile} {
     }
 
     /**
@@ -48,19 +45,19 @@ class archive : public object {
          * @param filepath path to the file in package (must be started from ./)
          * @return content of file
          */
-    std::tuple<int, std::string> getdata(std::string const &filepath);
+    virtual std::tuple<int, std::string> getdata(std::string const &filepath) = 0;
 
-    std::shared_ptr<archive::package> info();
+    virtual std::shared_ptr<archive::package> info() = 0;
     /**
          * List all files in the archive
          */
-    std::vector<std::string> list();
+    virtual std::vector<std::string> list() = 0;
 
-    bool is_exist(std::string const &path) const;
+    virtual bool is_exist(std::string const &path) = 0;
 
-    bool extract(std::string const &outdir);
+    virtual bool extract(std::string const &outdir) = 0;
 
-    bool compress(std::string const &srcdir, std::shared_ptr<pkginfo> const &info);
+    virtual bool compress(std::string const &srcdir, std::shared_ptr<pkginfo> const &info) = 0;
 };
 }  // namespace rlxos::libpkgupd
 

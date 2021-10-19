@@ -266,10 +266,19 @@ int PKGUPD::exec(int ac, char **av) {
             pkginfo_ = repodb_[_args[0]];
             if (pkginfo_ == nullptr) {
                 if (std::filesystem::exists(_args[0])) {
-                    auto archive_ = archive(_args[0]);
-                    pkginfo_ = archive_.info();
+                    std::shared_ptr<archive> archive_;
+                    std::string ext = std::filesystem::path(_args[0]).extension();
+                    if (ext == ".rlx") {
+                        archive_ = std::make_shared<tar>(_args[0]);
+                    } else if (ext == ".app") {
+                        archive_ = std::make_shared<image>(_args[0]);
+                    } else {
+                        ERROR("unsupported packaging format " + ext);
+                        return 1;
+                    }
+                    pkginfo_ = archive_->info();
                     if (pkginfo_ == nullptr) {
-                        ERROR(archive_.error());
+                        ERROR(archive_->error());
                         return 2;
                     }
 
