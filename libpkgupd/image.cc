@@ -115,6 +115,10 @@ bool image::compress(std::string const& srcdir, std::shared_ptr<pkginfo> const& 
         if (std::filesystem::exists(libdir / std::filesystem::path(i).filename())) {
             continue;
         }
+        if (!std::filesystem::exists(i)) {
+            ERROR("Missing " << i);
+            continue;
+        }
         DEBUG("copying " << i);
         std::filesystem::copy_file(i, libdir / std::filesystem::path(i).filename());
     }
