@@ -63,7 +63,9 @@ class builder : public object {
         }
         for (auto const &pkg : recipe_->packages())
             if (!_build(pkg)) {
-                std::filesystem::remove_all(_work_dir);
+                if (!pkg->parent()->split()) {
+                    std::filesystem::remove_all(_work_dir);
+                  }
                 return false;
             }
 

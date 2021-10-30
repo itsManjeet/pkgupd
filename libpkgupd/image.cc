@@ -120,7 +120,12 @@ bool image::compress(std::string const& srcdir, std::shared_ptr<pkginfo> const& 
             continue;
         }
         DEBUG("copying " << i);
-        std::filesystem::copy_file(i, libdir / std::filesystem::path(i).filename());
+        std::error_code err;
+        std::filesystem::copy_file(i, libdir / std::filesystem::path(i).filename(), err);
+        if (err) {
+            _error = err.message();
+            return false;
+        }
     }
 
     std::shared_ptr<recipe::package> _pkg = std::dynamic_pointer_cast<recipe::package>(info);

@@ -163,7 +163,7 @@ bool builder::_build(std::shared_ptr<recipe::package> package) {
         if (package->pack() == "rlx") {
             PROCESS("packaging rlx archive");
             archive_ = std::make_shared<tar>(pkgfile);
-        } else if (package->pack() == "image") {
+        } else if (package->pack() == "app") {
             PROCESS("packaging app image");
             archive_ = std::make_shared<image>(pkgfile);
         } else {
