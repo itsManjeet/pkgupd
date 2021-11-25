@@ -84,38 +84,38 @@ bool compiler::compile(std::string const &srcdir, std::string const &destdir) {
     switch (config) {
         case configurator::AUTOCONF:
             cmd = srcdir + "/configure " + getargs("configure",
-                                                   " --prefix=/usr "
-                                                   " --sysconfdir=/etc"
-                                                   " --libdir=/usr/lib"
-                                                   " --libexecdir=/usr/lib"
-                                                   " --bindir=/usr/bin"
-                                                   " --sbindir=/usr/bin"
-                                                   " --localstatedir=/var"
-                                                   " --datadir=/usr/share");
+                                                   " --prefix=/rlxos "
+                                                   " --sysconfdir=/rlxos/config"
+                                                   " --libdir=/rlxos/lib"
+                                                   " --libexecdir=/rlxos/lib"
+                                                   " --bindir=/rlxos/exec"
+                                                   " --sbindir=/rlxosexec"
+                                                   " --localstatedir=/rlxos/cache"
+                                                   " --datadir=/rlxos/data");
             break;
 
         case configurator::MESON:
             cmd = "meson " + getargs("configure",
-                                     "--prefix=/usr "
-                                     " --sysconfdir=/etc"
-                                     " --libdir=/usr/lib"
-                                     " --libexecdir=/usr/lib"
-                                     " --bindir=/usr/bin"
-                                     " --sbindir=/usr/bin"
-                                     " --localstatedir=/var"
-                                     " --datadir=/usr/share");
+                                     "--prefix=/rlxos "
+                                     " --sysconfdir=/rlxos/config"
+                                     " --libdir=/rlxos/lib"
+                                     " --libexecdir=/rlxos/lib"
+                                     " --bindir=/rlxos/exec"
+                                     " --sbindir=/rlxos/exec"
+                                     " --localstatedir=/rlxos/cache"
+                                     " --datadir=/rlxos/data");
             break;
 
         case configurator::CMAKE:
             cmd = "cmake -S " + srcdir + " " + getargs("configure",
-                                                       "-DCMAKE_INSTALL_PREFIX=/usr "
-                                                       " -DCMAKE_INSTALL_SYSCONFDIR=/etc"
-                                                       " -DCMAKE_INSTALL_LIBDIR=/usr/lib"
-                                                       " -DCMAKE_INSTALL_LIBEXECDIR=/usr/lib"
-                                                       " -DCMAKE_INSTALL_BINDIR=/usr/bin"
-                                                       " -DCMAKE_INSTALL_SBINDIR=/usr/bin"
-                                                       " -DCMAKE_INSTALL_DATADIR=/usr/share"
-                                                       " -DCMAKE_INSTALL_LOCALSTATEDIR=/var");
+                                                       "-DCMAKE_INSTALL_PREFIX=/rlxos "
+                                                       " -DCMAKE_INSTALL_SYSCONFDIR=/rlxos/config"
+                                                       " -DCMAKE_INSTALL_LIBDIR=/rlxos/lib"
+                                                       " -DCMAKE_INSTALL_LIBEXECDIR=/rlxos/lib"
+                                                       " -DCMAKE_INSTALL_BINDIR=/rlxos/exec"
+                                                       " -DCMAKE_INSTALL_SBINDIR=/rlxos/exec"
+                                                       " -DCMAKE_INSTALL_DATADIR=/rlxos/cache"
+                                                       " -DCMAKE_INSTALL_LOCALSTATEDIR=/rlxos/data");
 
             break;
 
