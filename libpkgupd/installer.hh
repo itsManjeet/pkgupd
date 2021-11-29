@@ -8,33 +8,33 @@
 
 namespace rlxos::libpkgupd {
 class installer : public object {
-   private:
-    sysdb _sysdb;
-    repodb _repodb;
-    downloader _downloader;
+ private:
+  sysdb _sysdb;
+  repodb _repodb;
+  downloader _downloader;
 
-    std::string _pkg_dir;
+  std::string _pkg_dir;
 
-    bool _install(std::vector<std::string> const &pkgs,
-                  std::string const &root_dir,
-                  bool skip_triggers,
-                  bool force);
+  bool _install(std::vector<std::string> const &pkgs,
+                std::string const &root_dir,
+                bool skip_triggers,
+                bool force);
 
-   public:
-    installer(sysdb &sdb,
-              repodb &rdb,
-              downloader &dwn,
-              std::string const &pkgdir)
-        : _sysdb{sdb},
-          _repodb{rdb},
-          _downloader{dwn},
-          _pkg_dir{pkgdir} {
-    }
+ public:
+  installer(sysdb &sdb,
+            repodb &rdb,
+            downloader &dwn,
+            std::string const &pkgdir)
+      : _sysdb{sdb},
+        _repodb{rdb},
+        _downloader{dwn},
+        _pkg_dir{pkgdir} {
+  }
 
-    bool install(std::vector<std::string> const &pkgs,
-                 std::string const &root_dir,
-                 bool skip_triggers,
-                 bool force);
+  bool install(std::vector<std::string> const &pkgs,
+               std::string const &root_dir,
+               bool skip_triggers,
+               bool force);
 };
 }  // namespace rlxos::libpkgupd
 
