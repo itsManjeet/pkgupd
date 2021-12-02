@@ -35,8 +35,8 @@ void PKGUPD::_print_help(char const *path) {
          "system if already installed\n"
          "  rf,  refresh                 synchronize local data with "
          "repositories\n"
-         //           "  up,  update                  upgarde specified
-         //           package(s) to their latest avaliable version\n"
+         "  up,  update                  upgarde "
+         "package(s) to their latest avaliable version\n"
          "  co,  compile                 try to compile specified package(s) "
          "from repository recipe files\n"
          "  deptest                      perform dependencies test for "
@@ -201,6 +201,41 @@ int PKGUPD::exec(int ac, char **av) {
                               _get_value(PKG_DIR, DEFAULT_PKGS_DIR));
 
   switch (_task) {
+    case task::UPDATE: {
+      int status = WEXITSTATUS(system("pkgupd rf"));
+      if (status != 0) {
+        return status;
+      }
+      std::vector<std::string> pkgs;
+      for (auto const &i : sysdb_.all()) {
+        DEBUG("checking " << i->id());
+        auto repo_pkg = repodb_[i->id()];
+        if (repo_pkg == nullptr) {
+          DEBUG("missing database " << i->id());
+          continue;
+        }
+
+        if (repo_pkg->version() != i->version()) {
+          DEBUG("found package variation " << i->id() << " " << i->version()
+                                           << " != " << repo_pkg->version());
+          std::cout << "-> " << i->id() << std::endl;
+          pkgs.push_back(i->id());
+        }
+      }
+      if (pkgs.size() == 0) {
+        INFO("system is already upto date");
+        return 0;
+      }
+
+      INFO("found " << pkgs.size() << " packages to update");
+      if (!installer_.install(pkgs, _get_value(ROOT_DIR, DEFAULT_ROOT_DIR),
+                              _is_flag(flag::SKIP_TRIGGER), true)) {
+        ERROR(installer_.error());
+        return 1;
+      }
+
+      return 0;
+    } break;
     case task::INSTALL: {
       if (!_need_atleast(1)) return 1;
 
