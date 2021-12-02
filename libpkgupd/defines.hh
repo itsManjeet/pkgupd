@@ -13,66 +13,56 @@
 
 namespace rlxos::libpkgupd {
 class object {
-   protected:
-    std::string _error;
+ protected:
+  std::string _error;
 
-   public:
-    std::string const &error() const {
-        return _error;
-    }
+ public:
+  std::string const &error() const { return _error; }
 };
 
 }  // namespace rlxos::libpkgupd
 
 #define GET_METHOD(type, var) \
-    type const &var() const { \
-        return _##var;        \
-    }
+  type const &var() const { return _##var; }
 
 #define SET_METHOD(type, val) \
-    void val(type val) {      \
-        _##val = val;         \
-    }
+  void val(type val) { _##val = val; }
 
 #define METHOD(type, var) \
-    GET_METHOD(type, var) \
-    SET_METHOD(type, var)
+  GET_METHOD(type, var)   \
+  SET_METHOD(type, var)
 
 #define _CHECK_VALUE(type, variable) \
-    if (data[#variable])             \
-        _##variable = data[#variable].as<type>();
+  if (data[#variable]) _##variable = data[#variable].as<type>();
 
-#define _CHECK_LIST(type, variable)           \
-    if (data[#variable])                      \
-        for (auto const &i : data[#variable]) \
-            _##variable.push_back(i.as<type>());
+#define _CHECK_LIST(type, variable) \
+  if (data[#variable])              \
+    for (auto const &i : data[#variable]) _##variable.push_back(i.as<type>());
 
 #define _THROW_ERROR(variable) \
-    else throw std::runtime_error(#variable " is missing in " + file);
+  else throw std::runtime_error(#variable " is missing in " + file);
 
-#define _USE_FALLBACK(variable, fallback) \
-    else _##variable = fallback;
+#define _USE_FALLBACK(variable, fallback) else _##variable = fallback;
 
 #define READ_VALUE(type, variable) \
-    _CHECK_VALUE(type, variable)   \
-    _THROW_ERROR(variable)
+  _CHECK_VALUE(type, variable)     \
+  _THROW_ERROR(variable)
 
-#define READ_LIST(type, variable) \
-    _CHECK_LIST(type, variable)
+#define READ_LIST(type, variable) _CHECK_LIST(type, variable)
 
-#define READ_OBJECT_LIST(type, variable)      \
-    if (data[#variable])                      \
-        for (auto const &i : data[#variable]) \
-            _##variable.push_back(std::make_shared<type>(i, file));
+#define READ_OBJECT_LIST(type, variable)  \
+  if (data[#variable])                    \
+    for (auto const &i : data[#variable]) \
+      _##variable.push_back(std::make_shared<type>(i, file));
 
-#define READ_LIST_FROM(type, variable, from, into)   \
-    if (data[#from] && data[#from][#variable])       \
-        for (auto const &i : data[#from][#variable]) \
-            _##into.push_back(i.as<type>());
+#define READ_LIST_FROM(type, variable, from, into) \
+  if (data[#from] && data[#from][#variable])       \
+    for (auto const &i : data[#from][#variable])   \
+      _##into.push_back(i.as<type>());
 
 #define OPTIONAL_VALUE(type, variable, fallback) \
-    _CHECK_VALUE(type, variable)                 \
-    _USE_FALLBACK(variable, fallback)
+  _CHECK_VALUE(type, variable)                   \
+  _USE_FALLBACK(variable, fallback)
 
 #define DEFAULT_DATA_DIR "/var/lib/pkgupd/data"
 #define DEFAULT_PKGS_DIR "/var/cache/pkgupd/pkgs"

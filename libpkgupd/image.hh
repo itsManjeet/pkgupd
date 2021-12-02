@@ -7,8 +7,7 @@
 namespace rlxos::libpkgupd {
 class image : public archive {
  private:
-  std::string _app_run,
-      _desktop_file;
+  std::string _app_run, _desktop_file;
 
   std::string _mimetype(std::string const& path);
   std::set<std::string> _list_lib(std::string const& path);
@@ -31,7 +30,8 @@ class image : public archive {
 
   bool extract(std::string const& outdir);
 
-  bool compress(std::string const& srcdir, std::shared_ptr<pkginfo> const& info);
+  bool compress(std::string const& srcdir,
+                std::shared_ptr<pkginfo> const& info);
 };
 }  // namespace rlxos::libpkgupd
 

@@ -30,8 +30,7 @@ class recipe : public std::enable_shared_from_this<recipe> {
     };
 
    private:
-    std::string _id,
-        _dir;
+    std::string _id, _dir;
     bool _strip;
 
     std::string _pack;
@@ -67,14 +66,18 @@ class recipe : public std::enable_shared_from_this<recipe> {
 
     std::vector<std::string> sources() const;
 
-    std::vector<std::shared_ptr<pkginfo::user>> users() const { return _parent->_users; }
+    std::vector<std::shared_ptr<pkginfo::user>> users() const {
+      return _parent->_users;
+    }
 
-    std::vector<std::shared_ptr<pkginfo::group>> groups() const { return _parent->_groups; }
+    std::vector<std::shared_ptr<pkginfo::group>> groups() const {
+      return _parent->_groups;
+    }
 
     std::shared_ptr<flag> getflag(std::string const &i) {
-      auto iter = std::find_if(_flags.begin(), _flags.end(), [&](std::shared_ptr<flag> const &f) -> bool {
-        return f->id() == i;
-      });
+      auto iter = std::find_if(
+          _flags.begin(), _flags.end(),
+          [&](std::shared_ptr<flag> const &f) -> bool { return f->id() == i; });
 
       return *iter;
     }
@@ -101,9 +104,7 @@ class recipe : public std::enable_shared_from_this<recipe> {
       _environ.insert(_environ.begin(), env);
     }
 
-    void append_environ(std::string const &env) {
-      _environ.push_back(env);
-    }
+    void append_environ(std::string const &env) { _environ.push_back(env); }
   };
 
  private:
@@ -132,16 +133,14 @@ class recipe : public std::enable_shared_from_this<recipe> {
 
   static std::shared_ptr<recipe> from_filepath(std::string const &filepath) {
     auto ptr = std::make_shared<recipe>(YAML::LoadFile(filepath), filepath);
-    for (auto &pkg : ptr->_packages)
-      pkg->parent(ptr->shared_from_this());
+    for (auto &pkg : ptr->_packages) pkg->parent(ptr->shared_from_this());
 
     return ptr;
   }
 
   static std::shared_ptr<recipe> from_yaml(YAML::Node const &node) {
     auto ptr = std::make_shared<recipe>(node, "");
-    for (auto &pkg : ptr->_packages)
-      pkg->parent(ptr->shared_from_this());
+    for (auto &pkg : ptr->_packages) pkg->parent(ptr->shared_from_this());
 
     return ptr;
   }

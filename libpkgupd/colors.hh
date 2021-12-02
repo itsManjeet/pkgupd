@@ -10,13 +10,13 @@
 #define BLUE(mesg) COLOR(34, mesg)
 #define BOLD(mesg) COLOR(49, mesg)
 
-#define MESSAGE(header, mesg) std::cout << header << BOLD(" ") << BOLD(mesg) << std::endl;
+#define MESSAGE(header, mesg) \
+  std::cout << header << BOLD(" ") << BOLD(mesg) << std::endl;
 
 #define ERROR(mesg) std::cout << RED("ERROR " << mesg) << std::endl;
 #define PROCESS(mesg) MESSAGE(GREEN("=>"), mesg)
 #define INFO(mesg) MESSAGE(BLUE("INFO"), mesg)
-#define DEBUG(mesg)                 \
-    if (getenv("DEBUG") != nullptr) \
-    MESSAGE(BLUE("DEBUG"), mesg)
+#define DEBUG(mesg) \
+  if (getenv("DEBUG") != nullptr) MESSAGE(BLUE("DEBUG"), mesg)
 
 #endif

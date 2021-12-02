@@ -16,25 +16,14 @@ class installer : public object {
   std::string _pkg_dir;
 
   bool _install(std::vector<std::string> const &pkgs,
-                std::string const &root_dir,
-                bool skip_triggers,
-                bool force);
+                std::string const &root_dir, bool skip_triggers, bool force);
 
  public:
-  installer(sysdb &sdb,
-            repodb &rdb,
-            downloader &dwn,
-            std::string const &pkgdir)
-      : _sysdb{sdb},
-        _repodb{rdb},
-        _downloader{dwn},
-        _pkg_dir{pkgdir} {
-  }
+  installer(sysdb &sdb, repodb &rdb, downloader &dwn, std::string const &pkgdir)
+      : _sysdb{sdb}, _repodb{rdb}, _downloader{dwn}, _pkg_dir{pkgdir} {}
 
   bool install(std::vector<std::string> const &pkgs,
-               std::string const &root_dir,
-               bool skip_triggers,
-               bool force);
+               std::string const &root_dir, bool skip_triggers, bool force);
 };
 }  // namespace rlxos::libpkgupd
 

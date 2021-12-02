@@ -61,31 +61,27 @@ recipe::package::flag::flag(YAML::Node const &data, std::string const &file) {
 }
 
 std::string recipe::package::id() const {
-  if (_id == "lib" ||
-      _id == "lib32")
-    return _id + _parent->id();
+  if (_id == "lib" || _id == "lib32") return _id + _parent->id();
 
-  if (_id == "pkg")
-    return _parent->_id;
+  if (_id == "pkg") return _parent->_id;
 
   return _parent->_id + "-" + _id;
 }
 
-std::string recipe::package::version() const {
-  return _parent->_version;
-}
+std::string recipe::package::version() const { return _parent->_version; }
 
-std::string recipe::package::about() const {
-  return _parent->_about;
-}
+std::string recipe::package::about() const { return _parent->_about; }
 
 std::vector<std::string> recipe::package::depends(bool all) const {
   std::vector<string> depends = _runtime_depends;
-  depends.insert(depends.end(), _parent->_runtime_depends.begin(), _parent->_runtime_depends.end());
+  depends.insert(depends.end(), _parent->_runtime_depends.begin(),
+                 _parent->_runtime_depends.end());
 
   if (all) {
-    depends.insert(depends.end(), _buildtime_depends.begin(), _buildtime_depends.end());
-    depends.insert(depends.end(), _parent->_buildtime_depends.begin(), _parent->_buildtime_depends.end());
+    depends.insert(depends.end(), _buildtime_depends.begin(),
+                   _buildtime_depends.end());
+    depends.insert(depends.end(), _parent->_buildtime_depends.begin(),
+                   _parent->_buildtime_depends.end());
   }
 
   return depends;
@@ -93,7 +89,8 @@ std::vector<std::string> recipe::package::depends(bool all) const {
 
 std::vector<std::string> recipe::package::sources() const {
   std::vector<std::string> all_sources = _sources;
-  all_sources.insert(all_sources.end(), _parent->_sources.begin(), _parent->_sources.end());
+  all_sources.insert(all_sources.end(), _parent->_sources.begin(),
+                     _parent->_sources.end());
   return all_sources;
 }
 
@@ -103,21 +100,19 @@ std::vector<std::string> recipe::package::environ() {
   return allenviron;
 }
 
-std::shared_ptr<recipe::package> recipe::operator[](std::string const &pkgid) const {
-  auto pkgiter = std::find_if(
-      _packages.begin(), _packages.end(),
-      [&](std::shared_ptr<package> const &p) {
-        if (pkgid == this->id() && (p->id() == "pkg"))
-          return true;
+std::shared_ptr<recipe::package> recipe::operator[](
+    std::string const &pkgid) const {
+  auto pkgiter = std::find_if(_packages.begin(), _packages.end(),
+                              [&](std::shared_ptr<package> const &p) {
+                                if (pkgid == this->id() && (p->id() == "pkg"))
+                                  return true;
 
-        if (pkgid == p->id())
-          return true;
+                                if (pkgid == p->id()) return true;
 
-        return false;
-      });
+                                return false;
+                              });
 
-  if (pkgiter == _packages.end())
-    return nullptr;
+  if (pkgiter == _packages.end()) return nullptr;
 
   return (*pkgiter);
 }

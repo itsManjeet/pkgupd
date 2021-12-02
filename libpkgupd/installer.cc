@@ -12,8 +12,7 @@
 namespace rlxos::libpkgupd {
 
 bool installer::_install(std::vector<std::string> const &pkgs,
-                         std::string const &root_dir,
-                         bool skip_triggers,
+                         std::string const &root_dir, bool skip_triggers,
                          bool force) {
   std::vector<std::shared_ptr<pkginfo>> pkginfo_list;
   std::vector<std::vector<std::string>> all_pkgs_fileslist;
@@ -30,7 +29,8 @@ bool installer::_install(std::vector<std::string> const &pkgs,
       return false;
     }
 
-    DEBUG("getting information from " << std::filesystem::path(i).filename().string());
+    DEBUG("getting information from "
+          << std::filesystem::path(i).filename().string());
 
     auto info = archive_->info();
     if (info == nullptr) {
@@ -86,8 +86,10 @@ bool installer::_install(std::vector<std::string> const &pkgs,
           PROCESS("post installation script");
         }
 
-        if (int status = exec().execute(pkginfo_list[i]->install_script()); status != 0) {
-          _error = "install script failed to exit code: " + std::to_string(status);
+        if (int status = exec().execute(pkginfo_list[i]->install_script());
+            status != 0) {
+          _error =
+              "install script failed to exit code: " + std::to_string(status);
           return false;
         }
       }
@@ -117,8 +119,7 @@ bool installer::_install(std::vector<std::string> const &pkgs,
   return true;
 }
 bool installer::install(std::vector<std::string> const &pkgs,
-                        std::string const &root_dir,
-                        bool skip_triggers,
+                        std::string const &root_dir, bool skip_triggers,
                         bool force) {
   std::vector<std::string> archive_list;
 
