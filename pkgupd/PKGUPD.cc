@@ -35,6 +35,7 @@ void PKGUPD::_print_help(char const *path) {
          "system if already installed\n"
          "  rf,  refresh                 synchronize local data with "
          "repositories\n"
+         "  sr,  search                  search package from repository\n"
          "  up,  update                  upgarde "
          "package(s) to their latest avaliable version\n"
          "  co,  compile                 try to compile specified package(s) "
@@ -104,6 +105,12 @@ void PKGUPD::_parse_args(int ac, char **av) {
     case 't':
       !(strcmp(av[1], "trigger")) ? _task = task::TRIGGERS
                                   : _task = task::INVLAID;
+      break;
+
+    case 's':
+      !(strcmp(av[1], "sr") && (strcmp(av[1], "search")))
+          ? _task = task::SEARCH
+          : _task = task::INVLAID;
       break;
 
     default:
@@ -235,6 +242,23 @@ int PKGUPD::exec(int ac, char **av) {
       }
 
       return 0;
+    } break;
+    case task::SEARCH: {
+      if (!_need_args(1)) return 1;
+      std::string query = _args[0];
+      size_t found = 0;
+
+      for (auto const &i : repodb_.all()) {
+        if (i->id().find(query) != std::string::npos ||
+            i->about().find(query) != std::string::npos) {
+          std::cout << i->id() << " : " << i->about() << std::endl;
+          found++;
+        }
+      }
+
+      INFO("found " << found << " results");
+      return 0;
+
     } break;
     case task::INSTALL: {
       if (!_need_atleast(1)) return 1;
@@ -480,7 +504,7 @@ int PKGUPD::exec(int ac, char **av) {
     } break;
 
     default:
-      ERROR("invalid task");
+      ERROR("invalid task ");
       _print_help(av[0]);
   }
 

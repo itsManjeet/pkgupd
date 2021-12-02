@@ -67,4 +67,23 @@ std::shared_ptr<pkginfo> repodb::operator[](std::string const &pkgid) {
 
   return packageInfo;
 }
+
+std::vector<std::shared_ptr<pkginfo>> repodb::all() {
+  std::vector<std::shared_ptr<pkginfo>> data;
+  for (auto const &i : std::filesystem::directory_iterator(_data_dir)) {
+    try {
+      if (i.is_directory()) {
+        continue;
+      }
+      auto recipe_ =
+          recipe::from_filepath(std::filesystem::path(_data_dir) / i);
+      for (auto const &i : recipe_->packages()) {
+        data.push_back(i);
+      }
+    } catch (std::exception const &e) {
+      ERROR("failed to read " << e.what() << " skipping");
+    }
+  }
+  return data;
+}
 }  // namespace rlxos::libpkgupd

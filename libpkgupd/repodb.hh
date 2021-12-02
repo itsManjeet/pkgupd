@@ -10,6 +10,7 @@ class repodb : public db {
     DEBUG("Repository Database: " << data_dir);
   }
 
+  std::vector<std::shared_ptr<pkginfo>> all();
   std::shared_ptr<pkginfo> operator[](std::string const &pkgid);
 };
 }  // namespace rlxos::libpkgupd

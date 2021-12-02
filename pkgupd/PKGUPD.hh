@@ -19,6 +19,7 @@ class PKGUPD {
     COMPILE,
     REMOVE,
     REFRESH,
+    SEARCH,
     UPDATE,
     DEPTEST,
     INFO,
