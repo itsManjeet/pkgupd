@@ -122,37 +122,37 @@ std::string triggerer::_regex(
   // https://github.com/venomlinux/scratchpkg/blob/master/scratch#L284
   switch (t) {
     case type::MIME:
-      return "^./usr/share/mime/$";
+      return "share/mime/$";
 
     case type::DESKTOP:
-      return "^./usr/share/applications/$";
+      return "share/applications/$";
 
     case type::FONTS_SCALE:
-      return "^./usr/share/fonts/$";
+      return "share/fonts/$";
 
     case type::UDEV:
-      return "^./etc/udev/hwdb.d/$";
+      return "udev/hwdb.d/$";
 
     case type::ICONS:
-      return "^./usr/share/icons/$";
+      return "share/icons/$";
 
     case type::GTK3_INPUT_MODULES:
-      return "^./usr/lib/gtk-3.0/3.0.0/immodules/.*.so";
+      return "lib/gtk-3.0/3.0.0/immodules/.*.so";
 
     case type::GTK2_INPUT_MODULES:
-      return "^./usr/lib/gtk-2.0/2.10.0/immodules/.*.so";
+      return "lib/gtk-2.0/2.10.0/immodules/.*.so";
 
     case type::GLIB_SCHEMAS:
-      return "^./usr/share/glib-2.0/schemas/$";
+      return "share/glib-2.0/schemas/$";
 
     case type::GIO_MODULES:
-      return "^./usr/lib/gio/modules/.*.so";
+      return "lib/gio/modules/.*.so";
 
     case type::GDK_PIXBUF:
-      return "^./usr/lib/gdk-pixbuf-2.0/2.10.0/loaders/.*.so";
+      return "lib/gdk-pixbuf-2.0/2.10.0/loaders/.*.so";
 
     case type::FONTS_CACHE:
-      return "^./usr/share/fonts/$";
+      return "share/fonts/$";
   }
 
   throw std::runtime_error(

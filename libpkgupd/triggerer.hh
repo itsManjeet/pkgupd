@@ -6,7 +6,7 @@
 
 namespace rlxos::libpkgupd {
 class triggerer : public object {
- private:
+ public:
   enum class type : int {
     INVALID,
     MIME,
@@ -23,6 +23,7 @@ class triggerer : public object {
     FONTS_CACHE,
   };
 
+ protected:
   std::string _mesg(type t);
 
   std::string _regex(type t);
