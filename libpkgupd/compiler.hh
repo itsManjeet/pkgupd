@@ -8,6 +8,15 @@
 #include "defines.hh"
 #include "recipe.hh"
 
+#define RLXOS_PREFIX "/usr"
+#define RLXOS_BINDIR RLXOS_PREFIX "/bin"
+#define RLXOS_SBINDIR RLXOS_BINDIR
+#define RLXOS_LIBDIR RLXOS_PREFIX "/lib"
+#define RLXOS_LIBEXECDIR RLXOS_PREFIX "/lib"
+#define RLXOS_CACHEDIR "/var"
+#define RLXOS_DATADIR RLXOS_PREFIX "/share"
+#define RLXOS_SYSCONFDIR "/etc"
+
 namespace rlxos::libpkgupd {
 class compiler : public object {
  private:

@@ -84,39 +84,34 @@ bool compiler::compile(std::string const &srcdir, std::string const &destdir) {
     case configurator::AUTOCONF:
       cmd = srcdir + "/configure " +
             getargs("configure",
-                    " --prefix=/rlxos "
-                    " --sysconfdir=/rlxos/config"
-                    " --libdir=/rlxos/lib"
-                    " --libexecdir=/rlxos/lib"
-                    " --bindir=/rlxos/exec"
-                    " --sbindir=/rlxosexec"
-                    " --localstatedir=/rlxos/cache"
-                    " --datadir=/rlxos/data");
+                    " --prefix=" RLXOS_PREFIX " --sysconfdir=" RLXOS_SYSCONFDIR
+                    " --libdir=" RLXOS_LIBDIR " --libexecdir=" RLXOS_LIBEXECDIR
+                    " --bindir=" RLXOS_BINDIR " --sbindir=" RLXOS_SBINDIR
+                    " --localstatedir=" RLXOS_CACHEDIR
+                    " --datadir=" RLXOS_DATADIR);
       break;
 
     case configurator::MESON:
-      cmd = "meson " + getargs("configure",
-                               "--prefix=/rlxos "
-                               " --sysconfdir=/rlxos/config"
-                               " --libdir=/rlxos/lib"
-                               " --libexecdir=/rlxos/lib"
-                               " --bindir=/rlxos/exec"
-                               " --sbindir=/rlxos/exec"
-                               " --localstatedir=/rlxos/cache"
-                               " --datadir=/rlxos/data");
+      cmd = "meson " +
+            getargs("configure",
+                    " --prefix=" RLXOS_PREFIX " --sysconfdir=" RLXOS_SYSCONFDIR
+                    " --libdir=" RLXOS_LIBDIR " --libexecdir=" RLXOS_LIBEXECDIR
+                    " --bindir=" RLXOS_BINDIR " --sbindir=" RLXOS_SBINDIR
+                    " --localstatedir=" RLXOS_CACHEDIR
+                    " --datadir=" RLXOS_DATADIR);
       break;
 
     case configurator::CMAKE:
       cmd = "cmake -S " + srcdir + " " +
             getargs("configure",
-                    "-DCMAKE_INSTALL_PREFIX=/rlxos "
-                    " -DCMAKE_INSTALL_SYSCONFDIR=/rlxos/config"
-                    " -DCMAKE_INSTALL_LIBDIR=/rlxos/lib"
-                    " -DCMAKE_INSTALL_LIBEXECDIR=/rlxos/lib"
-                    " -DCMAKE_INSTALL_BINDIR=/rlxos/exec"
-                    " -DCMAKE_INSTALL_SBINDIR=/rlxos/exec"
-                    " -DCMAKE_INSTALL_DATADIR=/rlxos/cache"
-                    " -DCMAKE_INSTALL_LOCALSTATEDIR=/rlxos/data");
+                    "-DCMAKE_INSTALL_PREFIX=" RLXOS_PREFIX
+                    " -DCMAKE_INSTALL_SYSCONFDIR=" RLXOS_SYSCONFDIR
+                    " -DCMAKE_INSTALL_LIBDIR=" RLXOS_LIBDIR
+                    " -DCMAKE_INSTALL_LIBEXECDIR=" RLXOS_LIBEXECDIR
+                    " -DCMAKE_INSTALL_BINDIR=" RLXOS_BINDIR
+                    " -DCMAKE_INSTALL_SBINDIR=" RLXOS_SBINDIR
+                    " -DCMAKE_INSTALL_DATADIR=" RLXOS_DATADIR
+                    " -DCMAKE_INSTALL_LOCALSTATEDIR=" RLXOS_CACHEDIR);
 
       break;
 
