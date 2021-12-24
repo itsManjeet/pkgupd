@@ -268,15 +268,14 @@ int PKGUPD::exec(int ac, char **av) {
         to_install = {_args[0]};
       } else if (!_is_flag(flag::SKIP_DEPENDS)) {
         DEBUG("resolving dependencies")
+        auto resolver_ = resolver(repodb_, sysdb_);
         for (auto const &i : _args) {
-          auto resolver_ = resolver(repodb_, sysdb_);
           if (!resolver_.resolve(i)) {
             ERROR(resolver_.error());
             return 2;
           }
-          to_install.insert(to_install.end(), resolver_.data().begin(),
-                            resolver_.data().end());
         }
+        to_install = resolver_.data();
       } else {
         to_install = _args;
       }
