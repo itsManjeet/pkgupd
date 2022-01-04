@@ -107,7 +107,7 @@ bool image::compress(std::string const& srcdir,
       std::dynamic_pointer_cast<recipe::package>(info);
 
   auto lib_flag = _pkg->getflag("copy-libs");
-  if (lib_flag->value() == "yes") {
+  if (lib_flag != nullptr && lib_flag->value() == "yes") {
     std::set<std::string> req_libs = _list_req(srcdir);
     std::filesystem::path libdir = std::filesystem::path(srcdir) / "lib";
     std::error_code err;
@@ -140,13 +140,16 @@ bool image::compress(std::string const& srcdir,
   {
     DEBUG("writing AppRun")
 
-    if (_pkg->parent()->node()["AppRun"]) {
-      _app_run = _pkg->parent()->node()["AppRun"].as<std::string>();
+    std::string appRun_Path = std::filesystem::path(srcdir) / "AppRun";
+    if (!std::filesystem::exists(appRun_Path)) {
+      std::ofstream file(appRun_Path);
+      if (_pkg->parent()->node()["AppRun"]) {
+        file << _pkg->parent()->node()["AppRun"].as<std::string>();
+      } else {
+        _error = "no AppRun file found";
+        return false;
+      }
     }
-
-    std::ofstream app_run_fstream(srcdir + "/AppRun");
-    app_run_fstream << _app_run << std::endl;
-    app_run_fstream.close();
 
     if (int status = chmod((srcdir + "/AppRun").c_str(), 0755); status != 0) {
       ERROR("failed to set executable permission on AppRun");
@@ -156,35 +159,23 @@ bool image::compress(std::string const& srcdir,
 
   {
     DEBUG("writing desktop file")
-    if (_pkg->parent()->node()["Desktopfile"]) {
-      _desktop_file = _pkg->parent()->node()["Desktopfile"].as<std::string>();
-    } else if (std::filesystem::exists(srcdir + "/share/applications/" +
-                                       _pkg->parent()->id() + ".desktop")) {
-      std::ifstream file(srcdir + "/share/applications/" +
-                         _pkg->parent()->id() + ".desktop");
-      _desktop_file = std::string((std::istreambuf_iterator<char>(file)),
-                                  std::istreambuf_iterator<char>());
-    } else if (_pkg->parent()->node()["DesktopfilePath"]) {
-      std::ifstream file(
-          _pkg->parent()->node()["DesktopfilePath"].as<std::string>());
-      _desktop_file = std::string((std::istreambuf_iterator<char>(file)),
-                                  std::istreambuf_iterator<char>());
-    } else if (!std::filesystem::exists(srcdir + "/" + _pkg->parent()->id() +
-                                        ".desktop")) {
-      _error = "failed to get desktop file";
-      return false;
+    std::string desktopfilePath =
+        std::filesystem::path(srcdir) / (_pkg->parent()->id() + ".desktop");
+    if (!std::filesystem::exists(desktopfilePath)) {
+      if (_pkg->parent()->node()["Desktopfile"]) {
+        std::ofstream file(desktopfilePath);
+        file << _pkg->parent()->node()["Desktopfile"].as<std::string>();
+      } else {
+        _error = "no desktop file exist";
+        return false;
+      }
     }
-
-    std::ofstream app_desktop_fstream(srcdir + "/" + _pkg->parent()->id() +
-                                      ".desktop");
-    app_desktop_fstream << _desktop_file << std::endl;
-    app_desktop_fstream.close();
   }
 
   {
     DEBUG("packing AppImage")
-    int status =
-        exec().execute("appimagetool --sign " + srcdir + " " + _pkgfile);
+    int status = exec().execute(
+        "appimagetool --sign " + srcdir + " " + _pkgfile, ".", {"ARCH=x86_64"});
     if (status != 0) {
       _error = "failed to pack appimage";
       return false;
@@ -194,17 +185,79 @@ bool image::compress(std::string const& srcdir,
   return true;
 }
 
+bool image::install_icon(std::string const& outdir) {
+  std::string icon_dest_dir =
+      std::filesystem::path(outdir) / "apps" / "share" / "pixmaps";
+
+  if (!std::filesystem::exists(icon_dest_dir)) {
+    std::error_code err;
+    std::filesystem::create_directories(icon_dest_dir, err);
+    if (err) {
+      _error = "failed to create pixmap directory " + err.message();
+      return false;
+    }
+  }
+
+  auto [status, data] = getdata("./" + _package->id() + ".png");
+  if (status != 0) {
+    _error = "no icon file found " + data;
+    return false;
+  }
+
+  std::ofstream iconfile(icon_dest_dir + "/" + _package->id() + ".png",
+                         std::ios_base::binary);
+  iconfile << data;
+  iconfile.close();
+  return true;
+}
+
+bool image::install_desktopfile(std::string const& outdir) {
+  std::string deskfile_dest_dir =
+      std::filesystem::path(outdir) / "apps" / "share" / "applications";
+  if (!std::filesystem::exists(deskfile_dest_dir)) {
+    std::error_code err;
+    std::filesystem::create_directories(deskfile_dest_dir, err);
+    if (err) {
+      _error = "failed to create applications directory " + err.message();
+      return false;
+    }
+  }
+
+  auto [status, data] = getdata("./" + _package->id() + ".desktop");
+  if (status != 0) {
+    _error = "no desktop file found " + data;
+    return false;
+  }
+
+  std::ofstream deskfile(deskfile_dest_dir + "/" + _package->id() + ".desktop");
+  std::stringstream ss(data);
+  std::string line;
+  while (std::getline(ss, line, '\n')) {
+    if (line.length() == 0) {
+      continue;
+    }
+
+    if (line.find("Exec=", 0) == 0) {
+      auto del_index = line.find_first_of(' ');
+      if (del_index == std::string::npos) {
+        line = "Exec=/apps/" + _package->packagefile("app");
+      } else {
+        line = "Exec=/apps/" + _package->packagefile("app") +
+               line.substr(del_index, line.length() - del_index);
+      }
+    } else if (line.find("Icon=", 0) == 0) {
+      line = "Icon=/apps/share/pixmaps/" + _package->id() + ".png";
+    }
+
+    deskfile << line << std::endl;
+  }
+
+  return true;
+}
+
 bool image::extract(std::string const& outdir) {
   std::error_code err;
   std::string appdir = outdir + "/apps/";
-
-  std::filesystem::create_directories(
-      appdir + std::filesystem::path(_pkgfile).filename().string() + ".home",
-      err);
-  if (err) {
-    _error = "failed to create " + appdir + ", " + err.message();
-    return false;
-  }
 
   std::filesystem::copy(
       _pkgfile,
@@ -215,45 +268,22 @@ bool image::extract(std::string const& outdir) {
     return false;
   }
 
+  if (_package == nullptr) {
+    _package = info();
+  }
+
+  if (!install_icon(outdir)) {
+    return false;
+  }
+
+  if (!install_desktopfile(outdir)) {
+    return false;
+  }
+
   return true;
 }
 
-image::image(std::string const& p) : archive(p) {
-  _app_run =
-      "#!/bin/sh\n"
-      "HERE=\"$(dirname \"$(readlink -f \"${0}\")\")\"\n"
-      "export UNION_PRELOAD=\"${HERE}\"\n"
-      "export LD_PRELOAD=\"${HERE}/libunionpreload.so\"\n"
-      "export "
-      "PATH=\"${HERE}\"/usr/bin/:\"${HERE}\"/usr/sbin/:\"${HERE}\"/usr/games/"
-      ":\"${HERE}\"/bin/:\"${HERE}\"/sbin/:\"${PATH}\"\n"
-      "export "
-      "LD_LIBRARY_PATH=\"${HERE}\"/usr/lib/:\"${HERE}\"/usr/lib/i386-linux-gnu/"
-      ":\"${HERE}\"/usr/lib/x86_64-linux-gnu/:\"${HERE}\"/usr/lib32/"
-      ":\"${HERE}\"/usr/lib64/:\"${HERE}\"/lib/:\"${HERE}\"/lib/i386-linux-gnu/"
-      ":\"${HERE}\"/lib/x86_64-linux-gnu/:\"${HERE}\"/lib32/:\"${HERE}\"/lib64/"
-      ":\"${LD_LIBRARY_PATH}\"\n"
-      "export PYTHONPATH=\"${HERE}\"/usr/share/pyshared/:\"${PYTHONPATH}\"\n"
-      "export PYTHONHOME=\"${HERE}\"/usr/\n"
-      "export XDG_DATA_DIRS=\"${HERE}\"/usr/share/:\"${XDG_DATA_DIRS}\"\n"
-      "export "
-      "PERLLIB=\"${HERE}\"/usr/share/perl5/:\"${HERE}\"/usr/lib/perl5/"
-      ":\"${PERLLIB}\"\n"
-      "export "
-      "GSETTINGS_SCHEMA_DIR=\"${HERE}\"/usr/share/glib-2.0/schemas/"
-      ":\"${GSETTINGS_SCHEMA_DIR}\"\n"
-      "export "
-      "QT_PLUGIN_PATH=\"${HERE}\"/usr/lib/qt4/plugins/:\"${HERE}\"/usr/lib/"
-      "i386-linux-gnu/qt4/plugins/:\"${HERE}\"/usr/lib/x86_64-linux-gnu/qt4/"
-      "plugins/:\"${HERE}\"/usr/lib32/qt4/plugins/:\"${HERE}\"/usr/lib64/qt4/"
-      "plugins/:\"${HERE}\"/usr/lib/qt5/plugins/:\"${HERE}\"/usr/lib/"
-      "i386-linux-gnu/qt5/plugins/:\"${HERE}\"/usr/lib/x86_64-linux-gnu/qt5/"
-      "plugins/:\"${HERE}\"/usr/lib32/qt5/plugins/:\"${HERE}\"/usr/lib64/qt5/"
-      "plugins/:\"${QT_PLUGIN_PATH}\"\n"
-      "EXEC=$(grep -e '^Exec=.*' \"${HERE}\"/*.desktop | head -n 1 | cut -d "
-      "\"=\" -f 2- | sed -e 's|%.||g')\n"
-      "exec ${EXEC} \"$@\"";
-}
+image::image(std::string const& p) : archive(p) {}
 
 std::string image::_mimetype(std::string const& path) {
   auto [status, output] =

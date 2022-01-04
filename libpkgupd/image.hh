@@ -7,12 +7,14 @@
 namespace rlxos::libpkgupd {
 class image : public archive {
  private:
-  std::string _app_run, _desktop_file;
-
   std::string _mimetype(std::string const& path);
   std::set<std::string> _list_lib(std::string const& path);
   std::set<std::string> _list_req(std::string const& appdir);
   std::vector<std::string> _libpath;
+
+  bool install_icon(std::string const& outdir);
+
+  bool install_desktopfile(std::string const& outdir);
 
  public:
   image(std::string const& p);

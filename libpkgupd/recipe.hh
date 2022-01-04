@@ -79,6 +79,9 @@ class recipe : public std::enable_shared_from_this<recipe> {
           _flags.begin(), _flags.end(),
           [&](std::shared_ptr<flag> const &f) -> bool { return f->id() == i; });
 
+      if (iter == _flags.end()) {
+        return nullptr;
+      }
       return *iter;
     }
 
