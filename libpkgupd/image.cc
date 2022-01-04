@@ -106,8 +106,8 @@ bool image::compress(std::string const& srcdir,
   std::shared_ptr<recipe::package> _pkg =
       std::dynamic_pointer_cast<recipe::package>(info);
 
-  auto lib_flag = _pkg->getflag("lib");
-  if (lib_flag->value() != "no") {
+  auto lib_flag = _pkg->getflag("copy-libs");
+  if (lib_flag->value() == "yes") {
     std::set<std::string> req_libs = _list_req(srcdir);
     std::filesystem::path libdir = std::filesystem::path(srcdir) / "lib";
     std::error_code err;
