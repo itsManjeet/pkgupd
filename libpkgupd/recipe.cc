@@ -72,6 +72,14 @@ std::string recipe::package::version() const { return _parent->_version; }
 
 std::string recipe::package::about() const { return _parent->_about; }
 
+pkginfo::pkgtype recipe::package::type() const { 
+  if (_pack == "app") {
+    return pkgtype::APP;
+  } else {
+    return pkgtype::PKG;
+  }
+}
+
 std::vector<std::string> recipe::package::depends(bool all) const {
   std::vector<string> depends = _runtime_depends;
   depends.insert(depends.end(), _parent->_runtime_depends.begin(),

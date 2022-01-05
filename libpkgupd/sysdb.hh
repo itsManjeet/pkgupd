@@ -14,6 +14,7 @@ class sysdb : public db {
     std::string _id;
     std::string _version;
     std::string _about;
+    pkgtype _type;
 
     std::vector<std::string> _depends, _files;
 
@@ -27,6 +28,7 @@ class sysdb : public db {
     std::string id() const { return _id; }
     std::string version() const { return _version; }
     std::string about() const { return _about; }
+    pkgtype type() const { return _type; }
     std::vector<std::string> depends(bool) const { return _depends; }
 
     GET_METHOD(std::vector<std::string>, files);

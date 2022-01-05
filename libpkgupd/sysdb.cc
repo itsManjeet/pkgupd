@@ -18,6 +18,11 @@ sysdb::package::package(YAML::Node const &data, std::string const &file) {
   READ_LIST(std::string, depends);
   READ_LIST(std::string, files);
 
+  _type = pkgtype::RLX;
+  if (data["type"]) {
+    _type = pkginfo::str2pkgtype(data["type"].as<std::string>());
+  }
+
   READ_OBJECT_LIST(pkginfo::user, users);
   READ_OBJECT_LIST(pkginfo::group, groups);
 
@@ -104,7 +109,8 @@ bool sysdb::add(std::shared_ptr<pkginfo> const &pkginfo,
 
   fileptr << "id: " << pkginfo->id() << std::endl
           << "version: " << pkginfo->version() << std::endl
-          << "about: " << pkginfo->about() << std::endl;
+          << "about: " << pkginfo->about() << std::endl
+          << "type: " << pkginfo::pkgtype2str(pkginfo->type()) << std::endl;
 
   if (pkginfo->depends(false).size()) {
     fileptr << "depends:" << std::endl;

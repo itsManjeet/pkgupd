@@ -17,8 +17,8 @@ class archive : public object {
   class package : public pkginfo {
    private:
     std::string _id, _version, _about;
-
     std::string _script;
+    pkgtype _type;
 
     std::vector<std::string> _depends;
 
@@ -28,6 +28,7 @@ class archive : public object {
     std::string id() const { return _id; }
     std::string version() const { return _version; }
     std::string about() const { return _about; }
+    pkgtype type() const { return _type; }
     std::vector<std::string> depends(bool) const { return _depends; }
   };
 

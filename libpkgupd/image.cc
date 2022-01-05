@@ -240,9 +240,9 @@ bool image::install_desktopfile(std::string const& outdir) {
     if (line.find("Exec=", 0) == 0) {
       auto del_index = line.find_first_of(' ');
       if (del_index == std::string::npos) {
-        line = "Exec=/apps/" + _package->packagefile("app");
+        line = "Exec=/apps/" + _package->packagefile();
       } else {
-        line = "Exec=/apps/" + _package->packagefile("app") +
+        line = "Exec=/apps/" + _package->packagefile() +
                line.substr(del_index, line.length() - del_index);
       }
     } else if (line.find("Icon=", 0) == 0) {

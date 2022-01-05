@@ -13,6 +13,11 @@
 namespace rlxos::libpkgupd {
 class pkginfo {
  public:
+  enum class pkgtype : int {
+    APP,
+    RLX,
+    PKG,
+  };
   class user {
    private:
     unsigned int _id;
@@ -95,11 +100,37 @@ class pkginfo {
   virtual std::string id() const = 0;
   virtual std::string version() const = 0;
   virtual std::string about() const = 0;
+  virtual pkgtype type() const = 0;
 
   virtual std::vector<std::shared_ptr<user>> users() const { return _users; }
   virtual std::vector<std::shared_ptr<group>> groups() const { return _groups; }
 
-  virtual std::string packagefile(std::string ext = DEFAULT_EXTENSION) const {
+  static pkgtype str2pkgtype(std::string const &t) {
+    if (t == "app") {
+      return pkgtype::APP;
+    } else if (t == "rlx") {
+      return pkgtype::RLX;
+    } else if (t == "pkg") {
+      return pkgtype::PKG;
+    } else {
+      throw std::runtime_error("invalid pkgtype " + t + " specified");
+    }
+  }
+
+  static std::string pkgtype2str(pkgtype t) {
+    switch (t) {
+      case pkgtype::APP:
+        return "app";
+      case pkgtype::PKG:
+        return "pkg";
+      case pkgtype::RLX:
+        return "rlx";
+      default:
+        throw std::runtime_error("invalid pkgtype specified");
+    }
+  }
+  virtual std::string packagefile() const {
+    std::string ext = pkgtype2str(type());
     return id() + "-" + version() + "." + ext;
   }
 

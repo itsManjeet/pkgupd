@@ -15,6 +15,11 @@ archive::package::package(YAML::Node const &data, std::string const &file) {
   READ_OBJECT_LIST(pkginfo::user, users);
   READ_OBJECT_LIST(pkginfo::group, groups);
 
+  _type = pkgtype::RLX;
+  if (data["type"]) {
+    _type = pkginfo::str2pkgtype(data["type"].as<std::string>());
+  }
+
   OPTIONAL_VALUE(std::string, install_script, "");
 }
 

@@ -102,7 +102,7 @@ bool builder::_build(std::shared_ptr<recipe::package> package) {
   std::string pkg_src_dir = pkg_work_dir + "/src";
   std::string pkg_pkg_dir = pkg_work_dir + "/pkg";
 
-  std::string pkgfile = _pkgs_dir + "/" + package->packagefile(package->pack());
+  std::string pkgfile = _pkgs_dir + "/" + package->packagefile();
   if (std::filesystem::exists(pkgfile) && !_force) {
     std::cout << "Found in cache, skipping" << std::endl;
     if (package->pack() != "none") {

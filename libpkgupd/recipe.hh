@@ -62,6 +62,8 @@ class recipe : public std::enable_shared_from_this<recipe> {
 
     std::string about() const;
 
+    pkgtype type() const;
+
     std::vector<std::string> depends(bool all) const;
 
     std::vector<std::string> sources() const;
