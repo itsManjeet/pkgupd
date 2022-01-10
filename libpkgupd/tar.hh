@@ -4,12 +4,12 @@
 #include "archive.hh"
 
 namespace rlxos::libpkgupd {
-class tar : public archive {
+class Tar : public Archive {
  public:
-  tar(std::string const &p) : archive(p) {}
+  Tar(std::string const &p) : Archive(p) {}
   std::tuple<int, std::string> getdata(std::string const &filepath);
 
-  std::shared_ptr<archive::package> info();
+  std::shared_ptr<Archive::Package> info();
 
   std::vector<std::string> list();
 
@@ -21,7 +21,7 @@ class tar : public archive {
   bool extract(std::string const &outdir);
 
   bool compress(std::string const &srcdir,
-                std::shared_ptr<pkginfo> const &info);
+                std::shared_ptr<PackageInformation> const &info);
 };
 }  // namespace rlxos::libpkgupd
 #endif

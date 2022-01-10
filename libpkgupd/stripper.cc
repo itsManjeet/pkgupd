@@ -3,7 +3,7 @@
 #include "exec.hh"
 
 namespace rlxos::libpkgupd {
-stripper::stripper(std::vector<std::string> const &skips) {
+Stripper::Stripper(std::vector<std::string> const &skips) {
   // Thanks to (VenomLinux - scratchpkg) https://github.com/emmeett1
   // https://github.com/venomlinux/scratchpkg/blob/master/pkgbuild#L215
 
@@ -34,8 +34,8 @@ stripper::stripper(std::vector<std::string> const &skips) {
       " done\n";
 }
 
-bool stripper::strip(std::string const &dir) {
-  if (int status = exec().execute(_script, dir); status != 0) {
+bool Stripper::strip(std::string const &dir) {
+  if (int status = Executor().execute(_script, dir); status != 0) {
     _error = "strip script failed with exit code: " + std::to_string(status);
     return false;
   }

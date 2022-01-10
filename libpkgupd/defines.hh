@@ -12,7 +12,7 @@
 #include "colors.hh"
 
 namespace rlxos::libpkgupd {
-class object {
+class Object {
  protected:
   std::string _error;
 

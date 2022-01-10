@@ -4,11 +4,11 @@
 
 namespace rlxos::libpkgupd {
 
-std::tuple<int, std::string> tar::getdata(std::string const &filepath) {
+std::tuple<int, std::string> Tar::getdata(std::string const &filepath) {
   std::string cmd = "/bin/tar";
   cmd += " --zstd -O -xPf " + _pkgfile + " " + filepath;
 
-  auto [status, output] = exec().output(cmd);
+  auto [status, output] = Executor().output(cmd);
   if (status != 0) {
     _error = "failed to get data from " + _pkgfile;
     return {status, output};
@@ -16,7 +16,7 @@ std::tuple<int, std::string> tar::getdata(std::string const &filepath) {
   return {status, output};
 }
 
-std::shared_ptr<tar::package> tar::info() {
+std::shared_ptr<Tar::Package> Tar::info() {
   auto [status, content] = getdata("./info");
   if (status != 0) {
     _error = "failed to read package information";
@@ -33,14 +33,14 @@ std::shared_ptr<tar::package> tar::info() {
     return nullptr;
   }
 
-  return std::make_shared<tar::package>(data, _pkgfile);
+  return std::make_shared<Tar::Package>(data, _pkgfile);
 }
 
-std::vector<std::string> tar::list() {
+std::vector<std::string> Tar::list() {
   std::string cmd = "/bin/tar";
   cmd += " --zstd -tPf " + _pkgfile;
 
-  auto [status, output] = exec().output(cmd);
+  auto [status, output] = Executor().output(cmd);
   if (status != 0) {
     _error = output;
     return {};
@@ -56,8 +56,8 @@ std::vector<std::string> tar::list() {
   return files_list;
 }
 
-bool tar::compress(std::string const &srcdir,
-                   std::shared_ptr<pkginfo> const &info) {
+bool Tar::compress(std::string const &srcdir,
+                   std::shared_ptr<PackageInformation> const &info) {
   std::string pardir = std::filesystem::path(_pkgfile).parent_path();
   if (!std::filesystem::exists(pardir)) {
     std::error_code err;
@@ -106,7 +106,7 @@ bool tar::compress(std::string const &srcdir,
   std::string command = "/bin/tar";
 
   command += " --zstd -cPf " + _pkgfile + " -C " + srcdir + " . ";
-  if (exec().execute(command) != 0) {
+  if (Executor().execute(command) != 0) {
     _error = "failed to execute command for compression '" + command + "'";
     return false;
   }
@@ -114,7 +114,7 @@ bool tar::compress(std::string const &srcdir,
   return true;
 }
 
-bool tar::extract(std::string const &outdir) {
+bool Tar::extract(std::string const &outdir) {
   if (!std::filesystem::exists(_pkgfile)) {
     _error = "no " + _pkgfile + " exist";
     return false;
@@ -123,7 +123,7 @@ bool tar::extract(std::string const &outdir) {
   std::string cmd = "/bin/tar";
 
   cmd += " --zstd --exclude './info' -xPhpf " + _pkgfile + " -C " + outdir;
-  if (exec().execute(cmd) != 0) {
+  if (Executor().execute(cmd) != 0) {
     _error = "failed to execute extraction command";
     return false;
   }

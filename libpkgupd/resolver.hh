@@ -8,16 +8,16 @@
 #include "sysdb.hh"
 
 namespace rlxos::libpkgupd {
-class resolver : public object {
+class Resolver : public Object {
  private:
-  repodb &_repodb;
-  sysdb &_sysdb;
+  Repository &_repodb;
+  SystemDatabase &_sysdb;
   std::vector<std::string> _data, _visited;
 
   bool _to_skip(std::string const &pkgid);
 
  public:
-  resolver(repodb &rp, sysdb &sd) : _repodb{rp}, _sysdb{sd} {}
+  Resolver(Repository &rp, SystemDatabase &sd) : _repodb{rp}, _sysdb{sd} {}
 
   bool resolve(std::string const &pkgid, bool all = false);
 

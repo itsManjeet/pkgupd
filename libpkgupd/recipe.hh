@@ -11,9 +11,9 @@
 
 namespace rlxos::libpkgupd {
 
-class recipe : public std::enable_shared_from_this<recipe> {
+class Recipe : public std::enable_shared_from_this<Recipe> {
  public:
-  class package : public pkginfo {
+  class Package : public PackageInformation {
    public:
     class flag {
      private:
@@ -49,12 +49,12 @@ class recipe : public std::enable_shared_from_this<recipe> {
 
     std::vector<std::shared_ptr<flag>> _flags;
 
-    std::shared_ptr<recipe> _parent;
+    std::shared_ptr<Recipe> _parent;
 
    public:
-    package(YAML::Node const &data, std::string const &file);
+    Package(YAML::Node const &data, std::string const &file);
 
-    METHOD(std::shared_ptr<recipe>, parent);
+    METHOD(std::shared_ptr<Recipe>, parent);
 
     std::string id() const;
 
@@ -62,17 +62,17 @@ class recipe : public std::enable_shared_from_this<recipe> {
 
     std::string about() const;
 
-    pkgtype type() const;
+    PackageType type() const;
 
     std::vector<std::string> depends(bool all) const;
 
     std::vector<std::string> sources() const;
 
-    std::vector<std::shared_ptr<pkginfo::user>> users() const {
+    std::vector<std::shared_ptr<PackageInformation::User>> users() const {
       return _parent->_users;
     }
 
-    std::vector<std::shared_ptr<pkginfo::group>> groups() const {
+    std::vector<std::shared_ptr<PackageInformation::Group>> groups() const {
       return _parent->_groups;
     }
 
@@ -124,41 +124,41 @@ class recipe : public std::enable_shared_from_this<recipe> {
 
   std::vector<std::string> _environ;
 
-  std::vector<std::shared_ptr<pkginfo::user>> _users;
-  std::vector<std::shared_ptr<pkginfo::group>> _groups;
+  std::vector<std::shared_ptr<PackageInformation::User>> _users;
+  std::vector<std::shared_ptr<PackageInformation::Group>> _groups;
 
-  std::vector<std::shared_ptr<package>> _packages;
+  std::vector<std::shared_ptr<Package>> _packages;
 
   bool _split = false;
 
   YAML::Node _node;
 
  public:
-  recipe(YAML::Node const &node, std::string const &file);
+  Recipe(YAML::Node const &node, std::string const &file);
 
-  static std::shared_ptr<recipe> from_filepath(std::string const &filepath) {
-    auto ptr = std::make_shared<recipe>(YAML::LoadFile(filepath), filepath);
+  static std::shared_ptr<Recipe> from_filepath(std::string const &filepath) {
+    auto ptr = std::make_shared<Recipe>(YAML::LoadFile(filepath), filepath);
     for (auto &pkg : ptr->_packages) pkg->parent(ptr->shared_from_this());
 
     return ptr;
   }
 
-  static std::shared_ptr<recipe> from_yaml(YAML::Node const &node) {
-    auto ptr = std::make_shared<recipe>(node, "");
+  static std::shared_ptr<Recipe> from_yaml(YAML::Node const &node) {
+    auto ptr = std::make_shared<Recipe>(node, "");
     for (auto &pkg : ptr->_packages) pkg->parent(ptr->shared_from_this());
 
     return ptr;
   }
 
-  std::shared_ptr<package> operator[](std::string const &pkgid) const;
+  std::shared_ptr<Package> operator[](std::string const &pkgid) const;
 
-  GET_METHOD(std::vector<std::shared_ptr<package>>, packages);
+  GET_METHOD(std::vector<std::shared_ptr<Package>>, packages);
   GET_METHOD(std::string, id);
   GET_METHOD(bool, split);
 
   GET_METHOD(YAML::Node, node);
 
-  friend class recipe::package;
+  friend class Recipe::Package;
 };
 
 }  // namespace rlxos::libpkgupd

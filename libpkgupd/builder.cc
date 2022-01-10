@@ -12,7 +12,7 @@
 
 namespace rlxos::libpkgupd {
 
-bool builder::_prepare(std::vector<std::string> const &sources,
+bool Builder::_prepare(std::vector<std::string> const &sources,
                        std::string const &srcdir) {
   for (auto const &i : sources) {
     std::string pkgfile = std::filesystem::path(i).filename().string();
@@ -26,7 +26,7 @@ bool builder::_prepare(std::vector<std::string> const &sources,
 
     std::string outfile = _src_dir + "/" + pkgfile;
 
-    auto downloader_ = downloader();
+    auto downloader_ = Downloader();
 
     if (!std::filesystem::exists(outfile)) {
       if (!downloader_.download(url, outfile)) {
@@ -49,7 +49,7 @@ bool builder::_prepare(std::vector<std::string> const &sources,
                           ".bz2", ".lzma"}) {
       if (endswith(outfile, i)) {
         if (int status =
-                exec().execute("tar -xPf " + outfile + " -C " + srcdir);
+                Executor().execute("tar -xPf " + outfile + " -C " + srcdir);
             status != 0) {
           _error = "failed to extract " + outfile +
                    " with tar, exit status: " + std::to_string(status);
@@ -61,7 +61,7 @@ bool builder::_prepare(std::vector<std::string> const &sources,
     }
 
     if (endswith(outfile, "zip")) {
-      if (int status = exec().execute("unzip " + outfile + " -d " + srcdir);
+      if (int status = Executor().execute("unzip " + outfile + " -d " + srcdir);
           status != 0) {
         _error = "failed to extract " + outfile +
                  " with unzip, exit status:  " + std::to_string(status);
@@ -86,9 +86,9 @@ bool builder::_prepare(std::vector<std::string> const &sources,
   return true;
 }
 
-bool builder::_compile(std::string const &srcdir, std::string const &destdir,
-                       std::shared_ptr<recipe::package> package) {
-  auto compiler_ = compiler(package);
+bool Builder::_compile(std::string const &srcdir, std::string const &destdir,
+                       std::shared_ptr<Recipe::Package> package) {
+  auto compiler_ = Compiler(package);
   if (!compiler_.compile(srcdir, destdir)) {
     _error = compiler_.error();
     return false;
@@ -97,7 +97,7 @@ bool builder::_compile(std::string const &srcdir, std::string const &destdir,
   return true;
 }
 
-bool builder::_build(std::shared_ptr<recipe::package> package) {
+bool Builder::_build(std::shared_ptr<Recipe::Package> package) {
   std::string pkg_work_dir = _work_dir + "/" + package->id();
   std::string pkg_src_dir = pkg_work_dir + "/src";
   std::string pkg_pkg_dir = pkg_work_dir + "/pkg";
@@ -133,7 +133,7 @@ bool builder::_build(std::shared_ptr<recipe::package> package) {
   package->prepand_environ("pkgupd_pkgdir=" + pkg_pkg_dir);
 
   if (package->prescript().size()) {
-    if (int status = exec().execute(package->prescript(),
+    if (int status = Executor().execute(package->prescript(),
                                     pkg_src_dir + "/" + package->dir(),
                                     package->environ());
         status != 0) {
@@ -149,7 +149,7 @@ bool builder::_build(std::shared_ptr<recipe::package> package) {
   }
 
   if (package->postscript().size()) {
-    if (int status = exec().execute(package->postscript(),
+    if (int status = Executor().execute(package->postscript(),
                                     pkg_src_dir + "/" + package->dir(),
                                     package->environ());
         status != 0) {
@@ -167,7 +167,7 @@ bool builder::_build(std::shared_ptr<recipe::package> package) {
   }
 
   if (package->strip()) {
-    stripper stripper_(package->skipstrip());
+    Stripper stripper_(package->skipstrip());
 
     PROCESS("stripping " + package->id());
     if (!stripper_.strip(pkg_pkg_dir)) {
@@ -178,13 +178,13 @@ bool builder::_build(std::shared_ptr<recipe::package> package) {
   if (package->pack() == "none") {
     INFO("No packaging done");
   } else {
-    std::shared_ptr<archive> archive_;
+    std::shared_ptr<Archive> archive_;
     if (package->pack() == "rlx") {
       PROCESS("packaging rlx archive");
-      archive_ = std::make_shared<tar>(pkgfile);
+      archive_ = std::make_shared<Tar>(pkgfile);
     } else if (package->pack() == "app") {
       PROCESS("packaging app image");
-      archive_ = std::make_shared<image>(pkgfile);
+      archive_ = std::make_shared<Image>(pkgfile);
     } else {
       _error = "unsupport packaging format specified '" + package->pack() + "'";
       return false;

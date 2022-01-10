@@ -3,7 +3,7 @@
 #include "exec.hh"
 
 namespace rlxos::libpkgupd {
-compiler::configurator compiler::_detect_configurator(std::string const &path) {
+Compiler::configurator Compiler::_detect_configurator(std::string const &path) {
   std::string touse;
 
   for (auto const &i : _package->flags()) {
@@ -26,7 +26,7 @@ compiler::configurator compiler::_detect_configurator(std::string const &path) {
   return configurator::INVALID;
 }
 
-compiler::builder compiler::_detect_builder(std::string const &path) {
+Compiler::builder Compiler::_detect_builder(std::string const &path) {
   std::string touse;
 
   for (auto const &i : _package->flags()) {
@@ -49,12 +49,12 @@ compiler::builder compiler::_detect_builder(std::string const &path) {
   return builder::INVALID;
 }
 
-bool compiler::compile(std::string const &srcdir, std::string const &destdir) {
+bool Compiler::compile(std::string const &srcdir, std::string const &destdir) {
   std::string builddir = srcdir;
 
   if (_package->script().size() != 0) {
     if (int status =
-            exec().execute(_package->script(), srcdir, _package->environ());
+            Executor().execute(_package->script(), srcdir, _package->environ());
         status != 0) {
       _error = "script failed with exit code: " + std::to_string(status);
       return false;
@@ -120,7 +120,7 @@ bool compiler::compile(std::string const &srcdir, std::string const &destdir) {
       return false;
   }
 
-  if (int status = exec().execute(cmd, builddir, _package->environ());
+  if (int status = Executor().execute(cmd, builddir, _package->environ());
       status != 0) {
     _error = "failed to configure, exit code: " + std::to_string(status);
     return false;
@@ -140,7 +140,7 @@ bool compiler::compile(std::string const &srcdir, std::string const &destdir) {
       return false;
   }
 
-  if (int status = exec().execute(cmd, builddir, _package->environ());
+  if (int status = Executor().execute(cmd, builddir, _package->environ());
       status != 0) {
     _error = "Failed to compile, exit code: " + std::to_string(status);
     return false;
@@ -167,7 +167,7 @@ bool compiler::compile(std::string const &srcdir, std::string const &destdir) {
       return false;
   }
 
-  if (int status = exec().execute(cmd, builddir, environ); status != 0) {
+  if (int status = Executor().execute(cmd, builddir, environ); status != 0) {
     _error = "failed to compile, exit code: " + std::to_string(status);
     return false;
   }

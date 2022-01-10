@@ -6,7 +6,7 @@ using namespace rlxos;
 
 class TriggerTest : public ::testing::Test {
  protected:
-  class PkgupdTriggererTester : public libpkgupd::triggerer {
+  class PkgupdTriggererTester : public libpkgupd::Triggerer {
    public:
     bool triggers_checkup(std::vector<type> const& t,
                           std::vector<std::string> const& s) {
@@ -27,6 +27,6 @@ class TriggerTest : public ::testing::Test {
 
 TEST_F(TriggerTest, RegrexPatternCheck) {
   EXPECT_TRUE(
-      tester.triggers_checkup({libpkgupd::triggerer::type::GLIB_SCHEMAS},
+      tester.triggers_checkup({libpkgupd::Triggerer::type::GLIB_SCHEMAS},
                               {"./usr/share/glib-2.0/schemas/org.xfce.mousepad.gschema.xml"}));
 }

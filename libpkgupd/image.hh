@@ -5,7 +5,7 @@
 #include "recipe.hh"
 
 namespace rlxos::libpkgupd {
-class image : public archive {
+class Image : public Archive {
  private:
   std::string _mimetype(std::string const& path);
   std::set<std::string> _list_lib(std::string const& path);
@@ -17,11 +17,11 @@ class image : public archive {
   bool install_desktopfile(std::string const& outdir);
 
  public:
-  image(std::string const& p);
+  Image(std::string const& p);
 
   std::tuple<int, std::string> getdata(std::string const& filepath);
 
-  std::shared_ptr<archive::package> info();
+  std::shared_ptr<Archive::Package> info();
 
   std::vector<std::string> list();
 
@@ -33,7 +33,7 @@ class image : public archive {
   bool extract(std::string const& outdir);
 
   bool compress(std::string const& srcdir,
-                std::shared_ptr<pkginfo> const& info);
+                std::shared_ptr<PackageInformation> const& info);
 };
 }  // namespace rlxos::libpkgupd
 

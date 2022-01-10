@@ -8,14 +8,14 @@
 
 namespace rlxos::libpkgupd {
 
-std::tuple<int, std::string> image::getdata(std::string const& _filepath) {
+std::tuple<int, std::string> Image::getdata(std::string const& _filepath) {
   std::string filepath = _filepath;
   if (filepath.substr(0, 2) == "./") {
     filepath = filepath.substr(2, filepath.length() - 2);
   }
 
   auto [status, output] =
-      exec().output(_pkgfile + " --appimage-extract " + filepath, "/tmp/");
+      Executor().output(_pkgfile + " --appimage-extract " + filepath, "/tmp/");
   if (status != 0) {
     return {status, "failed to get data from " + _pkgfile};
   }
@@ -31,7 +31,7 @@ std::tuple<int, std::string> image::getdata(std::string const& _filepath) {
                          std::istreambuf_iterator<char>())};
 }
 
-std::shared_ptr<image::package> image::info() {
+std::shared_ptr<Image::Package> Image::info() {
   auto [status, content] = getdata("./info");
   if (status != 0) {
     _error = "failed to read package information " + std::to_string(status) +
@@ -49,15 +49,15 @@ std::shared_ptr<image::package> image::info() {
     return nullptr;
   }
 
-  return std::make_shared<image::package>(data, _pkgfile);
+  return std::make_shared<Image::Package>(data, _pkgfile);
 }
 
-std::vector<std::string> image::list() {
+std::vector<std::string> Image::list() {
   return {"/apps/" + std::filesystem::path(_pkgfile).filename().string()};
 }
 
-bool image::compress(std::string const& srcdir,
-                     std::shared_ptr<pkginfo> const& info) {
+bool Image::compress(std::string const& srcdir,
+                     std::shared_ptr<PackageInformation> const& info) {
   std::string pardir = std::filesystem::path(_pkgfile).parent_path();
   if (!std::filesystem::exists(pardir)) {
     std::error_code err;
@@ -103,8 +103,8 @@ bool image::compress(std::string const& srcdir,
 
   fileptr.close();
 
-  std::shared_ptr<recipe::package> _pkg =
-      std::dynamic_pointer_cast<recipe::package>(info);
+  std::shared_ptr<Recipe::Package> _pkg =
+      std::dynamic_pointer_cast<Recipe::Package>(info);
 
   auto lib_flag = _pkg->getflag("copy-libs");
   if (lib_flag != nullptr && lib_flag->value() == "yes") {
@@ -174,7 +174,7 @@ bool image::compress(std::string const& srcdir,
 
   {
     DEBUG("packing AppImage")
-    int status = exec().execute(
+    int status = Executor().execute(
         "appimagetool --sign " + srcdir + " " + _pkgfile, ".", {"ARCH=x86_64"});
     if (status != 0) {
       _error = "failed to pack appimage";
@@ -185,7 +185,7 @@ bool image::compress(std::string const& srcdir,
   return true;
 }
 
-bool image::install_icon(std::string const& outdir) {
+bool Image::install_icon(std::string const& outdir) {
   std::string icon_dest_dir =
       std::filesystem::path(outdir) / "apps" / "share" / "pixmaps";
 
@@ -211,7 +211,7 @@ bool image::install_icon(std::string const& outdir) {
   return true;
 }
 
-bool image::install_desktopfile(std::string const& outdir) {
+bool Image::install_desktopfile(std::string const& outdir) {
   std::string deskfile_dest_dir =
       std::filesystem::path(outdir) / "apps" / "share" / "applications";
   if (!std::filesystem::exists(deskfile_dest_dir)) {
@@ -255,7 +255,7 @@ bool image::install_desktopfile(std::string const& outdir) {
   return true;
 }
 
-bool image::extract(std::string const& outdir) {
+bool Image::extract(std::string const& outdir) {
   std::error_code err;
   std::string appdir = outdir + "/apps/";
 
@@ -283,11 +283,11 @@ bool image::extract(std::string const& outdir) {
   return true;
 }
 
-image::image(std::string const& p) : archive(p) {}
+Image::Image(std::string const& p) : Archive(p) {}
 
-std::string image::_mimetype(std::string const& path) {
+std::string Image::_mimetype(std::string const& path) {
   auto [status, output] =
-      exec().output("file --mime-type " + path + " | awk '{print $2}'");
+      Executor().output("file --mime-type " + path + " | awk '{print $2}'");
   if (status != 0) {
     return "";
   }
@@ -295,7 +295,7 @@ std::string image::_mimetype(std::string const& path) {
   return output.substr(0, output.size() - 1);
 }
 
-std::set<std::string> image::_list_lib(std::string const& path) {
+std::set<std::string> Image::_list_lib(std::string const& path) {
   std::string lib_env;
   if (_libpath.size()) {
     lib_env = "LD_LIBRARY_PATH=";
@@ -307,7 +307,7 @@ std::set<std::string> image::_list_lib(std::string const& path) {
   }
 
   auto [status, output] =
-      exec().output(lib_env + " ldd " + path + " | awk '{print $3}'");
+      Executor().output(lib_env + " ldd " + path + " | awk '{print $3}'");
   if (status != 0) {
     return {};
   }
@@ -326,7 +326,7 @@ std::set<std::string> image::_list_lib(std::string const& path) {
   return list;
 }
 
-std::set<std::string> image::_list_req(std::string const& appdir) {
+std::set<std::string> Image::_list_req(std::string const& appdir) {
   std::set<std::string> list;
 
   for (auto const& d : std::filesystem::recursive_directory_iterator(appdir)) {

@@ -4,13 +4,13 @@
 #include "defines.hh"
 
 namespace rlxos::libpkgupd {
-class stripper : public object {
+class Stripper : public Object {
  private:
   std::string _script;
   std::string _filter = "cat";
 
  public:
-  stripper(std::vector<std::string> const &skips = {});
+  Stripper(std::vector<std::string> const &skips = {});
 
   METHOD(std::string, script);
 

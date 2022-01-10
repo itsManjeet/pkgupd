@@ -4,7 +4,7 @@
 #include "defines.hh"
 
 namespace rlxos::libpkgupd {
-class downloader : public object {
+class Downloader : public Object {
  private:
   std::vector<std::string> _urls;
 
@@ -13,7 +13,7 @@ class downloader : public object {
   static size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *fstream);
 
  public:
-  downloader() {}
+  Downloader() {}
 
   METHOD(std::vector<std::string>, urls);
 

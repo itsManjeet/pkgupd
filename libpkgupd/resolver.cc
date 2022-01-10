@@ -1,6 +1,6 @@
 #include "resolver.hh"
 namespace rlxos::libpkgupd {
-bool resolver::_to_skip(std::string const &pkgid) {
+bool Resolver::_to_skip(std::string const &pkgid) {
   if ((std::find(_data.begin(), _data.end(), pkgid) != _data.end()))
     return true;
 
@@ -12,7 +12,7 @@ bool resolver::_to_skip(std::string const &pkgid) {
   _visited.push_back(pkgid);
   return false;
 }
-bool resolver::resolve(std::string const &pkgid, bool all) {
+bool Resolver::resolve(std::string const &pkgid, bool all) {
   if (_to_skip(pkgid)) return true;
 
   auto pkginfo_ = _repodb[pkgid];

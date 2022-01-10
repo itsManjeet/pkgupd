@@ -8,45 +8,45 @@
 
 namespace rlxos::libpkgupd {
 /**
- * This class represent rlxos compressed package,
+ * This class represent rlxos compressed Package,
  * @brief It provides various methods to handle, read, compress and extract
  * rlxos packages
  */
-class archive : public object {
+class Archive : public Object {
  public:
-  class package : public pkginfo {
+  class Package : public PackageInformation {
    private:
     std::string _id, _version, _about;
     std::string _script;
-    pkgtype _type;
+    PackageType _type;
 
     std::vector<std::string> _depends;
 
    public:
-    package(YAML::Node const &data, std::string const &file);
+    Package(YAML::Node const &data, std::string const &file);
 
     std::string id() const { return _id; }
     std::string version() const { return _version; }
     std::string about() const { return _about; }
-    pkgtype type() const { return _type; }
+    PackageType type() const { return _type; }
     std::vector<std::string> depends(bool) const { return _depends; }
   };
 
  protected:
   std::string _pkgfile;
-  std::shared_ptr<archive::package> _package;
+  std::shared_ptr<Archive::Package> _package;
 
  public:
-  archive(std::string const &packagefile) : _pkgfile{packagefile} {}
+  Archive(std::string const &packagefile) : _pkgfile{packagefile} {}
 
   /**
    * @brief Provides the file data of specified file in the package
-   * @param filepath path to the file in package (must be started from ./)
+   * @param filepath path to the file in Package (must be started from ./)
    * @return content of file
    */
   virtual std::tuple<int, std::string> getdata(std::string const &filepath) = 0;
 
-  virtual std::shared_ptr<archive::package> info() = 0;
+  virtual std::shared_ptr<Archive::Package> info() = 0;
   /**
    * List all files in the archive
    */
@@ -57,7 +57,7 @@ class archive : public object {
   virtual bool extract(std::string const &outdir) = 0;
 
   virtual bool compress(std::string const &srcdir,
-                        std::shared_ptr<pkginfo> const &info) = 0;
+                        std::shared_ptr<PackageInformation> const &info) = 0;
 };
 }  // namespace rlxos::libpkgupd
 

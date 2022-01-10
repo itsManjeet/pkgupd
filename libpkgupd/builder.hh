@@ -5,12 +5,12 @@
 #include "recipe.hh"
 
 namespace rlxos::libpkgupd {
-class builder : public object {
+class Builder : public Object {
  private:
-  std::vector<std::shared_ptr<recipe::package>> _packages;
+  std::vector<std::shared_ptr<Recipe::Package>> _packages;
   std::vector<std::string> _archive_list;
 
-  installer &_installer;
+  Installer &_installer;
 
   std::string _work_dir, _pkgs_dir, _src_dir, _root_dir;
 
@@ -21,14 +21,14 @@ class builder : public object {
                 std::string const &srcdir);
 
   bool _compile(std::string const &srcdir, std::string const &pkgdir,
-                std::shared_ptr<recipe::package> package);
+                std::shared_ptr<Recipe::Package> package);
 
-  bool _build(std::shared_ptr<recipe::package> package);
+  bool _build(std::shared_ptr<Recipe::Package> package);
 
  public:
-  builder(std::string const &wdir, std::string const &pdir,
+  Builder(std::string const &wdir, std::string const &pdir,
           std::string const &sdir, std::string const &root_dir,
-          installer &_installer, bool force = false, bool triggers = false)
+          Installer &_installer, bool force = false, bool triggers = false)
       : _work_dir{wdir},
         _pkgs_dir{pdir},
         _src_dir{sdir},
@@ -37,11 +37,11 @@ class builder : public object {
         _skip_triggers{triggers},
         _installer{_installer} {}
 
-  ~builder() { std::filesystem::remove_all(_work_dir); }
+  ~Builder() { std::filesystem::remove_all(_work_dir); }
 
   GET_METHOD(std::vector<std::string>, archive_list);
 
-  bool build(std::shared_ptr<recipe> const &recipe_) {
+  bool build(std::shared_ptr<Recipe> const &recipe_) {
     _work_dir += "/" + recipe_->id();
 
     for (auto const &dir : {_pkgs_dir, _src_dir, _work_dir}) {

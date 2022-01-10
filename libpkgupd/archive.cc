@@ -6,18 +6,18 @@
 
 namespace rlxos::libpkgupd {
 
-archive::package::package(YAML::Node const &data, std::string const &file) {
+Archive::Package::Package(YAML::Node const &data, std::string const &file) {
   READ_VALUE(std::string, id);
   READ_VALUE(std::string, version);
   READ_VALUE(std::string, about);
   READ_LIST(std::string, depends);
 
-  READ_OBJECT_LIST(pkginfo::user, users);
-  READ_OBJECT_LIST(pkginfo::group, groups);
+  READ_OBJECT_LIST(PackageInformation::User, users);
+  READ_OBJECT_LIST(PackageInformation::Group, groups);
 
-  _type = pkgtype::RLX;
+  _type = PackageType::RLX;
   if (data["type"]) {
-    _type = pkginfo::str2pkgtype(data["type"].as<std::string>());
+    _type = PackageInformation::str2pkgtype(data["type"].as<std::string>());
   }
 
   OPTIONAL_VALUE(std::string, install_script, "");

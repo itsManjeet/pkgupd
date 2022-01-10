@@ -8,7 +8,7 @@
 
 namespace rlxos::libpkgupd {
 
-triggerer::type triggerer::_get(std::string const &path) {
+Triggerer::type Triggerer::_get(std::string const &path) {
   for (auto const &i :
        {type::MIME, type::DESKTOP, type::FONTS_SCALE, type::UDEV, type::ICONS,
         type::GTK3_INPUT_MODULES, type::GTK2_INPUT_MODULES, type::GLIB_SCHEMAS,
@@ -20,7 +20,7 @@ triggerer::type triggerer::_get(std::string const &path) {
   return type::INVALID;
 }
 
-bool triggerer::_exec(type t) {
+bool Triggerer::_exec(type t) {
   std::string cmd;
 
   switch (t) {
@@ -72,14 +72,14 @@ bool triggerer::_exec(type t) {
         if (std::filesystem::is_empty(i.path()))
           std::filesystem::remove(i.path(), ee);
 
-        if (int status = exec().execute("mkfontdir " + i.path().string());
+        if (int status = Executor().execute("mkfontdir " + i.path().string());
             status != 0) {
           _error +=
               "mkfontdir failed with exit code: " + std::to_string(status);
           status = false;
         }
 
-        if (int status = exec().execute("mkfontscale " + i.path().string());
+        if (int status = Executor().execute("mkfontscale " + i.path().string());
             status != 0) {
           _error +=
               "mkfontscale failed with exit code: " + std::to_string(status);
@@ -95,7 +95,7 @@ bool triggerer::_exec(type t) {
       for (auto const &i :
            std::filesystem::directory_iterator("/usr/share/icons")) {
         if (int status =
-                exec().execute("gtk-update-icon-cache -q " + i.path().string());
+                Executor().execute("gtk-update-icon-cache -q " + i.path().string());
             status != 0) {
           _error += "gtk-update-icon-cahce failed with exit code: " +
                     std::to_string(status);
@@ -109,7 +109,7 @@ bool triggerer::_exec(type t) {
       throw std::runtime_error("unimplemented trigger executed");
   }
 
-  if (int status = exec().execute(cmd); status != 0) {
+  if (int status = Executor().execute(cmd); status != 0) {
     _error += "trigger failed with exit code: " + std::to_string(status);
     status = false;
   }
@@ -117,7 +117,7 @@ bool triggerer::_exec(type t) {
   return true;
 }
 
-std::string triggerer::_regex(
+std::string Triggerer::_regex(
     type t) {  // Thanks to venomLinux scratch package manager
   // https://github.com/venomlinux/scratchpkg/blob/master/scratch#L284
   switch (t) {
@@ -159,7 +159,7 @@ std::string triggerer::_regex(
       "unimplemented trigger found in triggerer::triggerRegex()");
 }
 
-std::string triggerer::_mesg(type t) {
+std::string Triggerer::_mesg(type t) {
   // Thanks to venomLinux scratch package manager
   // https://github.com/venomlinux/scratchpkg/blob/master/scratch#L284
   switch (t) {
@@ -191,9 +191,9 @@ std::string triggerer::_mesg(type t) {
       "unimplemented trigger found in triggerer::getMessage()");
 }
 
-std::vector<triggerer::type> triggerer::_get(
+std::vector<Triggerer::type> Triggerer::_get(
     std::vector<std::vector<std::string>> const &fileslist) {
-  std::vector<triggerer::type> requiredTriggers;
+  std::vector<Triggerer::type> requiredTriggers;
   for (auto i :
        {type::MIME, type::DESKTOP, type::FONTS_SCALE, type::UDEV, type::ICONS,
         type::GTK3_INPUT_MODULES, type::GTK2_INPUT_MODULES, type::GLIB_SCHEMAS,
@@ -216,7 +216,7 @@ std::vector<triggerer::type> triggerer::_get(
   return requiredTriggers;
 }
 
-bool triggerer::trigger(std::vector<std::shared_ptr<pkginfo>> const &pkgs) {
+bool Triggerer::trigger(std::vector<std::shared_ptr<PackageInformation>> const &pkgs) {
   bool status = true;
   for (auto const &i : pkgs) {
     for (auto const &grp : i->groups()) {
@@ -242,7 +242,7 @@ bool triggerer::trigger(std::vector<std::shared_ptr<pkginfo>> const &pkgs) {
   return status;
 }
 
-bool triggerer::trigger(
+bool Triggerer::trigger(
     std::vector<std::vector<std::string>> const &fileslist) {
   if (fileslist.size() == 0) return true;
 
@@ -260,7 +260,7 @@ bool triggerer::trigger(
   {
     PROCESS("Updating library cache");
 
-    if (int status = exec().execute("/bin/ldconfig"); status != 0) {
+    if (int status = Executor().execute("/bin/ldconfig"); status != 0) {
       _error = "failed to update library cache";
       return false;
     }
@@ -268,7 +268,7 @@ bool triggerer::trigger(
   return status;
 }
 
-bool triggerer::trigger() {
+bool Triggerer::trigger() {
   for (auto i : {
            type::MIME,
            type::DESKTOP,

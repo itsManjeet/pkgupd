@@ -1,7 +1,7 @@
 #include "remover.hh"
 
 namespace rlxos::libpkgupd {
-bool remover::remove(std::shared_ptr<sysdb::package> pkginfo_) {
+bool Remover::remove(std::shared_ptr<SystemDatabase::package> pkginfo_) {
   auto files = pkginfo_->files();
 
   bool status = true;
@@ -42,8 +42,8 @@ bool remover::remove(std::shared_ptr<sysdb::package> pkginfo_) {
   return status;
 }
 
-bool remover::remove(std::vector<std::string> const &pkgs, bool skip_triggers) {
-  std::vector<std::shared_ptr<sysdb::package>> pkgsInfo;
+bool Remover::remove(std::vector<std::string> const &pkgs, bool skip_triggers) {
+  std::vector<std::shared_ptr<SystemDatabase::package>> pkgsInfo;
 
   for (auto const &i : pkgs) {
     auto pkginfo_ = _sys_db[i];
@@ -52,7 +52,7 @@ bool remover::remove(std::vector<std::string> const &pkgs, bool skip_triggers) {
       return false;
     }
 
-    pkgsInfo.push_back(std::dynamic_pointer_cast<sysdb::package>(pkginfo_));
+    pkgsInfo.push_back(std::dynamic_pointer_cast<SystemDatabase::package>(pkginfo_));
   }
 
   for (auto const &i : pkgsInfo) {

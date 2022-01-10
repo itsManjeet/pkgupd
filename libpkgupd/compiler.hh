@@ -18,9 +18,9 @@
 #define RLXOS_SYSCONFDIR "/etc"
 
 namespace rlxos::libpkgupd {
-class compiler : public object {
+class Compiler : public Object {
  private:
-  std::shared_ptr<recipe::package> _package;
+  std::shared_ptr<Recipe::Package> _package;
 
   enum class configurator { INVALID, AUTOCONF, AUTOGEN, PYSETUP, MESON, CMAKE };
   enum class builder {
@@ -46,7 +46,7 @@ class compiler : public object {
   builder _detect_builder(std::string const &path);
 
  public:
-  compiler(std::shared_ptr<recipe::package> &package) : _package{package} {}
+  Compiler(std::shared_ptr<Recipe::Package> &package) : _package{package} {}
 
   bool compile(std::string const &srcdir, std::string const &pkgdir);
 };

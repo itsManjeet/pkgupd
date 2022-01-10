@@ -7,14 +7,14 @@
 
 namespace rlxos::libpkgupd {
 
-class sysdb : public db {
+class SystemDatabase : public Database {
  public:
-  class package : public pkginfo {
+  class package : public PackageInformation {
    private:
     std::string _id;
     std::string _version;
     std::string _about;
-    pkgtype _type;
+    PackageType _type;
 
     std::vector<std::string> _depends, _files;
 
@@ -28,30 +28,30 @@ class sysdb : public db {
     std::string id() const { return _id; }
     std::string version() const { return _version; }
     std::string about() const { return _about; }
-    pkgtype type() const { return _type; }
+    PackageType type() const { return _type; }
     std::vector<std::string> depends(bool) const { return _depends; }
 
     GET_METHOD(std::vector<std::string>, files);
     GET_METHOD(std::string, installed_on);
     GET_METHOD(std::string, required_by);
   };
-  sysdb(std::string const &d) : db(d) {
+  SystemDatabase(std::string const &d) : Database(d) {
     DEBUG("System Database: " << _data_dir);
   }
 
-  std::shared_ptr<pkginfo> operator[](std::string const &pkgid);
+  std::shared_ptr<PackageInformation> operator[](std::string const &pkgid);
 
-  std::vector<std::shared_ptr<pkginfo>> all();
+  std::vector<std::shared_ptr<PackageInformation>> all();
 
-  bool is_installed(std::shared_ptr<pkginfo> const &pkginfo);
+  bool is_installed(std::shared_ptr<PackageInformation> const &pkginfo);
 
-  bool outdated(std::shared_ptr<pkginfo> const &pkginfo);
+  bool outdated(std::shared_ptr<PackageInformation> const &pkginfo);
 
-  bool add(std::shared_ptr<pkginfo> const &pkginfo,
+  bool add(std::shared_ptr<PackageInformation> const &pkginfo,
            std::vector<std::string> const &files, std::string root,
            bool update = false);
 
-  bool remove(std::shared_ptr<pkginfo> const &pkginfo);
+  bool remove(std::shared_ptr<PackageInformation> const &pkginfo);
 };
 }  // namespace rlxos::libpkgupd
 

@@ -3,12 +3,12 @@
 #include "recipe.hh"
 
 namespace rlxos::libpkgupd {
-std::shared_ptr<pkginfo> repodb::operator[](std::string const &pkgid) {
+std::shared_ptr<PackageInformation> Repository::operator[](std::string const &pkgid) {
   auto direct_path = std::filesystem::path(_data_dir) / (pkgid + ".yml");
   if (std::filesystem::exists(direct_path)) {
-    std::shared_ptr<recipe> recipe_;
+    std::shared_ptr<Recipe> recipe_;
     try {
-      recipe_ = recipe::from_filepath(direct_path);
+      recipe_ = Recipe::from_filepath(direct_path);
     } catch (YAML::Exception const &ee) {
       _error = "failed to read recipe file '" + direct_path.string() + "' " +
                std::string(ee.what());
@@ -49,9 +49,9 @@ std::shared_ptr<pkginfo> repodb::operator[](std::string const &pkgid) {
     return nullptr;
   }
 
-  std::shared_ptr<recipe> recipe_;
+  std::shared_ptr<Recipe> recipe_;
   try {
-    recipe_ = recipe::from_filepath(_try_rcp_file);
+    recipe_ = Recipe::from_filepath(_try_rcp_file);
   } catch (YAML::Exception const &ee) {
     _error = "failed to read recipe file '" + _try_rcp_file + "' " +
              std::string(ee.what());
@@ -68,15 +68,15 @@ std::shared_ptr<pkginfo> repodb::operator[](std::string const &pkgid) {
   return packageInfo;
 }
 
-std::vector<std::shared_ptr<pkginfo>> repodb::all() {
-  std::vector<std::shared_ptr<pkginfo>> data;
+std::vector<std::shared_ptr<PackageInformation>> Repository::all() {
+  std::vector<std::shared_ptr<PackageInformation>> data;
   for (auto const &i : std::filesystem::directory_iterator(_data_dir)) {
     try {
       if (i.is_directory()) {
         continue;
       }
       auto recipe_ =
-          recipe::from_filepath(std::filesystem::path(_data_dir) / i);
+          Recipe::from_filepath(std::filesystem::path(_data_dir) / i);
       for (auto const &i : recipe_->packages()) {
         data.push_back(i);
       }

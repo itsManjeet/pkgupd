@@ -40,7 +40,7 @@ int progress_func(void *ptr, double TotalToDownload, double NowDownloaded,
   return 0;
 }
 
-bool downloader::download(std::string const &url, std::string const &outfile) {
+bool Downloader::download(std::string const &url, std::string const &outfile) {
   CURL *curl;
   CURLcode res;
   FILE *fptr;
@@ -92,7 +92,7 @@ bool downloader::download(std::string const &url, std::string const &outfile) {
   return res == CURLE_OK;
 }
 
-bool downloader::valid(std::string const &url) {
+bool Downloader::valid(std::string const &url) {
   CURL *curl;
   CURLcode resp;
 
@@ -123,7 +123,7 @@ bool downloader::valid(std::string const &url) {
   return false;
 }
 
-bool downloader::get(std::string const &file, std::string const &outdir) {
+bool Downloader::get(std::string const &file, std::string const &outdir) {
   if (_urls.size() == 0) {
     _error = "No url specified";
     return false;

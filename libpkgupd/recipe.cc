@@ -15,22 +15,22 @@ using std::string;
 
 namespace rlxos::libpkgupd {
 
-recipe::recipe(YAML::Node const &data, std::string const &file) : _node{data} {
+Recipe::Recipe(YAML::Node const &data, std::string const &file) : _node{data} {
   READ_VALUE(string, id);
   READ_VALUE(string, version);
   READ_VALUE(string, about);
 
   READ_COMMON();
 
-  READ_OBJECT_LIST(pkginfo::user, users);
-  READ_OBJECT_LIST(pkginfo::group, groups);
+  READ_OBJECT_LIST(PackageInformation::User, users);
+  READ_OBJECT_LIST(PackageInformation::Group, groups);
 
   OPTIONAL_VALUE(bool, split, false);
 
-  READ_OBJECT_LIST(package, packages);
+  READ_OBJECT_LIST(Package, packages);
 }
 
-recipe::package::package(YAML::Node const &data, std::string const &file) {
+Recipe::Package::Package(YAML::Node const &data, std::string const &file) {
   READ_VALUE(string, id);
   READ_VALUE(string, dir);
 
@@ -49,7 +49,7 @@ recipe::package::package(YAML::Node const &data, std::string const &file) {
   READ_OBJECT_LIST(flag, flags);
 }
 
-recipe::package::flag::flag(YAML::Node const &data, std::string const &file) {
+Recipe::Package::flag::flag(YAML::Node const &data, std::string const &file) {
   READ_VALUE(string, id);
   READ_VALUE(string, value);
 
@@ -60,7 +60,7 @@ recipe::package::flag::flag(YAML::Node const &data, std::string const &file) {
   }
 }
 
-std::string recipe::package::id() const {
+std::string Recipe::Package::id() const {
   if (_id == "lib" || _id == "lib32") return _id + _parent->id();
 
   if (_id == "pkg") return _parent->_id;
@@ -68,19 +68,19 @@ std::string recipe::package::id() const {
   return _parent->_id + "-" + _id;
 }
 
-std::string recipe::package::version() const { return _parent->_version; }
+std::string Recipe::Package::version() const { return _parent->_version; }
 
-std::string recipe::package::about() const { return _parent->_about; }
+std::string Recipe::Package::about() const { return _parent->_about; }
 
-pkginfo::pkgtype recipe::package::type() const { 
+PackageInformation::PackageType Recipe::Package::type() const { 
   if (_pack == "app") {
-    return pkgtype::APP;
+    return PackageType::APP;
   } else {
-    return pkgtype::PKG;
+    return PackageType::PKG;
   }
 }
 
-std::vector<std::string> recipe::package::depends(bool all) const {
+std::vector<std::string> Recipe::Package::depends(bool all) const {
   std::vector<string> depends = _runtime_depends;
   depends.insert(depends.end(), _parent->_runtime_depends.begin(),
                  _parent->_runtime_depends.end());
@@ -95,23 +95,23 @@ std::vector<std::string> recipe::package::depends(bool all) const {
   return depends;
 }
 
-std::vector<std::string> recipe::package::sources() const {
+std::vector<std::string> Recipe::Package::sources() const {
   std::vector<std::string> all_sources = _sources;
   all_sources.insert(all_sources.end(), _parent->_sources.begin(),
                      _parent->_sources.end());
   return all_sources;
 }
 
-std::vector<std::string> recipe::package::environ() {
+std::vector<std::string> Recipe::Package::environ() {
   std::vector<std::string> allenviron = _parent->_environ;
   allenviron.insert(allenviron.end(), _environ.begin(), _environ.end());
   return allenviron;
 }
 
-std::shared_ptr<recipe::package> recipe::operator[](
+std::shared_ptr<Recipe::Package> Recipe::operator[](
     std::string const &pkgid) const {
   auto pkgiter = std::find_if(_packages.begin(), _packages.end(),
-                              [&](std::shared_ptr<package> const &p) {
+                              [&](std::shared_ptr<Package> const &p) {
                                 if (pkgid == this->id() && (p->id() == "pkg"))
                                   return true;
 

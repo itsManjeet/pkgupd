@@ -188,10 +188,10 @@ int PKGUPD::exec(int ac, char **av) {
     }
   }
 
-  auto sysdb_ = sysdb(_get_value(SYS_DB, DEFAULT_DATA_DIR));
-  auto repodb_ = repodb(_get_value(REPO_DB, DEFAULT_REPO_DIR));
+  auto sysdb_ = SystemDatabase(_get_value(SYS_DB, DEFAULT_DATA_DIR));
+  auto repodb_ = Repository(_get_value(REPO_DB, DEFAULT_REPO_DIR));
 
-  auto downloader_ = downloader();
+  auto downloader_ = Downloader();
 
   std::vector<std::string> _urls;
   if (_config["mirrors"]) {
@@ -204,7 +204,7 @@ int PKGUPD::exec(int ac, char **av) {
 
   downloader_.urls(_urls);
 
-  auto installer_ = installer(sysdb_, repodb_, downloader_,
+  auto installer_ = Installer(sysdb_, repodb_, downloader_,
                               _get_value(PKG_DIR, DEFAULT_PKGS_DIR));
 
   switch (_task) {
@@ -268,7 +268,7 @@ int PKGUPD::exec(int ac, char **av) {
         to_install = {_args[0]};
       } else if (!_is_flag(flag::SKIP_DEPENDS)) {
         DEBUG("resolving dependencies")
-        auto resolver_ = resolver(repodb_, sysdb_);
+        auto resolver_ = Resolver(repodb_, sysdb_);
         for (auto const &i : _args) {
           if (!resolver_.resolve(i)) {
             ERROR(resolver_.error());
@@ -298,9 +298,9 @@ int PKGUPD::exec(int ac, char **av) {
     case task::COMPILE: {
       if (!_need_args(1)) return 1;
 
-      std::shared_ptr<recipe> recipe_;
+      std::shared_ptr<Recipe> recipe_;
       if (std::filesystem::exists(_args[0]))
-        recipe_ = recipe::from_filepath(_args[0]);
+        recipe_ = Recipe::from_filepath(_args[0]);
       else {
         auto pkg = repodb_[_args[0]];
         if (pkg == nullptr) {
@@ -308,9 +308,9 @@ int PKGUPD::exec(int ac, char **av) {
           return 2;
         }
 
-        recipe_ = std::dynamic_pointer_cast<recipe::package>(pkg)->parent();
+        recipe_ = std::dynamic_pointer_cast<Recipe::Package>(pkg)->parent();
       }
-      auto builder_ = builder(
+      auto builder_ = Builder(
           _get_value("work-dir", "/tmp"), _get_value(PKG_DIR, DEFAULT_PKGS_DIR),
           _get_value(SRC_DIR, DEFAULT_SRC_DIR), _get_value(ROOT_DIR, "/"),
           installer_, _is_flag(flag::FORCE), _is_flag(flag::SKIP_TRIGGER));
@@ -332,10 +332,10 @@ int PKGUPD::exec(int ac, char **av) {
     case task::INFO: {
       _need_args(1);
 
-      std::shared_ptr<pkginfo> pkginfo_;
+      std::shared_ptr<PackageInformation> pkginfo_;
       pkginfo_ = sysdb_[_args[0]];
       if (pkginfo_ != nullptr) {
-        auto sys_pkginfo = std::dynamic_pointer_cast<sysdb::package>(pkginfo_);
+        auto sys_pkginfo = std::dynamic_pointer_cast<SystemDatabase::package>(pkginfo_);
         cout << "id            : " << sys_pkginfo->id() << "\n"
              << "version       : " << sys_pkginfo->version() << "\n"
              << "about         : " << sys_pkginfo->about() << "\n"
@@ -348,12 +348,12 @@ int PKGUPD::exec(int ac, char **av) {
       pkginfo_ = repodb_[_args[0]];
       if (pkginfo_ == nullptr) {
         if (std::filesystem::exists(_args[0])) {
-          std::shared_ptr<archive> archive_;
+          std::shared_ptr<Archive> archive_;
           std::string ext = std::filesystem::path(_args[0]).extension();
           if (ext == ".rlx") {
-            archive_ = std::make_shared<tar>(_args[0]);
+            archive_ = std::make_shared<Tar>(_args[0]);
           } else if (ext == ".app") {
-            archive_ = std::make_shared<image>(_args[0]);
+            archive_ = std::make_shared<Image>(_args[0]);
           } else {
             ERROR("unsupported packaging format " + ext);
             return 1;
@@ -365,7 +365,7 @@ int PKGUPD::exec(int ac, char **av) {
           }
 
           auto archive_pkginfo =
-              std::dynamic_pointer_cast<archive::package>(pkginfo_);
+              std::dynamic_pointer_cast<Archive::Package>(pkginfo_);
           cout << "id            : " << archive_pkginfo->id() << "\n"
                << "version       : " << archive_pkginfo->version() << "\n"
                << "about         : " << archive_pkginfo->about() << endl;
@@ -377,7 +377,7 @@ int PKGUPD::exec(int ac, char **av) {
         }
       }
 
-      auto repo_pkginfo = std::dynamic_pointer_cast<recipe::package>(pkginfo_);
+      auto repo_pkginfo = std::dynamic_pointer_cast<Recipe::Package>(pkginfo_);
       cout << "id            : " << repo_pkginfo->id() << "\n"
            << "version       : " << repo_pkginfo->version() << "\n"
            << "about         : " << repo_pkginfo->about() << "\n"
@@ -387,7 +387,7 @@ int PKGUPD::exec(int ac, char **av) {
     } break;
 
     case task::REMOVE: {
-      auto remover_ = remover(sysdb_, _get_value(ROOT_DIR, DEFAULT_ROOT_DIR));
+      auto remover_ = Remover(sysdb_, _get_value(ROOT_DIR, DEFAULT_ROOT_DIR));
       std::vector<std::string> _to_remove;
       for (auto const &i : _args) {
         if (sysdb_[i] != nullptr)
@@ -408,7 +408,7 @@ int PKGUPD::exec(int ac, char **av) {
 
       std::vector<std::string> list;
       for (auto const &i : _args) {
-        auto resolver_ = resolver(repodb_, sysdb_);
+        auto resolver_ = Resolver(repodb_, sysdb_);
         if (!resolver_.resolve(i, _is_flag(flag::FORCE))) {
           ERROR(resolver_.error());
           return 2;
@@ -475,7 +475,7 @@ int PKGUPD::exec(int ac, char **av) {
 
     case task::TRIGGERS: {
       _need_args(0);
-      std::vector<std::shared_ptr<pkginfo>> pkgs;
+      std::vector<std::shared_ptr<PackageInformation>> pkgs;
 
       pkgs = sysdb_.all();
       if (pkgs.size() == 0 && sysdb_.error().length() != 0) {
@@ -483,7 +483,7 @@ int PKGUPD::exec(int ac, char **av) {
         return 2;
       }
 
-      auto triggerer_ = triggerer();
+      auto triggerer_ = Triggerer();
 
       int status = 0;
 

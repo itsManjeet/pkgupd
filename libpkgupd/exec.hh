@@ -11,7 +11,7 @@
 #include "colors.hh"
 
 namespace rlxos::libpkgupd {
-class exec : public object {
+class Executor : public Object {
  private:
   std::string _get_cmd(std::string const &cmd, std::string const &dir,
                        std::vector<std::string> const &env = {}) {
@@ -27,7 +27,7 @@ class exec : public object {
   }
 
  public:
-  exec() {}
+  Executor() {}
   int execute(std::string const &command, std::string const &dir = ".",
               std::vector<std::string> const &environ = {}) {
     auto cmd = _get_cmd(command, dir, environ);

@@ -11,19 +11,19 @@
 
 namespace rlxos::libpkgupd {
 
-bool installer::_install(std::vector<std::string> const &pkgs,
+bool Installer::_install(std::vector<std::string> const &pkgs,
                          std::string const &root_dir, bool skip_triggers,
                          bool force) {
-  std::vector<std::shared_ptr<pkginfo>> pkginfo_list;
+  std::vector<std::shared_ptr<PackageInformation>> pkginfo_list;
   std::vector<std::vector<std::string>> all_pkgs_fileslist;
 
   for (auto const &i : pkgs) {
-    std::shared_ptr<archive> archive_;
+    std::shared_ptr<Archive> archive_;
     std::string ext = std::filesystem::path(i).extension();
     if (ext == ".rlx") {
-      archive_ = std::make_shared<tar>(i);
+      archive_ = std::make_shared<Tar>(i);
     } else if (ext == ".app") {
-      archive_ = std::make_shared<image>(i);
+      archive_ = std::make_shared<Image>(i);
     } else {
       _error = "unsupport package of type '" + ext + "'";
       return false;
@@ -86,7 +86,7 @@ bool installer::_install(std::vector<std::string> const &pkgs,
           PROCESS("post installation script");
         }
 
-        if (int status = exec().execute(pkginfo_list[i]->install_script());
+        if (int status = Executor().execute(pkginfo_list[i]->install_script());
             status != 0) {
           _error =
               "install script failed to exit code: " + std::to_string(status);
@@ -99,7 +99,7 @@ bool installer::_install(std::vector<std::string> const &pkgs,
   if (skip_triggers) {
     INFO("skipping triggers")
   } else {
-    auto triggerer_ = triggerer();
+    auto triggerer_ = Triggerer();
     if (!triggerer_.trigger(all_pkgs_fileslist)) {
       _error = triggerer_.error();
       return false;
@@ -109,7 +109,7 @@ bool installer::_install(std::vector<std::string> const &pkgs,
   if (skip_triggers) {
     INFO("skipped creating users account")
   } else {
-    auto triggerer_ = triggerer();
+    auto triggerer_ = Triggerer();
     if (!triggerer_.trigger(pkginfo_list)) {
       _error = triggerer_.error();
       return false;
@@ -118,7 +118,7 @@ bool installer::_install(std::vector<std::string> const &pkgs,
 
   return true;
 }
-bool installer::install(std::vector<std::string> const &pkgs,
+bool Installer::install(std::vector<std::string> const &pkgs,
                         std::string const &root_dir, bool skip_triggers,
                         bool force) {
   std::vector<std::string> archive_list;

@@ -7,11 +7,11 @@
 #include "sysdb.hh"
 
 namespace rlxos::libpkgupd {
-class installer : public object {
+class Installer : public Object {
  private:
-  sysdb _sysdb;
-  repodb _repodb;
-  downloader _downloader;
+  SystemDatabase _sysdb;
+  Repository _repodb;
+  Downloader _downloader;
 
   std::string _pkg_dir;
 
@@ -19,7 +19,7 @@ class installer : public object {
                 std::string const &root_dir, bool skip_triggers, bool force);
 
  public:
-  installer(sysdb &sdb, repodb &rdb, downloader &dwn, std::string const &pkgdir)
+  Installer(SystemDatabase &sdb, Repository &rdb, Downloader &dwn, std::string const &pkgdir)
       : _sysdb{sdb}, _repodb{rdb}, _downloader{dwn}, _pkg_dir{pkgdir} {}
 
   bool install(std::vector<std::string> const &pkgs,
