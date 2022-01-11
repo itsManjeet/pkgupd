@@ -14,7 +14,7 @@ std::optional<Package> Repository::operator[](std::string const &packageName) {
 
       auto package = recipe[packageName];
       if (!package) {
-        _error = "no package with id '" + packageName +
+        p_Error = "no package with id '" + packageName +
                  "' found in recipe file " + recipeFilePath.string();
         return {};
       }
@@ -22,7 +22,7 @@ std::optional<Package> Repository::operator[](std::string const &packageName) {
       return package;
 
     } catch (YAML::Exception const &ee) {
-      _error = "failed to read recipe file '" + recipeFilePath.string() + "' " +
+      p_Error = "failed to read recipe file '" + recipeFilePath.string() + "' " +
                std::string(ee.what());
       return {};
     }

@@ -14,10 +14,10 @@
 namespace rlxos::libpkgupd {
 class Object {
  protected:
-  std::string _error;
+  std::string p_Error;
 
  public:
-  std::string const &error() const { return _error; }
+  std::string const &error() const { return p_Error; }
 };
 
 }  // namespace rlxos::libpkgupd

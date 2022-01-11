@@ -51,7 +51,7 @@ class Executor : public Object {
     }
 
     int status = WEXITSTATUS(pclose(pipe));
-    if (status != 0) _error = "Failed to execute " + cmd;
+    if (status != 0) p_Error = "Failed to execute " + cmd;
 
     return {status, result};
   }

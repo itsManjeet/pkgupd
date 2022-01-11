@@ -1,7 +1,7 @@
 #ifndef _PKGUPD_REPOSITORY_DATABASE_HH_
 #define _PKGUPD_REPOSITORY_DATABASE_HH_
 
-#include "db.hh"
+#include "database.hh"
 
 namespace rlxos::libpkgupd {
 class Repository : public Database {

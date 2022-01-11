@@ -3,7 +3,7 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "db.hh"
+#include "database.hh"
 
 namespace rlxos::libpkgupd {
 

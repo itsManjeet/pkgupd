@@ -17,7 +17,7 @@ class Resolver : public Object {
   bool _to_skip(std::string const &pkgid);
 
  public:
-  Resolver(Repository &repository, SystemDatabase &systemDatabase)
+  Resolver(SystemDatabase &systemDatabase, Repository &repository)
       : m_Repository(repository), m_SystemDatabase(systemDatabase) {}
 
   bool resolve(std::string const &pkgid, bool all = false);

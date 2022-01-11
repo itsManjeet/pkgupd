@@ -28,7 +28,7 @@ bool Installer::_install(std::vector<std::string> const &packages,
 
     auto info = packager->info();
     if (!info) {
-      _error = packager->error();
+      p_Error = packager->error();
       return false;
     }
 
@@ -50,7 +50,7 @@ bool Installer::_install(std::vector<std::string> const &packages,
     }
 
     if (!packager->extract(rootDir)) {
-      _error = packager->error();
+      p_Error = packager->error();
       return false;
     }
     packagesFiles.push_back(packager->list());
@@ -68,7 +68,7 @@ bool Installer::_install(std::vector<std::string> const &packages,
 
     if (!m_SystemDatabase.registerIntoSystem(packagesList[i], packagesFiles[i],
                                              rootDir, isForce)) {
-      _error = m_SystemDatabase.error();
+      p_Error = m_SystemDatabase.error();
       return false;
     }
 
@@ -82,7 +82,7 @@ bool Installer::_install(std::vector<std::string> const &packages,
 
         if (int status = Executor().execute(packagesList[i].script());
             status != 0) {
-          _error =
+          p_Error =
               "install script failed to exit code: " + std::to_string(status);
           return false;
         }
@@ -95,7 +95,7 @@ bool Installer::_install(std::vector<std::string> const &packages,
   } else {
     auto triggerer_ = Triggerer();
     if (!triggerer_.trigger(packagesFiles)) {
-      _error = triggerer_.error();
+      p_Error = triggerer_.error();
       return false;
     }
   }
@@ -105,7 +105,7 @@ bool Installer::_install(std::vector<std::string> const &packages,
   } else {
     auto triggerer_ = Triggerer();
     if (!triggerer_.trigger(packagesList)) {
-      _error = triggerer_.error();
+      p_Error = triggerer_.error();
       return false;
     }
   }
@@ -125,12 +125,12 @@ bool Installer::install(std::vector<std::string> const &packages,
 
     auto package = m_Repository[i];
     if (!package) {
-      _error = "no package found with name '" + i + "'";
+      p_Error = "no package found with name '" + i + "'";
       return false;
     }
 
     if (m_SystemDatabase.isInstalled(*package) && !isForce) {
-      _error = package->id() + " is already installed in the system";
+      p_Error = package->id() + " is already installed in the system";
       return false;
     }
 
@@ -140,7 +140,7 @@ bool Installer::install(std::vector<std::string> const &packages,
     if (!std::filesystem::exists(archiveFilePath)) {
       PROCESS("getting " << archiveFile);
       if (!m_Downloader.get(archiveFile, archiveFilePath)) {
-        _error = m_Downloader.error();
+        p_Error = m_Downloader.error();
         return false;
       }
     }

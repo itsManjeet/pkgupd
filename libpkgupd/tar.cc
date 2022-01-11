@@ -10,7 +10,7 @@ std::tuple<int, std::string> Tar::get(std::string const &filepath) {
 
   auto [status, output] = Executor().output(cmd);
   if (status != 0) {
-    _error = "failed to get data from " + m_PackageFile;
+    p_Error = "failed to get data from " + m_PackageFile;
     return {status, output};
   }
   return {status, output};
@@ -19,7 +19,7 @@ std::tuple<int, std::string> Tar::get(std::string const &filepath) {
 std::optional<Package> Tar::info() {
   auto [status, content] = get("./info");
   if (status != 0) {
-    _error = "failed to read package information";
+    p_Error = "failed to read package information";
     return {};
   }
 
@@ -29,7 +29,7 @@ std::optional<Package> Tar::info() {
   try {
     data = YAML::Load(content);
   } catch (YAML::Exception const &e) {
-    _error = "corrupt package data, " + std::string(e.what());
+    p_Error = "corrupt package data, " + std::string(e.what());
     return {};
   }
 
@@ -42,7 +42,7 @@ std::vector<std::string> Tar::list() {
 
   auto [status, output] = Executor().output(cmd);
   if (status != 0) {
-    _error = output;
+    p_Error = output;
     return {};
   }
 
@@ -62,7 +62,7 @@ bool Tar::compress(std::string const &srcdir, Package const &package) {
     std::error_code err;
     std::filesystem::create_directories(pardir, err);
     if (err) {
-      _error = "failed to create " + pardir + ", " + err.message();
+      p_Error = "failed to create " + pardir + ", " + err.message();
       return false;
     }
   }
@@ -77,7 +77,7 @@ bool Tar::compress(std::string const &srcdir, Package const &package) {
 
   command += " --zstd -cPf " + m_PackageFile + " -C " + srcdir + " . ";
   if (Executor().execute(command) != 0) {
-    _error = "failed to execute command for compression '" + command + "'";
+    p_Error = "failed to execute command for compression '" + command + "'";
     return false;
   }
 
@@ -86,7 +86,7 @@ bool Tar::compress(std::string const &srcdir, Package const &package) {
 
 bool Tar::extract(std::string const &outdir) {
   if (!std::filesystem::exists(m_PackageFile)) {
-    _error = "no " + m_PackageFile + " exist";
+    p_Error = "no " + m_PackageFile + " exist";
     return false;
   }
 
@@ -94,7 +94,7 @@ bool Tar::extract(std::string const &outdir) {
 
   cmd += " --zstd --exclude './info' -xPhpf " + m_PackageFile + " -C " + outdir;
   if (Executor().execute(cmd) != 0) {
-    _error = "failed to execute extraction command";
+    p_Error = "failed to execute extraction command";
     return false;
   }
 

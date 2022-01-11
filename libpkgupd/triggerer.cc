@@ -74,14 +74,14 @@ bool Triggerer::_exec(type t) {
 
         if (int status = Executor().execute("mkfontdir " + i.path().string());
             status != 0) {
-          _error +=
+          p_Error +=
               "mkfontdir failed with exit code: " + std::to_string(status);
           status = false;
         }
 
         if (int status = Executor().execute("mkfontscale " + i.path().string());
             status != 0) {
-          _error +=
+          p_Error +=
               "mkfontscale failed with exit code: " + std::to_string(status);
           status = false;
         }
@@ -97,7 +97,7 @@ bool Triggerer::_exec(type t) {
         if (int status =
                 Executor().execute("gtk-update-icon-cache -q " + i.path().string());
             status != 0) {
-          _error += "gtk-update-icon-cahce failed with exit code: " +
+          p_Error += "gtk-update-icon-cahce failed with exit code: " +
                     std::to_string(status);
           status = false;
         }
@@ -110,7 +110,7 @@ bool Triggerer::_exec(type t) {
   }
 
   if (int status = Executor().execute(cmd); status != 0) {
-    _error += "trigger failed with exit code: " + std::to_string(status);
+    p_Error += "trigger failed with exit code: " + std::to_string(status);
     status = false;
   }
 
@@ -252,7 +252,7 @@ bool Triggerer::trigger(
     PROCESS(_mesg(i))
 
     if (!_exec(i)) {
-      _error += "\n" + _error;
+      p_Error += "\n" + p_Error;
       status = false;
     }
   }
@@ -261,7 +261,7 @@ bool Triggerer::trigger(
     PROCESS("Updating library cache");
 
     if (int status = Executor().execute("/bin/ldconfig"); status != 0) {
-      _error = "failed to update library cache";
+      p_Error = "failed to update library cache";
       return false;
     }
   }
@@ -285,7 +285,7 @@ bool Triggerer::trigger() {
     PROCESS(_mesg(i));
     try {
       if (!_exec(i)) {
-        ERROR(_error);
+        ERROR(p_Error);
       }
     } catch (std::exception &e) {
       ERROR(e.what());

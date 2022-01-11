@@ -18,13 +18,13 @@ bool Resolver::resolve(std::string const &pkgid, bool all) {
 
   auto pkginfo_ = m_Repository[pkgid];
   if (!pkginfo_) {
-    _error = "missing required dependency '" + pkgid + "'";
+    p_Error = "missing required dependency '" + pkgid + "'";
     return false;
   }
 
   for (auto const &i : pkginfo_->depends()) {
     if (!resolve(i, all)) {
-      _error += "\n Trace Required by " + pkgid;
+      p_Error += "\n Trace Required by " + pkgid;
       return false;
     }
   }

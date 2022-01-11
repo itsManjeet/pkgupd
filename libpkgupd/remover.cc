@@ -33,13 +33,13 @@ bool Remover::remove(Package const &package) {
     }
 
     if (err) {
-      _error += "\n" + err.message();
+      p_Error += "\n" + err.message();
       status = false;
     }
   }
 
   if (!_sys_db.unregisterFromSystem(package)) {
-    _error += _sys_db.error();
+    p_Error += _sys_db.error();
     status = false;
   }
 
@@ -52,7 +52,7 @@ bool Remover::remove(std::vector<std::string> const &pkgs, bool skip_triggers) {
   for (auto const &i : pkgs) {
     auto package = _sys_db[i];
     if (!package) {
-      _error = _sys_db.error();
+      p_Error = _sys_db.error();
       return false;
     }
 
@@ -61,12 +61,12 @@ bool Remover::remove(std::vector<std::string> const &pkgs, bool skip_triggers) {
 
   for (auto const &i : pkgsInfo) {
     PROCESS("cleaning file of " << i.id());
-    if (!remove(i)) ERROR(_error);
+    if (!remove(i)) ERROR(p_Error);
   }
 
   if (!skip_triggers) {
     if (!_triggerer.trigger(_files_list)) {
-      _error = _triggerer.error();
+      p_Error = _triggerer.error();
       return false;
     }
   }

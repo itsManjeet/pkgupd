@@ -34,7 +34,7 @@ std::tuple<int, std::string> Image::get(std::string const& _filepath) {
 std::optional<Package> Image::info() {
   auto [status, content] = get("./info");
   if (status != 0) {
-    _error = "failed to read package information " + std::to_string(status) +
+    p_Error = "failed to read package information " + std::to_string(status) +
              ", " + content;
     return {};
   }
@@ -45,7 +45,7 @@ std::optional<Package> Image::info() {
   try {
     data = YAML::Load(content);
   } catch (YAML::Exception const& e) {
-    _error = "corrupt package data, " + std::string(e.what());
+    p_Error = "corrupt package data, " + std::string(e.what());
     return {};
   }
 
@@ -62,7 +62,7 @@ bool Image::compress(std::string const& srcdir, Package const& package) {
     std::error_code err;
     std::filesystem::create_directories(pardir, err);
     if (err) {
-      _error = "failed to create " + pardir + ", " + err.message();
+      p_Error = "failed to create " + pardir + ", " + err.message();
       return false;
     }
   }
@@ -79,7 +79,7 @@ bool Image::compress(std::string const& srcdir, Package const& package) {
         "appimagetool --sign " + srcdir + " " + m_PackageFile, ".",
         {"ARCH=x86_64"});
     if (status != 0) {
-      _error = "failed to pack appimage";
+      p_Error = "failed to pack appimage";
       return false;
     }
   }
@@ -97,7 +97,7 @@ bool Image::extract(std::string const& outdir) {
           std::filesystem::path(m_PackageFile).filename().string(),
       std::filesystem::copy_options::overwrite_existing, err);
   if (err) {
-    _error = "failed to install " + m_PackageFile + ", " + err.message();
+    p_Error = "failed to install " + m_PackageFile + ", " + err.message();
     return false;
   }
 

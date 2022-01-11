@@ -33,7 +33,7 @@ bool SystemDatabase::isOutDated(Package const &pkginfo) {
 bool SystemDatabase::unregisterFromSystem(Package const &pkginfo) {
   auto installedPackage = (*this)[pkginfo.id()];
   if (!installedPackage) {
-    _error = "no package with id " + pkginfo.id() + " is installed";
+    p_Error = "no package with id " + pkginfo.id() + " is installed";
     return false;
   }
 
@@ -41,7 +41,7 @@ bool SystemDatabase::unregisterFromSystem(Package const &pkginfo) {
   std::error_code err;
   std::filesystem::remove(datafile, err);
   if (err) {
-    _error = err.message();
+    p_Error = err.message();
     return false;
   }
 
@@ -50,7 +50,7 @@ bool SystemDatabase::unregisterFromSystem(Package const &pkginfo) {
 
 std::vector<Package> SystemDatabase::all() {
   if (!std::filesystem::exists(p_DataDir)) {
-    _error = "no packages database found";
+    p_Error = "no packages database found";
     return {};
   }
 
@@ -68,7 +68,7 @@ bool SystemDatabase::registerIntoSystem(Package const &pkginfo,
                                         std::string root, bool toupdate) {
   try {
     if (isInstalled(pkginfo) && !isOutDated(pkginfo) && !toupdate) {
-      _error = pkginfo.id() + " " + pkginfo.version() +
+      p_Error = pkginfo.id() + " " + pkginfo.version() +
                " is already registered in the system";
       return false;
     }
@@ -81,7 +81,7 @@ bool SystemDatabase::registerIntoSystem(Package const &pkginfo,
   {
     std::ofstream file(datafile);
     if (!file.is_open()) {
-      _error = "failed to open sysdb to register " + pkginfo.id();
+      p_Error = "failed to open sysdb to register " + pkginfo.id();
       return false;
     }
     pkginfo.dump(file);

@@ -49,13 +49,13 @@ bool Downloader::download(std::string const &url, std::string const &outfile) {
 
   curl = curl_easy_init();
   if (!curl) {
-    _error = "Failed to initialize curl";
+    p_Error = "Failed to initialize curl";
     return false;
   }
 
   fptr = fopen((outfile + ".part").c_str(), "wb");
   if (!fptr) {
-    _error = "Failed to open " + outfile + " for write";
+    p_Error = "Failed to open " + outfile + " for write";
     return false;
   }
 
@@ -84,7 +84,7 @@ bool Downloader::download(std::string const &url, std::string const &outfile) {
 
     std::filesystem::rename(outfile + ".part", outfile, err);
     if (err) {
-      _error = err.message();
+      p_Error = err.message();
       return false;
     }
   }
@@ -98,7 +98,7 @@ bool Downloader::valid(std::string const &url) {
 
   curl = curl_easy_init();
   if (!curl) {
-    _error = "failed to initialize curl";
+    p_Error = "failed to initialize curl";
     return false;
   }
 
@@ -119,13 +119,13 @@ bool Downloader::valid(std::string const &url) {
   curl_easy_cleanup(curl);
   if ((resp == CURLE_OK) && http_code == 200) return true;
 
-  _error = "invalid url " + url;
+  p_Error = "invalid url " + url;
   return false;
 }
 
 bool Downloader::get(std::string const &file, std::string const &outdir) {
   if (_urls.size() == 0) {
-    _error = "No url specified";
+    p_Error = "No url specified";
     return false;
   }
 
@@ -140,7 +140,7 @@ bool Downloader::get(std::string const &file, std::string const &outdir) {
     return download(fileurl, outdir);
   }
 
-  _error = file + " is missing on server";
+  p_Error = file + " is missing on server";
 
   return false;
 }

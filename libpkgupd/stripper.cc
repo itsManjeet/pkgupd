@@ -36,7 +36,7 @@ Stripper::Stripper(std::vector<std::string> const &skips) {
 
 bool Stripper::strip(std::string const &dir) {
   if (int status = Executor().execute(_script, dir); status != 0) {
-    _error = "strip script failed with exit code: " + std::to_string(status);
+    p_Error = "strip script failed with exit code: " + std::to_string(status);
     return false;
   }
   return true;
