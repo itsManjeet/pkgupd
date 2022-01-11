@@ -124,15 +124,15 @@ bool Downloader::valid(std::string const &url) {
 }
 
 bool Downloader::get(std::string const &file, std::string const &outdir) {
-  if (_urls.size() == 0) {
-    p_Error = "No url specified";
+  if (m_Mirrors.size() == 0) {
+    p_Error = "No mirror specified";
     return false;
   }
 
-  for (auto const &url : _urls) {
-    DEBUG("checking " << url << " " << file);
+  for (auto const &mirror : m_Mirrors) {
+    DEBUG("checking  mirror: " << mirror << " " << file);
 
-    std::string fileurl = url + "/" + file;
+    std::string fileurl = mirror + "/" + m_Version + "/pkgs/" + file;
 
     if (!getenv("NO_CURL_CHECK"))
       if (!valid(fileurl)) continue;

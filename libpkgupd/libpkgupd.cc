@@ -133,4 +133,19 @@ bool Pkgupd::trigger(std::vector<std::string> const& packages) {
 
   return status;
 }
+
+std::optional<Package> Pkgupd::info(std::string packageName) {
+  auto package = m_SystemDatabase[packageName];
+  if (package.has_value()) {
+    return package;
+  }
+
+  package = m_Repository[packageName];
+  if (package.has_value()) {
+    return package;
+  }
+
+  p_Error = "no package found with name '" + packageName + "'";
+  return {};
+}
 }  // namespace rlxos::libpkgupd

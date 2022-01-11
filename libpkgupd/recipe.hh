@@ -15,8 +15,26 @@ enum class BuildType {
   CMAKE,
 };
 
-std::string buildTypeToString(BuildType type);
-BuildType stringToBuildType(std::string type);
+static std::string buildTypeToString(BuildType type) {
+  switch (type) {
+    case BuildType::AUTO_DETECT:
+      return "auto";
+    case BuildType::CMAKE:
+      return "cmake";
+
+    default:
+      throw std::runtime_error("unimplemented buildtype");
+  }
+}
+static BuildType stringToBuildType(std::string type) {
+  if (type == "auto") {
+    return BuildType::AUTO_DETECT;
+  } else if (type == "cmake") {
+    return BuildType::CMAKE;
+  }
+
+  throw std::runtime_error("unimplemented build type '" + type + "'");
+}
 
 struct SplitPackage {
   std::string into;

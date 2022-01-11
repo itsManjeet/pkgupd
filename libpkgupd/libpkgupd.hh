@@ -34,6 +34,7 @@ class Pkgupd : public Object {
  public:
   Pkgupd(std::string const& systemDatabasePath,
          std::string const& repositoryPath, std::string const& packagesPath,
+         std::vector<std::string> const& mirrors, std::string const& version,
          std::string const& rootsPath, bool isForce = false,
          bool isSkipTriggers = false)
       : m_SystemDatabase(systemDatabasePath),
@@ -43,13 +44,16 @@ class Pkgupd : public Object {
         m_Remover(m_SystemDatabase, m_RootDir),
         m_Resolver(m_SystemDatabase, m_Repository),
         m_IsForce(isForce),
-        m_IsSkipTriggers(isSkipTriggers) {}
+        m_IsSkipTriggers(isSkipTriggers),
+        m_Downloader(mirrors, version) {}
 
   bool install(std::vector<std::string> const& packages);
 
   bool remove(std::vector<std::string> const& packages);
 
   bool update(std::vector<std::string> const& packages);
+
+  std::optional<Package> info(std::string packageName);
 
   std::vector<UpdateInformation> outdate();
 

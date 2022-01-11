@@ -6,16 +6,16 @@
 namespace rlxos::libpkgupd {
 class Downloader : public Object {
  private:
-  std::vector<std::string> _urls;
+  std::vector<std::string> m_Mirrors;
+  std::string m_Version;
 
   bool valid(std::string const &url);
 
   static size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *fstream);
 
  public:
-  Downloader() {}
-
-  METHOD(std::vector<std::string>, urls);
+  Downloader(std::vector<std::string> mirrors, std::string version)
+      : m_Mirrors(mirrors), m_Version(version) {}
 
   bool get(std::string const &file, std::string const &out);
 

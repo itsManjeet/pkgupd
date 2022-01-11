@@ -28,6 +28,7 @@ class PKGUPD {
 
   enum class flag : int {
     FORCE,
+    NOASK,
     SKIP_TRIGGER,
     SKIP_DEPENDS,
     NO_INSTALL,

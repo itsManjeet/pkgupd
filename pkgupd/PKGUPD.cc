@@ -188,57 +188,53 @@ int PKGUPD::exec(int ac, char **av) {
     }
   }
 
-  auto sysdb_ = SystemDatabase(_get_value(SYS_DB, DEFAULT_DATA_DIR));
-  auto repodb_ = Repository(_get_value(REPO_DB, DEFAULT_REPO_DIR));
-
-  auto downloader_ = Downloader();
-
-  std::vector<std::string> _urls;
+  std::vector<std::string> mirrors = {"https://rlxos.cloudtb.online/",
+                                      "https://apps.rlxos.dev/"};
   if (_config["mirrors"]) {
     for (auto const &m : _config["mirrors"]) {
-      _urls.push_back(m.as<std::string>());
+      mirrors.push_back(m.as<std::string>());
     }
-  } else {
-    _urls = std::vector<std::string>{DEFAULT_URL, DEFAULT_SECONDARY_URL};
   }
 
-  downloader_.urls(_urls);
-
-  auto installer_ = Installer(sysdb_, repodb_, downloader_,
-                              _get_value(PKG_DIR, DEFAULT_PKGS_DIR));
+  Pkgupd pkgupd(_get_value(SYS_DB, DEFAULT_DATA_DIR),
+                _get_value(REPO_DB, DEFAULT_REPO_DIR),
+                _get_value(PKG_DIR, DEFAULT_PKGS_DIR), mirrors, "2200",
+                _get_value(ROOT_DIR, DEFAULT_ROOT_DIR), _is_flag(flag::FORCE),
+                _is_flag(flag::SKIP_TRIGGER));
 
   switch (_task) {
     case task::UPDATE: {
-      int status = WEXITSTATUS(system("pkgupd rf"));
-      if (status != 0) {
-        return status;
+      if (!pkgupd.sync()) {
+        ERROR(pkgupd.error());
+        return 2;
       }
-      std::vector<std::string> pkgs;
-      for (auto const &i : sysdb_.all()) {
-        DEBUG("checking " << i.id());
-        auto repo_pkg = repodb_[i.id()];
-        if (repo_pkg == nullptr) {
-          DEBUG("missing database " << i.id());
-          continue;
-        }
 
-        if (repo_pkg->version() != i.version()) {
-          DEBUG("found package variation " << i.id() << " " << i.version()
-                                           << " != " << repo_pkg.version());
-          std::cout << "-> " << i.id() << std::endl;
-          pkgs.push_back(i.id());
-        }
-      }
-      if (pkgs.size() == 0) {
-        INFO("system is already upto date");
+      auto outdated = pkgupd.outdate();
+      if (outdated.size() == 0) {
+        INFO("system is upto date");
         return 0;
       }
 
-      INFO("found " << pkgs.size() << " packages to update");
-      if (!installer_.install(pkgs, _get_value(ROOT_DIR, DEFAULT_ROOT_DIR),
-                              _is_flag(flag::SKIP_TRIGGER), true)) {
-        ERROR(installer_.error());
-        return 1;
+      std::vector<std::string> packages;
+      for (auto const &i : outdated) {
+        std::cout << i.previous.id() << " (" << i.previous.version() << " -> "
+                  << i.updated.version() << std::endl;
+        packages.push_back(i.updated.id());
+      }
+
+      std::cout << "Found " << packages.size()
+                << " packages(s) update, Press 'Y' to update" << std::endl;
+
+      char ch;
+      std::cin >> ch;
+      if (ch != 'Y' && !_is_flag(flag::NOASK)) {
+        std::cout << "User aborted the process" << std::endl;
+        return 2;
+      }
+
+      if (!pkgupd.update(packages)) {
+        ERROR(pkgupd.error());
+        return 2;
       }
 
       return 0;
@@ -246,17 +242,18 @@ int PKGUPD::exec(int ac, char **av) {
     case task::SEARCH: {
       if (!_need_args(1)) return 1;
       std::string query = _args[0];
-      size_t found = 0;
 
-      for (auto const &i : repodb_.all()) {
-        if (i.id().find(query) != std::string::npos ||
-            i.about().find(query) != std::string::npos) {
-          std::cout << i.id() << " : " << i.about() << std::endl;
-          found++;
-        }
+      auto packages = pkgupd.search(query);
+      if (packages.size() == 0) {
+        std::cout << "no package found" << std::endl;
+        return 2;
       }
 
-      INFO("found " << found << " results");
+      for (auto const &i : packages) {
+        std::cout << i.id() << " : " << i.about() << std::endl;
+      }
+
+      INFO("found " << packages.size() << " results");
       return 0;
 
     } break;
@@ -264,142 +261,54 @@ int PKGUPD::exec(int ac, char **av) {
       if (!_need_atleast(1)) return 1;
 
       std::vector<std::string> to_install;
+
       if (_args.size() == 1 && std::filesystem::exists(_args[0])) {
         to_install = {_args[0]};
       } else if (!_is_flag(flag::SKIP_DEPENDS)) {
         DEBUG("resolving dependencies")
-        auto resolver_ = Resolver(repodb_, sysdb_);
         for (auto const &i : _args) {
-          if (!resolver_.resolve(i)) {
-            ERROR(resolver_.error());
-            return 2;
+          to_install = pkgupd.depends(i);
+          if (to_install.size() == 0 && pkgupd.error().size()) {
+            ERROR(pkgupd.error());
+            return false;
           }
         }
-        to_install = resolver_.list();
       } else {
         to_install = _args;
       }
 
       if (to_install.size() == 0) {
-        INFO("no action required");
+        INFO("dependencies already resolved");
         return 0;
       }
 
-      if (!installer_.install(
-              to_install, _get_value(ROOT_DIR, DEFAULT_ROOT_DIR),
-              _is_flag(flag::SKIP_TRIGGER), _is_flag(flag::FORCE))) {
-        ERROR(installer_.error());
+      if (!pkgupd.install(to_install)) {
+        ERROR(pkgupd.error());
         return 2;
       }
 
       INFO("Done")
       return 0;
     } break;
-    // case task::COMPILE: {
-    //   if (!_need_args(1)) return 1;
-
-    //   std::shared_ptr<Recipe> recipe_;
-    //   if (std::filesystem::exists(_args[0]))
-    //     recipe_ = Recipe::from_filepath(_args[0]);
-    //   else {
-    //     auto pkg = repodb_[_args[0]];
-    //     if (pkg == nullptr) {
-    //       ERROR(repodb_.error());
-    //       return 2;
-    //     }
-
-    //     recipe_ = std::dynamic_pointer_cast<Recipe::Package>(pkg)->parent();
-    //   }
-    //   auto builder_ = Builder(
-    //       _get_value("work-dir", "/tmp"), _get_value(PKG_DIR, DEFAULT_PKGS_DIR),
-    //       _get_value(SRC_DIR, DEFAULT_SRC_DIR), _get_value(ROOT_DIR, "/"),
-    //       installer_, _is_flag(flag::FORCE), _is_flag(flag::SKIP_TRIGGER));
-
-    //   if (!builder_.build(recipe_)) {
-    //     ERROR(builder_.error());
-    //     return 2;
-    //   }
-
-    //   if (!installer_.install(
-    //           builder_.archive_list(), _get_value(ROOT_DIR, DEFAULT_ROOT_DIR),
-    //           _is_flag(flag::SKIP_TRIGGER), _is_flag(flag::FORCE))) {
-    //     ERROR(installer_.error());
-    //     return 2;
-    //   }
-
-    //   return 0;
-    // } break;
     case task::INFO: {
       _need_args(1);
 
-      std::shared_ptr<PackageInformation> pkginfo_;
-      pkginfo_ = sysdb_[_args[0]];
-      if (pkginfo_ != nullptr) {
-        auto sys_pkginfo = std::dynamic_pointer_cast<SystemDatabase::package>(pkginfo_);
-        cout << "id            : " << sys_pkginfo->id() << "\n"
-             << "version       : " << sys_pkginfo->version() << "\n"
-             << "about         : " << sys_pkginfo->about() << "\n"
-             << "installed on  : " << sys_pkginfo->installed_on() << "\n"
-             << "files         : " << sys_pkginfo->files().size() << endl;
-
-        return 0;
+      auto package = pkgupd.info(_args[0]);
+      if (!package) {
+        ERROR(pkgupd.error());
+        return 2;
       }
 
-      pkginfo_ = repodb_[_args[0]];
-      if (pkginfo_ == nullptr) {
-        if (std::filesystem::exists(_args[0])) {
-          std::shared_ptr<Archive> archive_;
-          std::string ext = std::filesystem::path(_args[0]).extension();
-          if (ext == ".rlx") {
-            archive_ = std::make_shared<Tar>(_args[0]);
-          } else if (ext == ".app") {
-            archive_ = std::make_shared<Image>(_args[0]);
-          } else {
-            ERROR("unsupported packaging format " + ext);
-            return 1;
-          }
-          pkginfo_ = archive_->info();
-          if (pkginfo_ == nullptr) {
-            ERROR(archive_->error());
-            return 2;
-          }
-
-          auto archive_pkginfo =
-              std::dynamic_pointer_cast<Archive::Package>(pkginfo_);
-          cout << "id            : " << archive_pkginfo->id() << "\n"
-               << "version       : " << archive_pkginfo->version() << "\n"
-               << "about         : " << archive_pkginfo->about() << endl;
-
-          return 0;
-        } else {
-          ERROR(repodb_.error());
-          return 2;
-        }
-      }
-
-      auto repo_pkginfo = std::dynamic_pointer_cast<Recipe::Package>(pkginfo_);
-      cout << "id            : " << repo_pkginfo->id() << "\n"
-           << "version       : " << repo_pkginfo->version() << "\n"
-           << "about         : " << repo_pkginfo->about() << "\n"
-           << "provided by   : " << repo_pkginfo->parent()->id() << endl;
+      package->dump(std::cout);
 
       return 0;
     } break;
 
     case task::REMOVE: {
-      auto remover_ = Remover(sysdb_, _get_value(ROOT_DIR, DEFAULT_ROOT_DIR));
-      std::vector<std::string> _to_remove;
-      for (auto const &i : _args) {
-        if (sysdb_[i] != nullptr)
-          _to_remove.push_back(i);
-        else
-          INFO(i << " is not already installed");
-      }
-      if (!remover_.remove(_to_remove, _is_flag(flag::SKIP_TRIGGER))) {
-        ERROR(remover_.error());
+      if (!pkgupd.remove(_args)) {
+        ERROR(pkgupd.error());
         return 2;
       }
-
       return 0;
     } break;
 
@@ -408,17 +317,11 @@ int PKGUPD::exec(int ac, char **av) {
 
       std::vector<std::string> list;
       for (auto const &i : _args) {
-        auto resolver_ = Resolver(repodb_, sysdb_);
-        if (!resolver_.resolve(i, _is_flag(flag::FORCE))) {
-          ERROR(resolver_.error());
+        list = pkgupd.depends(i);
+        if (list.size() == 0 && pkgupd.error().size()) {
+          ERROR(pkgupd.error());
           return 2;
         }
-
-        // TODO do it better,
-        // Mostprobably need to pop the last element from resolver_.data
-        for (auto const &j : resolver_.data())
-          if (std::find(list.begin(), list.end(), j) == list.end())
-            list.push_back(j);
       }
 
       for (auto const &i : list) std::cout << i << std::endl;
@@ -428,45 +331,8 @@ int PKGUPD::exec(int ac, char **av) {
 
     case task::REFRESH: {
       PROCESS("refreshing repository");
-      if (!downloader_.get("recipe", "/tmp/.rcp")) {
-        ERROR(downloader_.error());
-        return 2;
-      }
-
-      try {
-        auto node = YAML::LoadFile("/tmp/.rcp");
-        std::error_code ee;
-        if (std::filesystem::exists(repodb_.data_dir())) {
-          std::filesystem::remove_all(repodb_.data_dir(), ee);
-          if (ee) {
-            ERROR(ee.message());
-            return 2;
-          }
-
-          std::filesystem::create_directories(repodb_.data_dir(), ee);
-          if (ee) {
-            ERROR(ee.message());
-            return 2;
-          }
-        }
-
-        for (auto const &i : node["recipes"]) {
-          if (i["id"]) {
-            std::string id = i["id"].as<string>();
-            DEBUG("found " << id);
-            std::ofstream file(repodb_.data_dir() + "/" + id + ".yml");
-            if (!file.is_open()) {
-              ERROR("failed to open file in " + repodb_.data_dir() +
-                    " to write recipe file for " + id);
-              return 2;
-            }
-
-            file << i << std::endl;
-            file.close();
-          }
-        }
-      } catch (YAML::Exception const &ee) {
-        ERROR(ee.what());
+      if (!pkgupd.sync()) {
+        ERROR(pkgupd.error());
         return 2;
       }
 
@@ -474,32 +340,11 @@ int PKGUPD::exec(int ac, char **av) {
     } break;
 
     case task::TRIGGERS: {
-      _need_args(0);
-      std::vector<std::shared_ptr<PackageInformation>> pkgs;
-
-      pkgs = sysdb_.all();
-      if (pkgs.size() == 0 && sysdb_.error().length() != 0) {
-        ERROR(sysdb_.error());
+      if (!pkgupd.trigger(_args)) {
+        ERROR(pkgupd.error());
         return 2;
       }
-
-      auto triggerer_ = Triggerer();
-
-      int status = 0;
-
-      PROCESS("executing triggers");
-      if (!triggerer_.trigger()) {
-        ERROR(triggerer_.error());
-        status = 2;
-      }
-
-      PROCESS("creating users and groups");
-      if (!triggerer_.trigger(pkgs)) {
-        ERROR(triggerer_.error());
-        status = 2;
-      }
-
-      return status;
+      return 0;
     } break;
 
     default:

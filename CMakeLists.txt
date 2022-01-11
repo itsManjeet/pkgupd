@@ -19,10 +19,10 @@ file(GLOB LIBPKGUPD_Src "libpkgupd/*.cc" "libpkgupd/*.hh")
 add_library(libpkgupd ${LIBPKGUPD_Src})
 target_link_libraries(libpkgupd ${LIBCURL} ${YAML_CPP_LIBRARIES})
 
-# file(GLOB PKGUPD_Src "pkgupd/*.cc" "pkgupd/*.hh")
-# add_executable(pkgupd ${PKGUPD_Src})
-# add_dependencies(pkgupd libpkgupd)
-# target_link_libraries(pkgupd libpkgupd)
+file(GLOB PKGUPD_Src "pkgupd/*.cc" "pkgupd/*.hh")
+add_executable(pkgupd ${PKGUPD_Src})
+add_dependencies(pkgupd libpkgupd)
+target_link_libraries(pkgupd libpkgupd)
 
 
 
@@ -33,5 +33,5 @@ if (BUILD_TESTS)
   add_subdirectory("tests")
 endif (BUILD_TESTS)
 
-# install(TARGETS pkgupd
-#     DESTINATION bin)
+install(TARGETS pkgupd
+    DESTINATION bin)

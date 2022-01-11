@@ -22,9 +22,26 @@ enum class PackageType : int {
   PACKAGE,
 };
 
-std::string packageTypeToString(PackageType type);
+static std::string packageTypeToString(PackageType type) {
+  switch (type) {
+    case PackageType::APPIMAGE:
+      return "app";
+    case PackageType::PACKAGE:
+      return "pkg";
+    default:
+      throw std::runtime_error("invalid package type");
+  }
+}
 
-PackageType stringToPackageType(std::string const& type);
+static PackageType stringToPackageType(std::string const& type) {
+  if (type == "app") {
+    return PackageType::APPIMAGE;
+  } else if (type == "pkg") {
+    return PackageType::PACKAGE;
+  }
+
+  throw std::runtime_error("invalid package type " + type);
+}
 
 /**
  * @brief Package holds all the information of rlxos packages
