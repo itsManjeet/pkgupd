@@ -1,0 +1,127 @@
+#include "recipe.hh"
+
+#include <yaml-cpp/yaml.h>
+
+#include <algorithm>  // find_if
+#include <iostream>
+
+using std::string;
+
+#define READ_COMMON()                                        \
+  READ_LIST(string, sources);                                \
+  READ_LIST(string, environ);                                \
+  READ_LIST_FROM(string, runtime, depends, runtime_depends); \
+  READ_LIST_FROM(string, buildtime, depends, buildtime_depends);
+
+namespace rlxos::libpkgupd {
+
+Recipe::Recipe(YAML::Node const &data, std::string const &file) : _node{data} {
+  READ_VALUE(string, id);
+  READ_VALUE(string, version);
+  READ_VALUE(string, about);
+
+  READ_COMMON();
+
+  READ_OBJECT_LIST(PackageInformation::User, users);
+  READ_OBJECT_LIST(PackageInformation::Group, groups);
+
+  OPTIONAL_VALUE(bool, split, false);
+
+  READ_OBJECT_LIST(Package, packages);
+}
+
+Recipe::Package::Package(YAML::Node const &data, std::string const &file) {
+  READ_VALUE(string, id);
+  READ_VALUE(string, dir);
+
+  READ_COMMON();
+
+  OPTIONAL_VALUE(string, prescript, "");
+  OPTIONAL_VALUE(string, postscript, "");
+  OPTIONAL_VALUE(string, script, "");
+  OPTIONAL_VALUE(string, install_script, "");
+
+  OPTIONAL_VALUE(string, pack, "rlx");
+
+  READ_LIST(string, skipstrip);
+  OPTIONAL_VALUE(bool, strip, true);
+
+  READ_OBJECT_LIST(flag, flags);
+}
+
+Recipe::Package::flag::flag(YAML::Node const &data, std::string const &file) {
+  READ_VALUE(string, id);
+  READ_VALUE(string, value);
+
+  OPTIONAL_VALUE(bool, force, false);
+  if (data["only"]) {
+    DEBUG("Use of 'only' in flags is deprecated, use 'force'")
+    _force = data["only"].as<bool>();
+  }
+}
+
+std::string Recipe::Package::id() const {
+  if (_id == "lib" || _id == "lib32") return _id + _parent->id();
+
+  if (_id == "pkg") return _parent->_id;
+
+  return _parent->_id + "-" + _id;
+}
+
+std::string Recipe::Package::version() const { return _parent->_version; }
+
+std::string Recipe::Package::about() const { return _parent->_about; }
+
+PackageInformation::PackageType Recipe::Package::type() const { 
+  if (_pack == "app") {
+    return PackageType::APP;
+  } else {
+    return PackageType::PKG;
+  }
+}
+
+std::vector<std::string> Recipe::Package::depends(bool all) const {
+  std::vector<string> depends = _runtime_depends;
+  depends.insert(depends.end(), _parent->_runtime_depends.begin(),
+                 _parent->_runtime_depends.end());
+
+  if (all) {
+    depends.insert(depends.end(), _buildtime_depends.begin(),
+                   _buildtime_depends.end());
+    depends.insert(depends.end(), _parent->_buildtime_depends.begin(),
+                   _parent->_buildtime_depends.end());
+  }
+
+  return depends;
+}
+
+std::vector<std::string> Recipe::Package::sources() const {
+  std::vector<std::string> all_sources = _sources;
+  all_sources.insert(all_sources.end(), _parent->_sources.begin(),
+                     _parent->_sources.end());
+  return all_sources;
+}
+
+std::vector<std::string> Recipe::Package::environ() {
+  std::vector<std::string> allenviron = _parent->_environ;
+  allenviron.insert(allenviron.end(), _environ.begin(), _environ.end());
+  return allenviron;
+}
+
+std::shared_ptr<Recipe::Package> Recipe::operator[](
+    std::string const &pkgid) const {
+  auto pkgiter = std::find_if(_packages.begin(), _packages.end(),
+                              [&](std::shared_ptr<Package> const &p) {
+                                if (pkgid == this->id() && (p->id() == "pkg"))
+                                  return true;
+
+                                if (pkgid == p->id()) return true;
+
+                                return false;
+                              });
+
+  if (pkgiter == _packages.end()) return nullptr;
+
+  return (*pkgiter);
+}
+}  // namespace rlxos::libpkgupd

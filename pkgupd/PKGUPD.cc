@@ -215,18 +215,18 @@ int PKGUPD::exec(int ac, char **av) {
       }
       std::vector<std::string> pkgs;
       for (auto const &i : sysdb_.all()) {
-        DEBUG("checking " << i->id());
-        auto repo_pkg = repodb_[i->id()];
+        DEBUG("checking " << i.id());
+        auto repo_pkg = repodb_[i.id()];
         if (repo_pkg == nullptr) {
-          DEBUG("missing database " << i->id());
+          DEBUG("missing database " << i.id());
           continue;
         }
 
-        if (repo_pkg->version() != i->version()) {
-          DEBUG("found package variation " << i->id() << " " << i->version()
-                                           << " != " << repo_pkg->version());
-          std::cout << "-> " << i->id() << std::endl;
-          pkgs.push_back(i->id());
+        if (repo_pkg->version() != i.version()) {
+          DEBUG("found package variation " << i.id() << " " << i.version()
+                                           << " != " << repo_pkg.version());
+          std::cout << "-> " << i.id() << std::endl;
+          pkgs.push_back(i.id());
         }
       }
       if (pkgs.size() == 0) {
@@ -249,9 +249,9 @@ int PKGUPD::exec(int ac, char **av) {
       size_t found = 0;
 
       for (auto const &i : repodb_.all()) {
-        if (i->id().find(query) != std::string::npos ||
-            i->about().find(query) != std::string::npos) {
-          std::cout << i->id() << " : " << i->about() << std::endl;
+        if (i.id().find(query) != std::string::npos ||
+            i.about().find(query) != std::string::npos) {
+          std::cout << i.id() << " : " << i.about() << std::endl;
           found++;
         }
       }
@@ -275,7 +275,7 @@ int PKGUPD::exec(int ac, char **av) {
             return 2;
           }
         }
-        to_install = resolver_.data();
+        to_install = resolver_.list();
       } else {
         to_install = _args;
       }
@@ -295,40 +295,40 @@ int PKGUPD::exec(int ac, char **av) {
       INFO("Done")
       return 0;
     } break;
-    case task::COMPILE: {
-      if (!_need_args(1)) return 1;
+    // case task::COMPILE: {
+    //   if (!_need_args(1)) return 1;
 
-      std::shared_ptr<Recipe> recipe_;
-      if (std::filesystem::exists(_args[0]))
-        recipe_ = Recipe::from_filepath(_args[0]);
-      else {
-        auto pkg = repodb_[_args[0]];
-        if (pkg == nullptr) {
-          ERROR(repodb_.error());
-          return 2;
-        }
+    //   std::shared_ptr<Recipe> recipe_;
+    //   if (std::filesystem::exists(_args[0]))
+    //     recipe_ = Recipe::from_filepath(_args[0]);
+    //   else {
+    //     auto pkg = repodb_[_args[0]];
+    //     if (pkg == nullptr) {
+    //       ERROR(repodb_.error());
+    //       return 2;
+    //     }
 
-        recipe_ = std::dynamic_pointer_cast<Recipe::Package>(pkg)->parent();
-      }
-      auto builder_ = Builder(
-          _get_value("work-dir", "/tmp"), _get_value(PKG_DIR, DEFAULT_PKGS_DIR),
-          _get_value(SRC_DIR, DEFAULT_SRC_DIR), _get_value(ROOT_DIR, "/"),
-          installer_, _is_flag(flag::FORCE), _is_flag(flag::SKIP_TRIGGER));
+    //     recipe_ = std::dynamic_pointer_cast<Recipe::Package>(pkg)->parent();
+    //   }
+    //   auto builder_ = Builder(
+    //       _get_value("work-dir", "/tmp"), _get_value(PKG_DIR, DEFAULT_PKGS_DIR),
+    //       _get_value(SRC_DIR, DEFAULT_SRC_DIR), _get_value(ROOT_DIR, "/"),
+    //       installer_, _is_flag(flag::FORCE), _is_flag(flag::SKIP_TRIGGER));
 
-      if (!builder_.build(recipe_)) {
-        ERROR(builder_.error());
-        return 2;
-      }
+    //   if (!builder_.build(recipe_)) {
+    //     ERROR(builder_.error());
+    //     return 2;
+    //   }
 
-      if (!installer_.install(
-              builder_.archive_list(), _get_value(ROOT_DIR, DEFAULT_ROOT_DIR),
-              _is_flag(flag::SKIP_TRIGGER), _is_flag(flag::FORCE))) {
-        ERROR(installer_.error());
-        return 2;
-      }
+    //   if (!installer_.install(
+    //           builder_.archive_list(), _get_value(ROOT_DIR, DEFAULT_ROOT_DIR),
+    //           _is_flag(flag::SKIP_TRIGGER), _is_flag(flag::FORCE))) {
+    //     ERROR(installer_.error());
+    //     return 2;
+    //   }
 
-      return 0;
-    } break;
+    //   return 0;
+    // } break;
     case task::INFO: {
       _need_args(1);
 

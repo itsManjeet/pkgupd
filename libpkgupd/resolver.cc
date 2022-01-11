@@ -1,35 +1,37 @@
 #include "resolver.hh"
 namespace rlxos::libpkgupd {
 bool Resolver::_to_skip(std::string const &pkgid) {
-  if ((std::find(_data.begin(), _data.end(), pkgid) != _data.end()))
+  if ((std::find(m_PackagesList.begin(), m_PackagesList.end(), pkgid) !=
+       m_PackagesList.end()))
     return true;
 
-  if (_sysdb[pkgid] != nullptr) return true;
+  if (!m_SystemDatabase[pkgid]) return true;
 
-  if ((std::find(_visited.begin(), _visited.end(), pkgid) != _visited.end()))
+  if ((std::find(m_Visited.begin(), m_Visited.end(), pkgid) != m_Visited.end()))
     return true;
 
-  _visited.push_back(pkgid);
+  m_Visited.push_back(pkgid);
   return false;
 }
 bool Resolver::resolve(std::string const &pkgid, bool all) {
   if (_to_skip(pkgid)) return true;
 
-  auto pkginfo_ = _repodb[pkgid];
-  if (pkginfo_ == nullptr) {
+  auto pkginfo_ = m_Repository[pkgid];
+  if (!pkginfo_) {
     _error = "missing required dependency '" + pkgid + "'";
     return false;
   }
 
-  for (auto const &i : pkginfo_->depends(all)) {
+  for (auto const &i : pkginfo_->depends()) {
     if (!resolve(i, all)) {
       _error += "\n Trace Required by " + pkgid;
       return false;
     }
   }
 
-  if ((std::find(_data.begin(), _data.end(), pkgid) == _data.end()))
-    _data.push_back(pkgid);
+  if ((std::find(m_PackagesList.begin(), m_PackagesList.end(), pkgid) ==
+       m_PackagesList.end()))
+    m_PackagesList.push_back(pkgid);
 
   return true;
 }

@@ -1,127 +1,75 @@
 #include "recipe.hh"
 
-#include <yaml-cpp/yaml.h>
-
-#include <algorithm>  // find_if
-#include <iostream>
-
 using std::string;
 
-#define READ_COMMON()                                        \
-  READ_LIST(string, sources);                                \
-  READ_LIST(string, environ);                                \
-  READ_LIST_FROM(string, runtime, depends, runtime_depends); \
-  READ_LIST_FROM(string, buildtime, depends, buildtime_depends);
-
 namespace rlxos::libpkgupd {
+Recipe::Recipe(YAML::Node data, std::string file) {
+  READ_VALUE(string, id, m_ID);
+  READ_VALUE(string, version, m_Version);
+  READ_VALUE(string, about, m_About);
+  READ_LIST(string, depends, m_Depends);
 
-Recipe::Recipe(YAML::Node const &data, std::string const &file) : _node{data} {
-  READ_VALUE(string, id);
-  READ_VALUE(string, version);
-  READ_VALUE(string, about);
+  std::string packageType;
+  READ_VALUE(string, type, packageType);
+  m_PackageType = stringToPackageType(packageType);
 
-  READ_COMMON();
+  OPTIONAL_VALUE(string, "script", m_Script, "");
+  READ_OBJECT_LIST(User, "users", m_Users);
+  READ_OBJECT_LIST(Group, "groups", m_Groups);
 
-  READ_OBJECT_LIST(PackageInformation::User, users);
-  READ_OBJECT_LIST(PackageInformation::Group, groups);
+  data = data["build"];
 
-  OPTIONAL_VALUE(bool, split, false);
+  std::string buildType;
+  OPTIONAL_VALUE(string, "type", buildType, "auto");
+  m_BuildType = stringToBuildType(buildType);
 
-  READ_OBJECT_LIST(Package, packages);
-}
+  READ_LIST(string, "depends", m_BuildTime);
+  READ_LIST(string, "sources", m_Sources);
+  READ_LIST(string, "environ", m_Environ);
 
-Recipe::Package::Package(YAML::Node const &data, std::string const &file) {
-  READ_VALUE(string, id);
-  READ_VALUE(string, dir);
+  OPTIONAL_VALUE(string, "configure", m_Configure, "");
+  OPTIONAL_VALUE(string, "compile", m_Compile, "");
+  OPTIONAL_VALUE(string, "install", m_Install, "");
 
-  READ_COMMON();
+  if (data["split"]) {
+    for (auto const& i : data["split"]) {
+      SplitPackage splitPackage;
+      READ_VALUE(string, "into", splitPackage.into);
+      READ_VALUE(string, "about", splitPackage.about);
+      READ_LIST(string, "depends", splitPackage.depends);
+      READ_LIST(string, "files", splitPackage.files);
 
-  OPTIONAL_VALUE(string, prescript, "");
-  OPTIONAL_VALUE(string, postscript, "");
-  OPTIONAL_VALUE(string, script, "");
-  OPTIONAL_VALUE(string, install_script, "");
-
-  OPTIONAL_VALUE(string, pack, "rlx");
-
-  READ_LIST(string, skipstrip);
-  OPTIONAL_VALUE(bool, strip, true);
-
-  READ_OBJECT_LIST(flag, flags);
-}
-
-Recipe::Package::flag::flag(YAML::Node const &data, std::string const &file) {
-  READ_VALUE(string, id);
-  READ_VALUE(string, value);
-
-  OPTIONAL_VALUE(bool, force, false);
-  if (data["only"]) {
-    DEBUG("Use of 'only' in flags is deprecated, use 'force'")
-    _force = data["only"].as<bool>();
+      m_SplitPackages.push_back(splitPackage);
+    }
   }
 }
 
-std::string Recipe::Package::id() const {
-  if (_id == "lib" || _id == "lib32") return _id + _parent->id();
-
-  if (_id == "pkg") return _parent->_id;
-
-  return _parent->_id + "-" + _id;
-}
-
-std::string Recipe::Package::version() const { return _parent->_version; }
-
-std::string Recipe::Package::about() const { return _parent->_about; }
-
-PackageInformation::PackageType Recipe::Package::type() const { 
-  if (_pack == "app") {
-    return PackageType::APP;
-  } else {
-    return PackageType::PKG;
-  }
-}
-
-std::vector<std::string> Recipe::Package::depends(bool all) const {
-  std::vector<string> depends = _runtime_depends;
-  depends.insert(depends.end(), _parent->_runtime_depends.begin(),
-                 _parent->_runtime_depends.end());
-
-  if (all) {
-    depends.insert(depends.end(), _buildtime_depends.begin(),
-                   _buildtime_depends.end());
-    depends.insert(depends.end(), _parent->_buildtime_depends.begin(),
-                   _parent->_buildtime_depends.end());
+std::optional<Package> Recipe::operator[](std::string const& name) const {
+  for (auto i : packages()) {
+    if (i.id() == name) {
+      return i;
+    }
   }
 
-  return depends;
+  return {};
 }
 
-std::vector<std::string> Recipe::Package::sources() const {
-  std::vector<std::string> all_sources = _sources;
-  all_sources.insert(all_sources.end(), _parent->_sources.begin(),
-                     _parent->_sources.end());
-  return all_sources;
-}
+std::vector<Package> Recipe::packages() const {
+  std::vector<Package> packagesList;
+  packagesList.push_back(Package(m_ID, m_Version, m_About, m_PackageType,
+                                 m_Depends, m_Users, m_Groups, m_Script));
 
-std::vector<std::string> Recipe::Package::environ() {
-  std::vector<std::string> allenviron = _parent->_environ;
-  allenviron.insert(allenviron.end(), _environ.begin(), _environ.end());
-  return allenviron;
-}
+  for (auto const& i : m_SplitPackages) {
+    std::string id = i.into;
+    if (id == "lib") {
+      id += m_ID;
+    }
 
-std::shared_ptr<Recipe::Package> Recipe::operator[](
-    std::string const &pkgid) const {
-  auto pkgiter = std::find_if(_packages.begin(), _packages.end(),
-                              [&](std::shared_ptr<Package> const &p) {
-                                if (pkgid == this->id() && (p->id() == "pkg"))
-                                  return true;
+    packagesList.push_back(Package(
+        id, m_Version, i.about.size() ? i.about : m_About, m_PackageType,
+        i.depends.size() ? i.depends : m_Depends, m_Users, m_Groups, m_Script));
+  }
 
-                                if (pkgid == p->id()) return true;
-
-                                return false;
-                              });
-
-  if (pkgiter == _packages.end()) return nullptr;
-
-  return (*pkgiter);
+  return packagesList;
 }
 }  // namespace rlxos::libpkgupd

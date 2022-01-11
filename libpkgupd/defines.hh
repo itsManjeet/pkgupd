@@ -32,37 +32,37 @@ class Object {
   GET_METHOD(type, var)   \
   SET_METHOD(type, var)
 
-#define _CHECK_VALUE(type, variable) \
-  if (data[#variable]) _##variable = data[#variable].as<type>();
+#define _CHECK_VALUE(type, variableID, variable) \
+  if (data[#variableID]) variable = data[#variableID].as<type>();
 
-#define _CHECK_LIST(type, variable) \
-  if (data[#variable])              \
-    for (auto const &i : data[#variable]) _##variable.push_back(i.as<type>());
+#define _CHECK_LIST(type, variableID, variable) \
+  if (data[#variableID])                        \
+    for (auto const &i : data[#variableID]) variable.push_back(i.as<type>());
 
-#define _THROW_ERROR(variable) \
-  else throw std::runtime_error(#variable " is missing in " + file);
+#define _THROW_ERROR(variableID) \
+  else throw std::runtime_error(#variableID " is missing in " + file);
 
-#define _USE_FALLBACK(variable, fallback) else _##variable = fallback;
+#define _USE_FALLBACK(variableID, variable, fallback) else variable = fallback;
 
-#define READ_VALUE(type, variable) \
-  _CHECK_VALUE(type, variable)     \
-  _THROW_ERROR(variable)
+#define READ_VALUE(type, variableID, variable) \
+  _CHECK_VALUE(type, variableID, variable)     \
+  _THROW_ERROR(variableID)
 
-#define READ_LIST(type, variable) _CHECK_LIST(type, variable)
+#define READ_LIST(type, variableID, variable) \
+  _CHECK_LIST(type, variableID, variable)
 
-#define READ_OBJECT_LIST(type, variable)  \
-  if (data[#variable])                    \
-    for (auto const &i : data[#variable]) \
-      _##variable.push_back(std::make_shared<type>(i, file));
+#define READ_OBJECT_LIST(type, variableID, variable) \
+  if (data[#variableID])                             \
+    for (auto const &i : data[#variableID]) variable.push_back(type(i, file));
 
 #define READ_LIST_FROM(type, variable, from, into) \
   if (data[#from] && data[#from][#variable])       \
     for (auto const &i : data[#from][#variable])   \
       _##into.push_back(i.as<type>());
 
-#define OPTIONAL_VALUE(type, variable, fallback) \
-  _CHECK_VALUE(type, variable)                   \
-  _USE_FALLBACK(variable, fallback)
+#define OPTIONAL_VALUE(type, variableID, variable, fallback) \
+  _CHECK_VALUE(type, variableID, variable)                   \
+  _USE_FALLBACK(variableID, variable, fallback)
 
 #define DEFAULT_DATA_DIR "/var/lib/pkgupd/data"
 #define DEFAULT_PKGS_DIR "/var/cache/pkgupd/pkgs"

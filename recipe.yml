@@ -1,0 +1,39 @@
+id: test-package
+version: 0.0.1
+about: new recipe file package
+
+type: app
+
+depends:
+  - package1
+  - package2
+  - package3
+
+script: |
+  
+
+build:
+  type: cmake
+
+  sources:
+    - 
+
+  environ:
+    - CFLAGS='-fPIC'
+
+  configure: -DCONFIGURE_ARGS
+
+  compile: >
+    COMPLER
+    FLAGS
+
+  install: >
+    INSTALL_FLAGS
+
+  
+  
+  split:
+    - into: lib
+      about: libraries of test package
+      files:
+        - /usr/lib/libc.so

@@ -1,27 +1,21 @@
-#ifndef _PKGUPD_TAR_HH_
-#define _PKGUPD_TAR_HH_
+#ifndef LIBPKGUPD_TAR
+#define LIBPKGUPD_TAR
 
-#include "archive.hh"
+#include "packager.hh"
 
 namespace rlxos::libpkgupd {
-class Tar : public Archive {
+class Tar : public Packager {
  public:
-  Tar(std::string const &p) : Archive(p) {}
-  std::tuple<int, std::string> getdata(std::string const &filepath);
+  Tar(std::string const &p) : Packager(p) {}
+  std::tuple<int, std::string> get(std::string const &filepath);
 
-  std::shared_ptr<Archive::Package> info();
+  std::optional<Package> info();
 
   std::vector<std::string> list();
 
-  bool is_exist(std::string const &path) {
-    auto [status, output] = getdata(path);
-    return status == 0;
-  }
-
   bool extract(std::string const &outdir);
 
-  bool compress(std::string const &srcdir,
-                std::shared_ptr<PackageInformation> const &info);
+  bool compress(std::string const &srcdir, Package const &info);
 };
 }  // namespace rlxos::libpkgupd
 #endif

@@ -2,7 +2,7 @@
 #define _LIBPKGUPD_REMOVER_HH_
 
 #include "defines.hh"
-#include "sysdb.hh"
+#include "system-database.hh"
 #include "triggerer.hh"
 
 namespace rlxos::libpkgupd {
@@ -20,7 +20,7 @@ class Remover : public Object {
   Remover(SystemDatabase &sdb, std::string const &rootdir)
       : _sys_db{sdb}, _root_dir{rootdir} {}
 
-  bool remove(std::shared_ptr<SystemDatabase::package> pkginfo_);
+  bool remove(Package const &pkginfo);
 
   bool remove(std::vector<std::string> const &pkgs, bool skip_triggers = false);
 };

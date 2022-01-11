@@ -216,23 +216,23 @@ std::vector<Triggerer::type> Triggerer::_get(
   return requiredTriggers;
 }
 
-bool Triggerer::trigger(std::vector<std::shared_ptr<PackageInformation>> const &pkgs) {
+bool Triggerer::trigger(std::vector<Package> const &pkgs) {
   bool status = true;
   for (auto const &i : pkgs) {
-    for (auto const &grp : i->groups()) {
-      PROCESS("creating group " + grp->name());
-      if (!grp->exists()) {
-        if (!grp->create()) {
-          ERROR("failed to create " + grp->name() + " group");
+    for (auto const &grp : i.groups()) {
+      PROCESS("creating group " + grp.name());
+      if (!grp.exists()) {
+        if (!grp.create()) {
+          ERROR("failed to create " + grp.name() + " group");
           status = false;
         }
       }
     }
-    for (auto const &usr : i->users()) {
-      PROCESS("creating user " + usr->name());
-      if (!usr->exists()) {
-        if (!usr->create()) {
-          ERROR("failed to create " + usr->name() + " user");
+    for (auto const &usr : i.users()) {
+      PROCESS("creating user " + usr.name());
+      if (!usr.exists()) {
+        if (!usr.create()) {
+          ERROR("failed to create " + usr.name() + " user");
           status = false;
         }
       }

@@ -4,24 +4,25 @@
 #include <functional>
 
 #include "defines.hh"
-#include "repodb.hh"
-#include "sysdb.hh"
+#include "repository.hh"
+#include "system-database.hh"
 
 namespace rlxos::libpkgupd {
 class Resolver : public Object {
  private:
-  Repository &_repodb;
-  SystemDatabase &_sysdb;
-  std::vector<std::string> _data, _visited;
+  Repository &m_Repository;
+  SystemDatabase &m_SystemDatabase;
+  std::vector<std::string> m_PackagesList, m_Visited;
 
   bool _to_skip(std::string const &pkgid);
 
  public:
-  Resolver(Repository &rp, SystemDatabase &sd) : _repodb{rp}, _sysdb{sd} {}
+  Resolver(Repository &repository, SystemDatabase &systemDatabase)
+      : m_Repository(repository), m_SystemDatabase(systemDatabase) {}
 
   bool resolve(std::string const &pkgid, bool all = false);
 
-  GET_METHOD(std::vector<std::string>, data);
+  std::vector<std::string> const &list() const { return m_PackagesList; }
 };
 }  // namespace rlxos::libpkgupd
 

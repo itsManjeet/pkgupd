@@ -3,44 +3,39 @@
 #include <cassert>
 #include <iostream>
 
-#include "archive.hh"
 #include "exec.hh"
 #include "image.hh"
+#include "packager.hh"
 #include "tar.hh"
 #include "triggerer.hh"
 
 namespace rlxos::libpkgupd {
 
-bool Installer::_install(std::vector<std::string> const &pkgs,
-                         std::string const &root_dir, bool skip_triggers,
-                         bool force) {
-  std::vector<std::shared_ptr<PackageInformation>> pkginfo_list;
-  std::vector<std::vector<std::string>> all_pkgs_fileslist;
+bool Installer::_install(std::vector<std::string> const &packages,
+                         std::string const &rootDir, bool isSkipTriggers,
+                         bool isForce) {
+  std::vector<Package> packagesList;
+  std::vector<std::vector<std::string>> packagesFiles;
 
-  for (auto const &i : pkgs) {
-    std::shared_ptr<Archive> archive_;
-    std::string ext = std::filesystem::path(i).extension();
-    if (ext == ".rlx") {
-      archive_ = std::make_shared<Tar>(i);
-    } else if (ext == ".app") {
-      archive_ = std::make_shared<Image>(i);
-    } else {
-      _error = "unsupport package of type '" + ext + "'";
-      return false;
-    }
+  for (auto const &i : packages) {
+    std::string ext = std::filesystem::path(i).extension().string();
+    ext = ext.substr(1, ext.length() - 1);
+
+    auto packager = Packager::create(stringToPackageType(ext), i);
 
     DEBUG("getting information from "
           << std::filesystem::path(i).filename().string());
 
-    auto info = archive_->info();
-    if (info == nullptr) {
-      _error = archive_->error();
+    auto info = packager->info();
+    if (!info) {
+      _error = packager->error();
       return false;
     }
 
     try {
-      if (!force) {
-        if (_sysdb.is_installed(info) && !_sysdb.outdated(info)) {
+      if (!isForce) {
+        if (m_SystemDatabase.isInstalled(*info) &&
+            !m_SystemDatabase.isOutDated(*info)) {
           INFO(info->id() + " latest version is already installed")
           continue;
         }
@@ -48,45 +43,44 @@ bool Installer::_install(std::vector<std::string> const &pkgs,
     } catch (...) {
     }
 
-    if (root_dir == "/") {
+    if (rootDir == "/") {
       PROCESS("installing " << BLUE(info->id()));
     } else {
-      PROCESS("installing " << BLUE(info->id()) << " into " << RED(root_dir));
+      PROCESS("installing " << BLUE(info->id()) << " into " << RED(rootDir));
     }
 
-    if (!archive_->extract(root_dir)) {
-      _error = archive_->error();
+    if (!packager->extract(rootDir)) {
+      _error = packager->error();
       return false;
     }
-    all_pkgs_fileslist.push_back(archive_->list());
-    pkginfo_list.push_back(info);
+    packagesFiles.push_back(packager->list());
+    packagesList.push_back(*info);
   }
 
-  assert(all_pkgs_fileslist.size() == pkginfo_list.size());
+  bool withPkgname = packagesList.size() != 1;
 
-  bool _with_pkgname = pkginfo_list.size() != 1;
-
-  for (int i = 0; i < pkginfo_list.size(); i++) {
-    if (_with_pkgname) {
-      PROCESS("registering into database " << BLUE(pkginfo_list[i]->id()));
+  for (int i = 0; i < packagesList.size(); i++) {
+    if (withPkgname) {
+      PROCESS("registering into database " << BLUE(packagesList[i].id()));
     } else {
       PROCESS("registering into database");
     }
 
-    if (!_sysdb.add(pkginfo_list[i], all_pkgs_fileslist[i], root_dir, force)) {
-      _error = _sysdb.error();
+    if (!m_SystemDatabase.registerIntoSystem(packagesList[i], packagesFiles[i],
+                                             rootDir, isForce)) {
+      _error = m_SystemDatabase.error();
       return false;
     }
 
-    if (!skip_triggers) {
-      if (pkginfo_list[i]->install_script().size()) {
-        if (_with_pkgname) {
-          PROCESS("post install script " << BLUE(pkginfo_list[i]->id()));
+    if (!isSkipTriggers) {
+      if (packagesList[i].script().size()) {
+        if (withPkgname) {
+          PROCESS("post install script " << BLUE(packagesList[i].id()));
         } else {
           PROCESS("post installation script");
         }
 
-        if (int status = Executor().execute(pkginfo_list[i]->install_script());
+        if (int status = Executor().execute(packagesList[i].script());
             status != 0) {
           _error =
               "install script failed to exit code: " + std::to_string(status);
@@ -96,21 +90,21 @@ bool Installer::_install(std::vector<std::string> const &pkgs,
     }
   }
 
-  if (skip_triggers) {
+  if (isSkipTriggers) {
     INFO("skipping triggers")
   } else {
     auto triggerer_ = Triggerer();
-    if (!triggerer_.trigger(all_pkgs_fileslist)) {
+    if (!triggerer_.trigger(packagesFiles)) {
       _error = triggerer_.error();
       return false;
     }
   }
 
-  if (skip_triggers) {
+  if (isSkipTriggers) {
     INFO("skipped creating users account")
   } else {
     auto triggerer_ = Triggerer();
-    if (!triggerer_.trigger(pkginfo_list)) {
+    if (!triggerer_.trigger(packagesList)) {
       _error = triggerer_.error();
       return false;
     }
@@ -118,42 +112,42 @@ bool Installer::_install(std::vector<std::string> const &pkgs,
 
   return true;
 }
-bool Installer::install(std::vector<std::string> const &pkgs,
-                        std::string const &root_dir, bool skip_triggers,
-                        bool force) {
-  std::vector<std::string> archive_list;
+bool Installer::install(std::vector<std::string> const &packages,
+                        std::string const &rootDir, bool isSkipTriggers,
+                        bool isForce) {
+  std::vector<std::string> archiveList;
 
-  for (auto const &i : pkgs) {
+  for (auto const &i : packages) {
     if (std::filesystem::exists(i)) {
-      archive_list.push_back(i);
+      archiveList.push_back(i);
       continue;
     }
 
-    auto info = _repodb[i];
-    if (info == nullptr) {
+    auto package = m_Repository[i];
+    if (!package) {
       _error = "no package found with name '" + i + "'";
       return false;
     }
 
-    if (_sysdb.is_installed(info) && !force) {
-      _error = info->id() + " is already installed in the system";
+    if (m_SystemDatabase.isInstalled(*package) && !isForce) {
+      _error = package->id() + " is already installed in the system";
       return false;
     }
 
-    auto pkgfile = info->packagefile();
-    auto pkgpath = _pkg_dir + "/" + pkgfile;
+    auto archiveFile = package->file();
+    auto archiveFilePath = m_PackageDir + "/" + archiveFile;
 
-    if (!std::filesystem::exists(pkgpath)) {
-      PROCESS("getting " << pkgfile);
-      if (!_downloader.get(pkgfile, pkgpath)) {
-        _error = _downloader.error();
+    if (!std::filesystem::exists(archiveFilePath)) {
+      PROCESS("getting " << archiveFile);
+      if (!m_Downloader.get(archiveFile, archiveFilePath)) {
+        _error = m_Downloader.error();
         return false;
       }
     }
 
-    archive_list.push_back(pkgpath);
+    archiveList.push_back(archiveFilePath);
   }
 
-  return _install(archive_list, root_dir, skip_triggers, force);
+  return _install(archiveList, rootDir, isSkipTriggers, isForce);
 }
 }  // namespace rlxos::libpkgupd

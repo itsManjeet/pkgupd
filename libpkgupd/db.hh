@@ -1,27 +1,29 @@
 #ifndef _PKGUPD_DATABASE_HH_
 #define _PKGUPD_DATABASE_HH_
 
+#include <optional>
+
 #include "defines.hh"
-#include "pkginfo.hh"
+#include "package.hh"
 
 namespace rlxos::libpkgupd {
 class Database : public Object {
  protected:
-  std::string _data_dir;
+  std::string p_DataDir;
 
  public:
-  Database(std::string const &datadir) : _data_dir{datadir} {
-    if (!std::filesystem::exists(_data_dir)) {
+  Database(std::string const &datadir) : p_DataDir(datadir) {
+    if (!std::filesystem::exists(p_DataDir)) {
       std::error_code ec;
-      DEBUG("Creating database directory " << _data_dir);
-      std::filesystem::create_directories(_data_dir, ec);
+      DEBUG("Creating database directory " << p_DataDir);
+      std::filesystem::create_directories(p_DataDir, ec);
     }
   }
 
-  GET_METHOD(std::string, data_dir);
+  std::string const &path() const { return p_DataDir; }
 
-  virtual std::shared_ptr<PackageInformation> operator[](std::string const &pkgid) = 0;
-  virtual std::vector<std::shared_ptr<PackageInformation>> all() {
+  virtual std::optional<Package> operator[](std::string const &pkgid) = 0;
+  virtual std::vector<Package> all() {
     throw std::runtime_error("INTERNAL ERROR: not yet implemented for " +
                              std::string(typeid(*this).name()));
   };

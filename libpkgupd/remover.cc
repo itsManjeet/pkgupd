@@ -1,8 +1,12 @@
 #include "remover.hh"
 
 namespace rlxos::libpkgupd {
-bool Remover::remove(std::shared_ptr<SystemDatabase::package> pkginfo_) {
-  auto files = pkginfo_->files();
+bool Remover::remove(Package const &package) {
+  auto files_node = package.node()["files"];
+  std::vector<std::string> files;
+  for (auto const &i : files_node) {
+    files.push_back(i.as<std::string>());
+  }
 
   bool status = true;
 
@@ -34,7 +38,7 @@ bool Remover::remove(std::shared_ptr<SystemDatabase::package> pkginfo_) {
     }
   }
 
-  if (!_sys_db.remove(pkginfo_)) {
+  if (!_sys_db.unregisterFromSystem(package)) {
     _error += _sys_db.error();
     status = false;
   }
@@ -43,20 +47,20 @@ bool Remover::remove(std::shared_ptr<SystemDatabase::package> pkginfo_) {
 }
 
 bool Remover::remove(std::vector<std::string> const &pkgs, bool skip_triggers) {
-  std::vector<std::shared_ptr<SystemDatabase::package>> pkgsInfo;
+  std::vector<Package> pkgsInfo;
 
   for (auto const &i : pkgs) {
-    auto pkginfo_ = _sys_db[i];
-    if (pkginfo_ == nullptr) {
+    auto package = _sys_db[i];
+    if (!package) {
       _error = _sys_db.error();
       return false;
     }
 
-    pkgsInfo.push_back(std::dynamic_pointer_cast<SystemDatabase::package>(pkginfo_));
+    pkgsInfo.push_back(*package);
   }
 
   for (auto const &i : pkgsInfo) {
-    PROCESS("cleaning file of " << i->id());
+    PROCESS("cleaning file of " << i.id());
     if (!remove(i)) ERROR(_error);
   }
 

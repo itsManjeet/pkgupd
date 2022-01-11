@@ -4,23 +4,23 @@
 
 namespace rlxos::libpkgupd {
 
-std::tuple<int, std::string> Tar::getdata(std::string const &filepath) {
+std::tuple<int, std::string> Tar::get(std::string const &filepath) {
   std::string cmd = "/bin/tar";
-  cmd += " --zstd -O -xPf " + _pkgfile + " " + filepath;
+  cmd += " --zstd -O -xPf " + m_PackageFile + " " + filepath;
 
   auto [status, output] = Executor().output(cmd);
   if (status != 0) {
-    _error = "failed to get data from " + _pkgfile;
+    _error = "failed to get data from " + m_PackageFile;
     return {status, output};
   }
   return {status, output};
 }
 
-std::shared_ptr<Tar::Package> Tar::info() {
-  auto [status, content] = getdata("./info");
+std::optional<Package> Tar::info() {
+  auto [status, content] = get("./info");
   if (status != 0) {
     _error = "failed to read package information";
-    return nullptr;
+    return {};
   }
 
   DEBUG("info: " << content);
@@ -30,15 +30,15 @@ std::shared_ptr<Tar::Package> Tar::info() {
     data = YAML::Load(content);
   } catch (YAML::Exception const &e) {
     _error = "corrupt package data, " + std::string(e.what());
-    return nullptr;
+    return {};
   }
 
-  return std::make_shared<Tar::Package>(data, _pkgfile);
+  return Package(data, m_PackageFile);
 }
 
 std::vector<std::string> Tar::list() {
   std::string cmd = "/bin/tar";
-  cmd += " --zstd -tPf " + _pkgfile;
+  cmd += " --zstd -tPf " + m_PackageFile;
 
   auto [status, output] = Executor().output(cmd);
   if (status != 0) {
@@ -56,9 +56,8 @@ std::vector<std::string> Tar::list() {
   return files_list;
 }
 
-bool Tar::compress(std::string const &srcdir,
-                   std::shared_ptr<PackageInformation> const &info) {
-  std::string pardir = std::filesystem::path(_pkgfile).parent_path();
+bool Tar::compress(std::string const &srcdir, Package const &package) {
+  std::string pardir = std::filesystem::path(m_PackageFile).parent_path();
   if (!std::filesystem::exists(pardir)) {
     std::error_code err;
     std::filesystem::create_directories(pardir, err);
@@ -68,44 +67,15 @@ bool Tar::compress(std::string const &srcdir,
     }
   }
 
-  std::ofstream fileptr(srcdir + "/info");
-
-  fileptr << "id: " << info->id() << "\n"
-          << "version: " << info->version() << "\n"
-          << "about: " << info->about() << "\n";
-
-  if (info->depends(false).size()) {
-    fileptr << "depends:"
-            << "\n";
-    for (auto const &i : info->depends(false)) fileptr << " - " << i << "\n";
+  // DUMP information
+  {
+    std::ofstream file(srcdir + "/info");
+    package.dump(file);
   }
-
-  if (info->users().size()) {
-    fileptr << "users: " << std::endl;
-    for (auto const &i : info->users()) {
-      i->print(fileptr);
-    }
-  }
-
-  if (info->groups().size()) {
-    fileptr << "groups: " << std::endl;
-    for (auto const &i : info->groups()) {
-      i->print(fileptr);
-    }
-  }
-
-  if (info->install_script().size()) {
-    fileptr << "install_script: | " << std::endl;
-    std::stringstream ss(info->install_script());
-    std::string line;
-    while (std::getline(ss, line, '\n')) fileptr << "  " << line << std::endl;
-  }
-
-  fileptr.close();
 
   std::string command = "/bin/tar";
 
-  command += " --zstd -cPf " + _pkgfile + " -C " + srcdir + " . ";
+  command += " --zstd -cPf " + m_PackageFile + " -C " + srcdir + " . ";
   if (Executor().execute(command) != 0) {
     _error = "failed to execute command for compression '" + command + "'";
     return false;
@@ -115,14 +85,14 @@ bool Tar::compress(std::string const &srcdir,
 }
 
 bool Tar::extract(std::string const &outdir) {
-  if (!std::filesystem::exists(_pkgfile)) {
-    _error = "no " + _pkgfile + " exist";
+  if (!std::filesystem::exists(m_PackageFile)) {
+    _error = "no " + m_PackageFile + " exist";
     return false;
   }
 
   std::string cmd = "/bin/tar";
 
-  cmd += " --zstd --exclude './info' -xPhpf " + _pkgfile + " -C " + outdir;
+  cmd += " --zstd --exclude './info' -xPhpf " + m_PackageFile + " -C " + outdir;
   if (Executor().execute(cmd) != 0) {
     _error = "failed to execute extraction command";
     return false;

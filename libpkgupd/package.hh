@@ -1,0 +1,142 @@
+#ifndef _LIBPKGUPD_PACKAGEINFO_HH_
+#define _LIBPKGUPD_PACKAGEINFO_HH_
+
+#include <grp.h>
+#include <yaml-cpp/yaml.h>
+
+#include <ostream>
+
+#include "defines.hh"
+#include "exec.hh"
+#include "group.hh"
+#include "user.hh"
+
+namespace rlxos::libpkgupd {
+/**
+ * @brief Package type helps to determine the type of packaging and
+ * installation methods use for that package
+ *
+ */
+enum class PackageType : int {
+  APPIMAGE,
+  PACKAGE,
+};
+
+std::string packageTypeToString(PackageType type);
+
+PackageType stringToPackageType(std::string const& type);
+
+/**
+ * @brief Package holds all the information of rlxos packages
+ * their dependencies and required user groups
+ */
+class Package {
+ private:
+  std::string m_ID;
+  std::string m_Version;
+  std::string m_About;
+
+  std::vector<std::string> m_Depends;
+
+  PackageType m_PackageType;
+
+  std::vector<User> m_Users;
+  std::vector<Group> m_Groups;
+
+  std::string m_Script;
+
+  YAML::Node m_Node;
+
+ public:
+  Package() {}
+
+  Package(std::string const& id, std::string const& version,
+          std::string const& about, PackageType packageType,
+          std::vector<std::string> const& depends,
+          std::vector<User> const& users, std::vector<Group> const& groups,
+          std::string const& script)
+      : m_ID(id),
+        m_Version(version),
+        m_About(about),
+        m_PackageType(packageType),
+        m_Depends(depends),
+        m_Users(users),
+        m_Groups(groups),
+        m_Script(script) {}
+
+  Package(YAML::Node const& data, std::string const& file) {
+    READ_VALUE(std::string, id, m_ID);
+    READ_VALUE(std::string, version, m_Version);
+    READ_VALUE(std::string, about, m_About);
+    READ_LIST(std::string, depends, m_Depends);
+
+    READ_OBJECT_LIST(User, users, m_Users);
+    READ_OBJECT_LIST(Group, groups, m_Groups);
+
+    m_PackageType = PackageType::PACKAGE;
+    if (data["type"]) {
+      m_PackageType = stringToPackageType(data["type"].as<std::string>());
+    }
+
+    OPTIONAL_VALUE(std::string, script, m_Script, "");
+
+    m_Node = data;
+  }
+
+  std::string const& id() const { return m_ID; }
+  std::string const& version() const { return m_Version; }
+  std::string const& about() const { return m_About; }
+  PackageType type() const { return m_PackageType; }
+
+  std::vector<std::string> const& depends() const { return m_Depends; }
+
+  std::vector<User> const& users() const { return m_Users; }
+  std::vector<Group> const& groups() const { return m_Groups; }
+
+  std::string const& script() const { return m_Script; };
+
+  YAML::Node const& node() const { return m_Node; }
+
+  std::string file() const {
+    return m_ID + "-" + m_Version + "." + packageTypeToString(m_PackageType);
+  }
+
+  void dump(std::ostream& os) const {
+    os << "id: " << m_ID << "\n"
+       << "version: " << m_Version << "\n"
+       << "about: " << m_About << "\n";
+
+    os << "type: " << packageTypeToString(m_PackageType) << '\n';
+
+    if (m_Depends.size()) {
+      os << "depends:"
+         << "\n";
+      for (auto const& i : m_Depends) os << " - " << i << "\n";
+    }
+
+    if (m_Users.size()) {
+      os << "users: " << std::endl;
+      for (auto const& i : m_Users) {
+        i.dump(os);
+      }
+    }
+
+    if (m_Groups.size()) {
+      os << "groups: " << std::endl;
+      for (auto const& i : m_Groups) {
+        i.dump(os);
+      }
+    }
+
+    if (m_Script.size()) {
+      os << "script: | " << std::endl;
+      std::stringstream ss(m_Script);
+      std::string line;
+      while (std::getline(ss, line, '\n')) os << "  " << line << std::endl;
+    }
+  }
+};
+
+}  // namespace rlxos::libpkgupd
+
+#endif
