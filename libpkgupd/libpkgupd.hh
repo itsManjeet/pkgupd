@@ -41,7 +41,7 @@ class Pkgupd : public Object {
         m_Repository(repositoryPath),
         m_Installer(m_SystemDatabase, m_Repository, m_Downloader, packagesPath),
         m_RootDir(rootsPath),
-        m_Remover(m_SystemDatabase, m_RootDir),
+        m_Remover(m_SystemDatabase, rootsPath),
         m_Resolver(m_SystemDatabase, m_Repository),
         m_IsForce(isForce),
         m_IsSkipTriggers(isSkipTriggers),

@@ -8,17 +8,17 @@
 namespace rlxos::libpkgupd {
 class Remover : public Object {
  private:
-  std::string _root_dir;
-  SystemDatabase _sys_db;
-  Triggerer _triggerer;
+  std::string m_RootDir;
+  SystemDatabase &m_SystemDatabase;
+  Triggerer m_Triggerer;
 
-  std::vector<std::vector<std::string>> _files_list;
+  std::vector<std::vector<std::string>> m_FilesList;
 
   bool _skip_trigger = false;
 
  public:
-  Remover(SystemDatabase &sdb, std::string const &rootdir)
-      : _sys_db{sdb}, _root_dir{rootdir} {}
+  Remover(SystemDatabase &systemDatabase, std::string const &rootdir)
+      : m_SystemDatabase(systemDatabase), m_RootDir(rootdir) {}
 
   bool remove(Package const &pkginfo);
 

@@ -10,26 +10,26 @@ bool Remover::remove(Package const &package) {
 
   bool status = true;
 
-  _files_list.push_back(std::vector<std::string>());
+  m_FilesList.push_back(std::vector<std::string>());
 
   for (auto i = files.rbegin(); i != files.rend(); i++) {
     std::error_code err;
     std::string path;
 
     if ((*i).rfind("./", 0) == 0)
-      path = _root_dir + "/" + (*i).substr(2, (*i).length() - 2);
+      path = m_RootDir + "/" + (*i).substr(2, (*i).length() - 2);
     else
-      path = _root_dir + "/" + *i;
+      path = m_RootDir + "/" + *i;
 
     if (std::filesystem::is_directory(path)) {
-      _files_list.back().push_back(path);
+      m_FilesList.back().push_back(path);
 
       if (std::filesystem::is_empty(path))
         std::filesystem::remove_all(path, err);
     } else {
       DEBUG("removing " << path);
       std::filesystem::remove(path, err);
-      _files_list.back().push_back(path);
+      m_FilesList.back().push_back(path);
     }
 
     if (err) {
@@ -38,8 +38,8 @@ bool Remover::remove(Package const &package) {
     }
   }
 
-  if (!_sys_db.unregisterFromSystem(package)) {
-    p_Error += _sys_db.error();
+  if (!m_SystemDatabase.unregisterFromSystem(package)) {
+    p_Error += m_SystemDatabase.error();
     status = false;
   }
 
@@ -50,9 +50,9 @@ bool Remover::remove(std::vector<std::string> const &pkgs, bool skip_triggers) {
   std::vector<Package> pkgsInfo;
 
   for (auto const &i : pkgs) {
-    auto package = _sys_db[i];
+    auto package = m_SystemDatabase[i];
     if (!package) {
-      p_Error = _sys_db.error();
+      p_Error = m_SystemDatabase.error();
       return false;
     }
 
@@ -65,8 +65,8 @@ bool Remover::remove(std::vector<std::string> const &pkgs, bool skip_triggers) {
   }
 
   if (!skip_triggers) {
-    if (!_triggerer.trigger(_files_list)) {
-      p_Error = _triggerer.error();
+    if (!m_Triggerer.trigger(m_FilesList)) {
+      p_Error = m_Triggerer.error();
       return false;
     }
   }
