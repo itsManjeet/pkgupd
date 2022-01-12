@@ -2,6 +2,7 @@
 #define LIBPKGUPD_BUILDER
 
 #include "defines.hh"
+#include "packager.hh"
 
 namespace rlxos::libpkgupd {
 

@@ -67,12 +67,6 @@ bool Tar::compress(std::string const &srcdir, Package const &package) {
     }
   }
 
-  // DUMP information
-  {
-    std::ofstream file(srcdir + "/info");
-    package.dump(file);
-  }
-
   std::string command = "/bin/tar";
 
   command += " --zstd -cPf " + m_PackageFile + " -C " + srcdir + " . ";

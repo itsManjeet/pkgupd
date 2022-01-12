@@ -67,12 +67,6 @@ bool Image::compress(std::string const& srcdir, Package const& package) {
     }
   }
 
-  // DUMP information
-  {
-    std::ofstream file(srcdir + "/info");
-    package.dump(file);
-  }
-
   {
     DEBUG("packing AppImage")
     int status = Executor().execute(
