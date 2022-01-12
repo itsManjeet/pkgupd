@@ -15,7 +15,7 @@ include_directories(${YAML_CPP_INCLUDE_DIRS})
 
 find_library(LIBCURL curl REQUIRED)
 
-file(GLOB LIBPKGUPD_Src "libpkgupd/*.cc" "libpkgupd/*.hh")
+file(GLOB_RECURSE LIBPKGUPD_Src "libpkgupd/*.cc" "libpkgupd/*.hh")
 add_library(libpkgupd ${LIBPKGUPD_Src})
 target_link_libraries(libpkgupd ${LIBCURL} ${YAML_CPP_LIBRARIES})
 

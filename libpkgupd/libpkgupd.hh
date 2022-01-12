@@ -7,6 +7,8 @@
 #include "packager.hh"
 #include "remover.hh"
 #include "resolver.hh"
+#include "builder.hh"
+#include "recipe.hh"
 #include "tar.hh"
 
 namespace rlxos::libpkgupd {
@@ -28,16 +30,21 @@ class Pkgupd : public Object {
 
   std::string m_RootDir;
 
+  std::string m_PackageDir, m_SourceDir, m_BuildDir;
+
   bool m_IsForce;
   bool m_IsSkipTriggers;
 
  public:
   Pkgupd(std::string const& systemDatabasePath,
          std::string const& repositoryPath, std::string const& packagesPath,
+         std::string const& sourcedir,
          std::vector<std::string> const& mirrors, std::string const& version,
          std::string const& rootsPath, bool isForce = false,
          bool isSkipTriggers = false)
-      : m_SystemDatabase(systemDatabasePath),
+      : m_PackageDir(packagesPath),
+      m_SourceDir(sourcedir),
+      m_SystemDatabase(systemDatabasePath),
         m_Repository(repositoryPath),
         m_Installer(m_SystemDatabase, m_Repository, m_Downloader, packagesPath),
         m_RootDir(rootsPath),
@@ -45,9 +52,16 @@ class Pkgupd : public Object {
         m_Resolver(m_SystemDatabase, m_Repository),
         m_IsForce(isForce),
         m_IsSkipTriggers(isSkipTriggers),
-        m_Downloader(mirrors, version) {}
+        m_Downloader(mirrors, version)
+         {}
+
+  ~Pkgupd() {
+    
+  }
 
   bool install(std::vector<std::string> const& packages);
+
+  bool build(std::string const& recipefile);
 
   bool remove(std::vector<std::string> const& packages);
 

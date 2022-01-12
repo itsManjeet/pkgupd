@@ -5,36 +5,11 @@
 
 #include <optional>
 
+#include "builder.hh"
 #include "defines.hh"
 #include "package.hh"
 
 namespace rlxos::libpkgupd {
-
-enum class BuildType {
-  AUTO_DETECT,
-  CMAKE,
-};
-
-static std::string buildTypeToString(BuildType type) {
-  switch (type) {
-    case BuildType::AUTO_DETECT:
-      return "auto";
-    case BuildType::CMAKE:
-      return "cmake";
-
-    default:
-      throw std::runtime_error("unimplemented buildtype");
-  }
-}
-static BuildType stringToBuildType(std::string type) {
-  if (type == "auto") {
-    return BuildType::AUTO_DETECT;
-  } else if (type == "cmake") {
-    return BuildType::CMAKE;
-  }
-
-  throw std::runtime_error("unimplemented build type '" + type + "'");
-}
 
 struct SplitPackage {
   std::string into;
@@ -58,13 +33,53 @@ class Recipe {
   std::string m_PreScript, m_PostScript;
   std::vector<SplitPackage> m_SplitPackages;
 
+  std::vector<std::string> m_SkipStrip;
+  bool m_DoStrip;
+
   std::string m_Script;
 
   std::vector<User> m_Users;
   std::vector<Group> m_Groups;
 
+  YAML::Node m_Node;
+
  public:
   Recipe(YAML::Node data, std::string file);
+
+  std::string const& id() const { return m_ID; }
+  std::string const& version() const { return m_Version; }
+  std::string const& about() const { return m_About; }
+
+  PackageType const packageType() const { return m_PackageType; }
+
+  BuildType const buildType() const {
+    return m_BuildType;
+  }
+
+  std::vector<std::string> const& depends() const { return m_Depends; }
+  std::vector<std::string> const& buildtype() const { return m_BuildTime; }
+
+  std::string const& buildDir() const { return m_BuildDir; }
+
+  std::string const& configure() const { return m_Configure; }
+  std::string const& compile() const { return m_Compile; }
+  std::string const& install() const { return m_Install; }
+
+  std::string const& prescript() const { return m_PreScript; }
+  std::string const& postscript() const { return m_PostScript; }
+
+  std::string const& script() const { return m_Script; }
+
+  std::vector<std::string> const& environ() const { return m_Environ; }
+  std::vector<std::string> const& sources() const { return m_Sources; }
+
+  std::vector<std::string> const& skipStrip() const { return m_SkipStrip; }
+
+  std::vector<SplitPackage> const& splits() const { return m_SplitPackages; }
+
+  bool dostrip() const { return m_DoStrip; }
+
+  YAML::Node const& node() const { return m_Node; }
 
   std::optional<Package> operator[](std::string const& name) const;
   std::vector<Package> packages() const;

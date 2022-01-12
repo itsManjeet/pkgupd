@@ -1,5 +1,6 @@
 #include "libpkgupd.hh"
 
+
 #include <fstream>
 #include <sstream>
 
@@ -8,6 +9,21 @@ bool Pkgupd::install(std::vector<std::string> const& packages) {
   bool status =
       m_Installer.install(packages, m_RootDir, m_IsSkipTriggers, m_IsForce);
   p_Error = m_Installer.error();
+  return status;
+}
+
+bool Pkgupd::build(std::string const& recipefile) {
+  auto node = YAML::LoadFile(recipefile);
+  auto recipe = Recipe(node, recipefile);
+
+  m_BuildDir = "/tmp/pkgupd-" + recipe.id();
+
+  auto builder = Builder::create(recipe.buildType());
+  builder->set(m_BuildDir, m_SourceDir, m_PackageDir);
+
+  bool status = builder->build(recipe);
+  p_Error = builder->error();
+
   return status;
 }
 

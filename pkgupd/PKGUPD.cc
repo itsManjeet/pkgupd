@@ -198,7 +198,9 @@ int PKGUPD::exec(int ac, char **av) {
 
   Pkgupd pkgupd(_get_value(SYS_DB, DEFAULT_DATA_DIR),
                 _get_value(REPO_DB, DEFAULT_REPO_DIR),
-                _get_value(PKG_DIR, DEFAULT_PKGS_DIR), mirrors, "2200",
+                _get_value(PKG_DIR, DEFAULT_PKGS_DIR),
+                _get_value(SRC_DIR, DEFAULT_SRC_DIR),
+                 mirrors, "2200",
                 _get_value(ROOT_DIR, DEFAULT_ROOT_DIR), _is_flag(flag::FORCE),
                 _is_flag(flag::SKIP_TRIGGER));
 
@@ -346,6 +348,17 @@ int PKGUPD::exec(int ac, char **av) {
       }
       return 0;
     } break;
+
+    case task::COMPILE: {
+      _need_args(1);
+      if (!pkgupd.build(_args[0])) {
+        ERROR(pkgupd.error());
+        return 2;
+      }
+
+      return 0;
+
+    }break;
 
     default:
       ERROR("invalid task ");

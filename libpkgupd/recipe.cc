@@ -4,6 +4,8 @@ using std::string;
 
 namespace rlxos::libpkgupd {
 Recipe::Recipe(YAML::Node data, std::string file) {
+  m_Node = data;
+
   READ_VALUE(string, id, m_ID);
   READ_VALUE(string, version, m_Version);
   READ_VALUE(string, about, m_About);
@@ -20,11 +22,15 @@ Recipe::Recipe(YAML::Node data, std::string file) {
   READ_OBJECT_LIST(Group, "groups", m_Groups);
 
   std::string buildType;
-  OPTIONAL_VALUE(string, "build-type", buildType, "auto");
+  READ_VALUE(string, "build-type", buildType);
   m_BuildType = stringToBuildType(buildType);
 
   READ_LIST(string, "sources", m_Sources);
   READ_LIST(string, "environ", m_Environ);
+
+  READ_LIST(string, "skip-strip", m_SkipStrip);
+
+  OPTIONAL_VALUE(bool, "strip", m_DoStrip, false);
 
   OPTIONAL_VALUE(string, "configure", m_Configure, "");
   OPTIONAL_VALUE(string, "compile", m_Compile, "");
@@ -35,11 +41,19 @@ Recipe::Recipe(YAML::Node data, std::string file) {
   if (data["split"]) {
     for (auto const& i : data["split"]) {
       SplitPackage splitPackage;
-      READ_VALUE(string, "into", splitPackage.into);
-      READ_VALUE(string, "about", splitPackage.about);
-      READ_LIST(string, "depends", splitPackage.depends);
-      READ_LIST(string, "files", splitPackage.files);
 
+      splitPackage.into = i["into"].as<std::string>();
+      splitPackage.about = i["about"].as<std::string>();
+
+      for (auto const& file : i["files"]) {
+        splitPackage.files.push_back(file.as<std::string>());
+      }
+
+      if (i["depends"]) {
+        for (auto const& dep : i["depends"]) {
+          splitPackage.depends.push_back(dep.as<std::string>());
+        }
+      }
       m_SplitPackages.push_back(splitPackage);
     }
   }
