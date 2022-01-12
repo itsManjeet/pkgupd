@@ -7,7 +7,9 @@ Recipe::Recipe(YAML::Node data, std::string file) {
   READ_VALUE(string, id, m_ID);
   READ_VALUE(string, version, m_Version);
   READ_VALUE(string, about, m_About);
-  READ_LIST(string, depends, m_Depends);
+
+  READ_LIST_FROM(string, depends, runtime, m_Depends);
+  READ_LIST_FROM(string, depends, buildtime, m_BuildTime);
 
   std::string packageType;
   READ_VALUE(string, type, packageType);
@@ -17,19 +19,18 @@ Recipe::Recipe(YAML::Node data, std::string file) {
   READ_OBJECT_LIST(User, "users", m_Users);
   READ_OBJECT_LIST(Group, "groups", m_Groups);
 
-  data = data["build"];
-
   std::string buildType;
-  OPTIONAL_VALUE(string, "type", buildType, "auto");
+  OPTIONAL_VALUE(string, "build-type", buildType, "auto");
   m_BuildType = stringToBuildType(buildType);
 
-  READ_LIST(string, "depends", m_BuildTime);
   READ_LIST(string, "sources", m_Sources);
   READ_LIST(string, "environ", m_Environ);
 
   OPTIONAL_VALUE(string, "configure", m_Configure, "");
   OPTIONAL_VALUE(string, "compile", m_Compile, "");
   OPTIONAL_VALUE(string, "install", m_Install, "");
+
+  OPTIONAL_VALUE(string, "build-dir", m_BuildDir, "");
 
   if (data["split"]) {
     for (auto const& i : data["split"]) {

@@ -53,8 +53,9 @@ class Recipe {
   BuildType m_BuildType;
 
   std::vector<std::string> m_Environ, m_Sources;
-  std::string m_Dir;
+  std::string m_BuildDir;
   std::string m_Configure, m_Compile, m_Install;
+  std::string m_PreScript, m_PostScript;
   std::vector<SplitPackage> m_SplitPackages;
 
   std::string m_Script;

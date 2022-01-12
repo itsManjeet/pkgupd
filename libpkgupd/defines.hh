@@ -58,7 +58,7 @@ class Object {
 #define READ_LIST_FROM(type, variable, from, into) \
   if (data[#from] && data[#from][#variable])       \
     for (auto const &i : data[#from][#variable])   \
-      _##into.push_back(i.as<type>());
+      into.push_back(i.as<type>());
 
 #define OPTIONAL_VALUE(type, variableID, variable, fallback) \
   _CHECK_VALUE(type, variableID, variable)                   \

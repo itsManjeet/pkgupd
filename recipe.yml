@@ -1,39 +1,42 @@
 id: test-package
-version: 0.0.1
-about: new recipe file package
+version: 0.1.0
+about: Sample recipe file
 
-type: app
+type: pkg
+
+sources:
+  - https://web.url/to/package
 
 depends:
-  - package1
-  - package2
-  - package3
+  runtime:
+    - pkg1
+    - pkg2
+  buildtime:
+    - pkg3
+    - pkg4
+
+environ:
+  - ENV=1
+
+
+prescript: |
+  execute pre build script
+
+postscript: |
+  execute post script
 
 script: |
-  
+  execute script
 
-build:
-  type: cmake
+build-type: cmake
 
-  sources:
-    - 
+build-dir: acl-{{version}}
 
-  environ:
-    - CFLAGS='-fPIC'
+configure: >
+  --disable-static
 
-  configure: -DCONFIGURE_ARGS
-
-  compile: >
-    COMPLER
-    FLAGS
-
-  install: >
-    INSTALL_FLAGS
-
-  
-  
-  split:
-    - into: lib
-      about: libraries of test package
-      files:
-        - /usr/lib/libc.so
+split:
+  - into: lib
+    about: test-package library
+    files:
+      - /usr/lib/libtest.so
