@@ -33,14 +33,14 @@ class Object {
   SET_METHOD(type, var)
 
 #define _CHECK_VALUE(type, variableID, variable) \
-  if (data[#variableID]) variable = data[#variableID].as<type>();
+  if (data[variableID]) variable = data[variableID].as<type>();
 
 #define _CHECK_LIST(type, variableID, variable) \
-  if (data[#variableID])                        \
-    for (auto const &i : data[#variableID]) variable.push_back(i.as<type>());
+  if (data[variableID])                        \
+    for (auto const &i : data[variableID]) variable.push_back(i.as<type>());
 
 #define _THROW_ERROR(variableID) \
-  else throw std::runtime_error(#variableID " is missing in " + file);
+  else throw std::runtime_error(variableID " is missing in " + file);
 
 #define _USE_FALLBACK(variableID, variable, fallback) else variable = fallback;
 

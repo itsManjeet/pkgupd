@@ -82,10 +82,10 @@ class Package {
         m_Script(script) {}
 
   Package(YAML::Node const& data, std::string const& file) {
-    READ_VALUE(std::string, id, m_ID);
-    READ_VALUE(std::string, version, m_Version);
-    READ_VALUE(std::string, about, m_About);
-    READ_LIST(std::string, depends, m_Depends);
+    READ_VALUE(std::string, "id", m_ID);
+    READ_VALUE(std::string, "version", m_Version);
+    READ_VALUE(std::string, "about", m_About);
+    READ_LIST(std::string, "depends", m_Depends);
 
     READ_OBJECT_LIST(User, users, m_Users);
     READ_OBJECT_LIST(Group, groups, m_Groups);
@@ -95,7 +95,7 @@ class Package {
       m_PackageType = stringToPackageType(data["type"].as<std::string>());
     }
 
-    OPTIONAL_VALUE(std::string, script, m_Script, "");
+    OPTIONAL_VALUE(std::string, "script", m_Script, "");
 
     m_Node = data;
   }

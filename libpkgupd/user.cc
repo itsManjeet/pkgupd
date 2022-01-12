@@ -7,12 +7,12 @@
 namespace rlxos::libpkgupd {
 
 User::User(YAML::Node const &data, std::string const &file) {
-  READ_VALUE(unsigned int, id, m_ID);
-  READ_VALUE(std::string, name, m_Name);
-  READ_VALUE(std::string, about, m_About);
-  READ_VALUE(std::string, group, m_Group);
-  READ_VALUE(std::string, dir, m_Dir);
-  READ_VALUE(std::string, shell, m_Shell);
+  READ_VALUE(unsigned int, "id", m_ID);
+  READ_VALUE(std::string, "name", m_Name);
+  READ_VALUE(std::string, "about", m_About);
+  READ_VALUE(std::string, "group", m_Group);
+  READ_VALUE(std::string, "dir", m_Dir);
+  READ_VALUE(std::string, "shell", m_Shell);
 }
 
 bool User::exists() const { return getpwnam(m_Name.c_str()) != nullptr; }

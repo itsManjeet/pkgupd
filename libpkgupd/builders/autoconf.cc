@@ -18,9 +18,11 @@ bool AutoConf::compile(Recipe const& recipe, std::string dir,
   if (!same_dir) {
     configurator = "../configure";
     dir += "/_pkgupd_builddir";
+
+    std::filesystem::create_directories(dir);
   }
 
-  if (configure.find("--prefix") != std::string::npos) {
+  if (configure.find("--prefix") == std::string::npos) {
     configure = " --prefix=" + PREFIX + " --sysconfdir=" + SYSCONF_DIR +
                 " --libdir=" + LIBDIR + " --libexecdir=" + LIBEXEDIR +
                 " --bindir=" + BINDIR + " --sbindir=" + SBINDIR +

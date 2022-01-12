@@ -7,8 +7,8 @@
 
 namespace rlxos::libpkgupd {
 Group::Group(YAML::Node const &data, std::string const &file) {
-  READ_VALUE(unsigned int, id, m_ID);
-  READ_VALUE(std::string, name, m_Name);
+  READ_VALUE(unsigned int, "id", m_ID);
+  READ_VALUE(std::string, "name", m_Name);
 }
 
 bool Group::exists() const { return getgrnam(m_Name.c_str()) != nullptr; }

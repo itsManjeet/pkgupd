@@ -31,7 +31,7 @@ class Executor : public Object {
   int execute(std::string const &command, std::string const &dir = ".",
               std::vector<std::string> const &environ = {}) {
     auto cmd = _get_cmd(command, dir, environ);
-    DEBUG("executing: '" << cmd << "'");
+    PROCESS("executing: '" << cmd << "'");
     return WEXITSTATUS(system(cmd.c_str()));
   }
 

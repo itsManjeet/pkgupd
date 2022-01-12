@@ -3,6 +3,10 @@
 #include <fstream>
 
 #include "builders/cmake.hh"
+#include "builders/autoconf.hh"
+#include "builders/meson.hh"
+#include "builders/script.hh"
+
 #include "downloader.hh"
 #include "exec.hh"
 #include "packager.hh"
@@ -37,10 +41,19 @@ bool Builder::prepare(std::vector<std::string> const& sources,
       }
     }
 
+    auto endswith = [](std::string const &fullstr, std::string const &ending) {
+            if (fullstr.length() >= ending.length())
+                return (0 == fullstr.compare(fullstr.length() - ending.length(), ending.length(), ending));
+            else
+                return false;
+        };
+
+
     bool extracted = false;
     for (auto const& i : {".tar", ".gz", ".tgz", ".xz", ".txz", ".bzip2", ".bz",
                           ".bz2", ".lzma"}) {
-      if (path(i).extension() == i) {
+      if (endswith(sourcefile, i)) {
+        PROCESS("extracting " << sourcefile)
         if (int status = Executor().execute(
                 "tar -xPf " + sourcefile_Path.string() + " -C " + dir);
             status != 0) {
@@ -164,9 +177,8 @@ bool Builder::build(Recipe const& recipe) {
     for (auto const& file : split.files) {
       auto srcfile_Path = pkgdir / file;
       auto destfile_Path = splitdir_Path / file;
-      auto file_Path = path(file).parent_path().string();
-
-      fs::create_directories(splitdir_Path / file_Path, err);
+      PROCESS("creating " << destfile_Path);
+      fs::create_directories(destfile_Path.parent_path(), err);
       if (err) {
         p_Error = "failed to create required dir " + err.message();
         return false;
@@ -214,6 +226,12 @@ std::shared_ptr<Builder> Builder::create(BuildType buildType) {
   switch (buildType) {
     case BuildType::CMAKE:
       return std::make_shared<Cmake>();
+    case BuildType::AUTOCONF:
+      return std::make_shared<AutoConf>();
+    case BuildType::MESON:
+      return std::make_shared<Meson>();
+      case BuildType::SCRIPT:
+      return std::make_shared<Script>();
   }
 
   throw std::runtime_error("unsupported " + buildTypeToString(buildType));
