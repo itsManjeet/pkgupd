@@ -10,8 +10,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/pkgupd",
             "args": [
-                "co",
-                "acl.yml"
+                "info",
+                "acl"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

@@ -1,0 +1,25 @@
+id: pkgupd
+version: 2200
+about: rlxos package manager
+depends:
+  runtime:
+    - libyaml-cpp
+  buildtime:
+    - cmake
+
+type: pkg
+
+build-type: cmake
+build-dir: pkgupd-main
+
+sources:
+  - pkgupd-2200.tar.gz::https://github.com/itsManjeet/pkgupd/archive/refs/heads/main.tar.gz
+
+post-script: |
+  touch ${pkgupd_pkgdir}/usr/bin/pkgpkg
+
+split:
+  - into: pkgpkg
+    about: test package
+    files:
+      - usr/bin/pkgpkg

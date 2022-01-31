@@ -3,6 +3,8 @@
 
 #include "defines.hh"
 #include "packager.hh"
+#include <filesystem>
+#include <system_error>
 
 namespace rlxos::libpkgupd {
 
@@ -15,16 +17,16 @@ enum class BuildType {
 
 static std::string buildTypeToString(BuildType type) {
   switch (type) {
-    case BuildType::CMAKE:
-      return "cmake";
-    case BuildType::MESON:
-      return "meson";
-    case BuildType::SCRIPT:
-      return "script";
-    case BuildType::AUTOCONF:
-      return "autoconf";
-    default:
-      throw std::runtime_error("unimplemented buildtype");
+  case BuildType::CMAKE:
+    return "cmake";
+  case BuildType::MESON:
+    return "meson";
+  case BuildType::SCRIPT:
+    return "script";
+  case BuildType::AUTOCONF:
+    return "autoconf";
+  default:
+    throw std::runtime_error("unimplemented buildtype");
   }
 }
 static BuildType stringToBuildType(std::string type) {
@@ -43,14 +45,14 @@ static BuildType stringToBuildType(std::string type) {
 class Recipe;
 
 class Builder : public Object {
- private:
+private:
   std::string m_BuildDir, m_SourceDir, m_PackageDir;
 
-  bool prepare(std::vector<std::string> const& sources, std::string const& dir);
+  bool prepare(std::vector<std::string> const &sources, std::string const &dir);
 
-  bool pack(std::vector<std::string> const& dirs);
+  bool pack(std::vector<std::string> const &dirs);
 
- protected:
+protected:
   std::string const PREFIX = "/usr";
   std::string const SYSCONF_DIR = "/etc";
   std::string const BINDIR = "/usr/bin";
@@ -60,22 +62,27 @@ class Builder : public Object {
   std::string const DATADIR = "/usr/share";
   std::string const CACHEDIR = "/var";
 
-  virtual bool compile(Recipe const& recipe, std::string dir,
+  virtual bool compile(Recipe const &recipe, std::string dir,
                        std::string destdir,
-                       std::vector<std::string> const& environ) = 0;
+                       std::vector<std::string> const &environ) = 0;
 
- public:
-  void set(std::string const& builddir, std::string const& sourcedir,
-           std::string const& packagedir) {
+public:
+  ~Builder() {
+    std::error_code err;
+    std::filesystem::remove_all(m_BuildDir, err);
+  }
+  
+  void set(std::string const &builddir, std::string const &sourcedir,
+           std::string const &packagedir) {
     m_BuildDir = builddir;
     m_SourceDir = sourcedir;
     m_PackageDir = packagedir;
   }
 
-  bool build(Recipe const& recipe);
+  bool build(Recipe const &recipe);
 
   static std::shared_ptr<Builder> create(BuildType buildType);
 };
-}  // namespace rlxos::libpkgupd
+} // namespace rlxos::libpkgupd
 
 #endif

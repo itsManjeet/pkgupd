@@ -1,12 +1,14 @@
 #include "builder.hh"
 
 #include <fstream>
+#include <vector>
 
-#include "builders/cmake.hh"
 #include "builders/autoconf.hh"
+#include "builders/cmake.hh"
 #include "builders/meson.hh"
 #include "builders/script.hh"
 
+#include "colors.hh"
 #include "downloader.hh"
 #include "exec.hh"
 #include "packager.hh"
@@ -18,9 +20,9 @@ using fs::path;
 using std::string;
 namespace rlxos::libpkgupd {
 
-bool Builder::prepare(std::vector<std::string> const& sources,
-                      std::string const& dir) {
-  for (auto const& source : sources) {
+bool Builder::prepare(std::vector<std::string> const &sources,
+                      std::string const &dir) {
+  for (auto const &source : sources) {
     auto sourcefile = path(source).filename().string();
     auto url = source;
 
@@ -42,15 +44,15 @@ bool Builder::prepare(std::vector<std::string> const& sources,
     }
 
     auto endswith = [](std::string const &fullstr, std::string const &ending) {
-            if (fullstr.length() >= ending.length())
-                return (0 == fullstr.compare(fullstr.length() - ending.length(), ending.length(), ending));
-            else
-                return false;
-        };
-
+      if (fullstr.length() >= ending.length())
+        return (0 == fullstr.compare(fullstr.length() - ending.length(),
+                                     ending.length(), ending));
+      else
+        return false;
+    };
 
     bool extracted = false;
-    for (auto const& i : {".tar", ".gz", ".tgz", ".xz", ".txz", ".bzip2", ".bz",
+    for (auto const &i : {".tar", ".gz", ".tgz", ".xz", ".txz", ".bzip2", ".bz",
                           ".bz2", ".lzma"}) {
       if (endswith(sourcefile, i)) {
         PROCESS("extracting " << sourcefile)
@@ -92,12 +94,13 @@ bool Builder::prepare(std::vector<std::string> const& sources,
   return true;
 }
 
-bool Builder::build(Recipe const& recipe) {
+bool Builder::build(Recipe const &recipe) {
   auto srcdir = path(m_BuildDir) / "src";
   auto pkgdir = path(m_BuildDir) / "pkg" / recipe.id();
 
-  for (auto const& dir : {srcdir, pkgdir}) {
+  for (auto dir : std::vector<std::filesystem::path>{srcdir, pkgdir}) {
     std::error_code err;
+    DEBUG("creating required dir: " << dir)
     fs::create_directories(dir, err);
     if (err) {
       p_Error = "failed to create required build directories " + err.message();
@@ -143,7 +146,7 @@ bool Builder::build(Recipe const& recipe) {
       return false;
     }
   }
-  for (auto const& i : std::filesystem::recursive_directory_iterator(wrkdir)) {
+  for (auto const &i : std::filesystem::recursive_directory_iterator(wrkdir)) {
     if (i.is_regular_file() && i.path().filename().extension() == ".la") {
       DEBUG("removing " + i.path().string());
       std::filesystem::remove(i);
@@ -165,7 +168,7 @@ bool Builder::build(Recipe const& recipe) {
   std::vector<std::string> packagesdir;
   packagesdir.push_back(pkgdir);
 
-  for (auto const& split : recipe.splits()) {
+  for (auto const &split : recipe.splits()) {
     std::error_code err;
     auto splitdir_Path = path(m_BuildDir) / "pkg" / split.into;
     fs::create_directories(splitdir_Path, err);
@@ -174,7 +177,7 @@ bool Builder::build(Recipe const& recipe) {
       return false;
     }
 
-    for (auto const& file : split.files) {
+    for (auto const &file : split.files) {
       auto srcfile_Path = pkgdir / file;
       auto destfile_Path = splitdir_Path / file;
       PROCESS("creating " << destfile_Path);
@@ -216,12 +219,12 @@ bool Builder::build(Recipe const& recipe) {
   return true;
 }
 
-bool Builder::pack(std::vector<std::string> const& dirs) {
-  for(auto const& i : dirs) {
+bool Builder::pack(std::vector<std::string> const &dirs) {
+  for (auto const &i : dirs) {
     auto node = YAML::LoadFile(i + "/info");
-    auto package = Package(node, i+"/info");
+    auto package = Package(node, i + "/info");
 
-    auto packagefile_Path = m_PackageDir +"/" + package.file();
+    auto packagefile_Path = m_PackageDir + "/" + package.file();
 
     auto packager = Packager::create(package.type(), packagefile_Path);
     if (!packager->compress(i, package)) {
@@ -235,16 +238,16 @@ bool Builder::pack(std::vector<std::string> const& dirs) {
 
 std::shared_ptr<Builder> Builder::create(BuildType buildType) {
   switch (buildType) {
-    case BuildType::CMAKE:
-      return std::make_shared<Cmake>();
-    case BuildType::AUTOCONF:
-      return std::make_shared<AutoConf>();
-    case BuildType::MESON:
-      return std::make_shared<Meson>();
-      case BuildType::SCRIPT:
-      return std::make_shared<Script>();
+  case BuildType::CMAKE:
+    return std::make_shared<Cmake>();
+  case BuildType::AUTOCONF:
+    return std::make_shared<AutoConf>();
+  case BuildType::MESON:
+    return std::make_shared<Meson>();
+  case BuildType::SCRIPT:
+    return std::make_shared<Script>();
   }
 
   throw std::runtime_error("unsupported " + buildTypeToString(buildType));
 }
-}  // namespace rlxos::libpkgupd
+} // namespace rlxos::libpkgupd

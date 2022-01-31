@@ -1,4 +1,5 @@
 #include "recipe.hh"
+#include "defines.hh"
 
 using std::string;
 
@@ -37,6 +38,10 @@ Recipe::Recipe(YAML::Node data, std::string file) {
   OPTIONAL_VALUE(string, "install", m_Install, "");
 
   OPTIONAL_VALUE(string, "build-dir", m_BuildDir, "");
+
+  OPTIONAL_VALUE(string, "script", m_Script, "");
+  OPTIONAL_VALUE(string, "pre-script", m_PreScript, "");
+  OPTIONAL_VALUE(string, "post-script", m_PostScript, "");
 
   if (data["split"]) {
     for (auto const& i : data["split"]) {

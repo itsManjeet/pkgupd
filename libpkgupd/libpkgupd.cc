@@ -1,18 +1,21 @@
 #include "libpkgupd.hh"
+#include "recipe.hh"
 
-
+#include <exception>
+#include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <yaml-cpp/node/parse.h>
 
 namespace rlxos::libpkgupd {
-bool Pkgupd::install(std::vector<std::string> const& packages) {
+bool Pkgupd::install(std::vector<std::string> const &packages) {
   bool status =
       m_Installer.install(packages, m_RootDir, m_IsSkipTriggers, m_IsForce);
   p_Error = m_Installer.error();
   return status;
 }
 
-bool Pkgupd::build(std::string const& recipefile) {
+bool Pkgupd::build(std::string const &recipefile) {
   auto node = YAML::LoadFile(recipefile);
   auto recipe = Recipe(node, recipefile);
 
@@ -27,13 +30,13 @@ bool Pkgupd::build(std::string const& recipefile) {
   return status;
 }
 
-bool Pkgupd::remove(std::vector<std::string> const& packages) {
+bool Pkgupd::remove(std::vector<std::string> const &packages) {
   bool status = m_Remover.remove(packages, m_IsSkipTriggers);
   p_Error = m_Remover.error();
   return status;
 }
 
-bool Pkgupd::update(std::vector<std::string> const& packages) {
+bool Pkgupd::update(std::vector<std::string> const &packages) {
   bool status =
       m_Installer.install(packages, m_RootDir, m_IsSkipTriggers, true);
   p_Error = m_Installer.error();
@@ -42,7 +45,7 @@ bool Pkgupd::update(std::vector<std::string> const& packages) {
 
 std::vector<UpdateInformation> Pkgupd::outdate() {
   std::vector<UpdateInformation> informations;
-  for (auto const& installedInformation : m_SystemDatabase.all()) {
+  for (auto const &installedInformation : m_SystemDatabase.all()) {
     auto repositoryInformation = m_Repository[installedInformation.id()];
     if (!repositoryInformation) {
       continue;
@@ -59,7 +62,7 @@ std::vector<UpdateInformation> Pkgupd::outdate() {
   return informations;
 }
 
-std::vector<std::string> Pkgupd::depends(std::string const& package) {
+std::vector<std::string> Pkgupd::depends(std::string const &package) {
   if (!m_Resolver.resolve(package)) {
     p_Error = m_Resolver.error();
     return {};
@@ -69,13 +72,13 @@ std::vector<std::string> Pkgupd::depends(std::string const& package) {
 
 std::vector<Package> Pkgupd::search(std::string query) {
   std::vector<Package> packages;
-  for (auto const& package : m_SystemDatabase.all()) {
+  for (auto const &package : m_SystemDatabase.all()) {
     if (package.id().find(query) != std::string::npos ||
         package.about().find(query) != std::string::npos) {
       packages.push_back(package);
     }
   }
-  for (auto const& package : m_Repository.all()) {
+  for (auto const &package : m_Repository.all()) {
     if (package.id().find(query) != std::string::npos ||
         package.about().find(query) != std::string::npos) {
       packages.push_back(package);
@@ -109,7 +112,7 @@ bool Pkgupd::sync() {
       return false;
     }
 
-    for (auto const& i : node["recipes"]) {
+    for (auto const &i : node["recipes"]) {
       if (i["id"]) {
         auto id = i["id"].as<std::string>();
         DEBUG("found " << id);
@@ -125,7 +128,7 @@ bool Pkgupd::sync() {
       }
     }
 
-  } catch (YAML::Exception const& err) {
+  } catch (YAML::Exception const &err) {
     p_Error = "corrupt data, " + err.msg;
     return false;
   }
@@ -133,9 +136,9 @@ bool Pkgupd::sync() {
   return true;
 }
 
-bool Pkgupd::trigger(std::vector<std::string> const& packages) {
+bool Pkgupd::trigger(std::vector<std::string> const &packages) {
   std::vector<Package> packagesList;
-  for (auto const& i : packages) {
+  for (auto const &i : packages) {
     auto package = m_SystemDatabase[i];
     if (!package) {
       p_Error = m_SystemDatabase.error();
@@ -151,6 +154,19 @@ bool Pkgupd::trigger(std::vector<std::string> const& packages) {
 }
 
 std::optional<Package> Pkgupd::info(std::string packageName) {
+  if (std::filesystem::exists(packageName) &&
+      std::filesystem::path(packageName).extension() == ".yml") {
+    try {
+      YAML::Node node = YAML::LoadFile(packageName);
+      auto recipe = Recipe(node, packageName);
+      return recipe.packages()[0];
+      
+    } catch (std::exception const &err) {
+      p_Error = "failed to read recipe file, " + std::string(err.what());
+      return {};
+    }
+  }
+
   auto package = m_SystemDatabase[packageName];
   if (package.has_value()) {
     return package;
@@ -164,4 +180,4 @@ std::optional<Package> Pkgupd::info(std::string packageName) {
   p_Error = "no package found with name '" + packageName + "'";
   return {};
 }
-}  // namespace rlxos::libpkgupd
+} // namespace rlxos::libpkgupd

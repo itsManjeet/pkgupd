@@ -4,8 +4,8 @@
 #include "../recipe.hh"
 
 namespace rlxos::libpkgupd {
-bool Cmake::compile(Recipe const& recipe, std::string dir, std::string destdir,
-                    std::vector<std::string> const& environ) {
+bool Cmake::compile(Recipe const &recipe, std::string dir, std::string destdir,
+                    std::vector<std::string> const &environ) {
   auto configure = recipe.configure();
   if (configure.find("-DCMAKE_INSTALL_PREFIX") == std::string::npos) {
     configure = " -DCMAKE_INSTALL_PREFIX=" + PREFIX +
@@ -17,7 +17,8 @@ bool Cmake::compile(Recipe const& recipe, std::string dir, std::string destdir,
                 " -DCMAKE_INSTALL_DATADIR=" + DATADIR +
                 " -DCMAKE_INSTALL_LOCALSTATEDIR=" + CACHEDIR + " " + configure;
   }
-  if (int status = Executor().execute("cmake -B _pkgupd_buildir " + configure,
+
+  if (int status = Executor().execute("cmake -B _pkgupd_builddir " + configure,
                                       dir, environ);
       status != 0) {
     p_Error = "failed to do cmake configuration";
@@ -40,4 +41,4 @@ bool Cmake::compile(Recipe const& recipe, std::string dir, std::string destdir,
 
   return true;
 }
-}  // namespace rlxos::libpkgupd
+} // namespace rlxos::libpkgupd

@@ -1,9 +1,11 @@
 #include "downloader.hh"
 
 #include <curl/curl.h>
+#include <filesystem>
 #include <math.h>
 
 #include <iostream>
+#include <system_error>
 
 namespace rlxos::libpkgupd {
 
@@ -51,6 +53,16 @@ bool Downloader::download(std::string const &url, std::string const &outfile) {
   if (!curl) {
     p_Error = "Failed to initialize curl";
     return false;
+  }
+
+  auto parent_path = std::filesystem::path(outfile).parent_path();
+  if (!std::filesystem::exists(parent_path)) {
+    std::error_code err;
+    std::filesystem::create_directories(parent_path, err);
+    if (err) {
+      p_Error = "failed to create required directories " + err.message();
+      return false;
+    }
   }
 
   fptr = fopen((outfile + ".part").c_str(), "wb");
@@ -117,7 +129,8 @@ bool Downloader::valid(std::string const &url) {
   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 
   curl_easy_cleanup(curl);
-  if ((resp == CURLE_OK) && http_code == 200) return true;
+  if ((resp == CURLE_OK) && http_code == 200)
+    return true;
 
   p_Error = "invalid url " + url;
   return false;
@@ -135,7 +148,8 @@ bool Downloader::get(std::string const &file, std::string const &outdir) {
     std::string fileurl = mirror + "/" + m_Version + "/pkgs/" + file;
 
     if (!getenv("NO_CURL_CHECK"))
-      if (!valid(fileurl)) continue;
+      if (!valid(fileurl))
+        continue;
 
     return download(fileurl, outdir);
   }
@@ -144,4 +158,4 @@ bool Downloader::get(std::string const &file, std::string const &outdir) {
 
   return false;
 }
-}  // namespace rlxos::libpkgupd
+} // namespace rlxos::libpkgupd
