@@ -1,10 +1,11 @@
 #include <bits/stdc++.h>
+#include <yaml-cpp/node/parse.h>
+
 #include <cstring>
 #include <exception>
 #include <optional>
 #include <stdexcept>
 #include <vector>
-#include <yaml-cpp/node/parse.h>
 using namespace std;
 
 #include "../libpkgupd/libpkgupd.hh"
@@ -13,6 +14,7 @@ using namespace rlxos;
 enum class Task : int {
   Invalid,
   Install,
+  Remove,
   Compile,
   Depends,
   Info,
@@ -31,6 +33,8 @@ Task getTask(const char *task) {
     return Task::Info;
   } else if (!strcmp(task, "refresh")) {
     return Task::Refresh;
+  } else if (!strcmp(task, "remove") || !strcmp(task, "rm")) {
+    return Task::Remove;
   }
 
   return Task::Invalid;
@@ -176,83 +180,87 @@ int main(int argc, char **argv) {
     };
 
     switch (task) {
-    case Task::Install: {
-      check_atleast(1);
-      vector<string> dependencies;
-      if (args.size() == 1 || hasFlag(Flag::NoDepends)) {
-        dependencies = args;
-      } else {
-        cout << "calculating dependencies" << endl;
-        for (auto const &i : args) {
-          auto dep = pkgupd.depends(i);
-          dependencies.insert(dependencies.end(), dep.begin(), dep.end());
+      case Task::Install: {
+        check_atleast(1);
+        vector<string> dependencies;
+        if (args.size() == 1 || hasFlag(Flag::NoDepends)) {
+          dependencies = args;
+        } else {
+          cout << "calculating dependencies" << endl;
+          for (auto const &i : args) {
+            auto dep = pkgupd.depends(i);
+            dependencies.insert(dependencies.end(), dep.begin(), dep.end());
+          }
+
+          cout << "found " << dependencies.size() << " dependencies" << endl;
+          for (auto const &i : dependencies) {
+            cout << i << endl;
+          }
+
+          if (dependencies.size() > 1) {
+            if (!check_ask("install dependencies")) {
+              return false;
+            }
+          }
         }
 
-        cout << "found " << dependencies.size() << " dependencies" << endl;
+        return pkgupd.install(dependencies);
+      }
+      case Task::Compile:
+        check_exact(1);
+        return pkgupd.build(args[0]);
+      case Task::Depends: {
+        check_exact(1);
+        auto dependencies = pkgupd.depends(args[0]);
         for (auto const &i : dependencies) {
           cout << i << endl;
         }
-
-        if (dependencies.size() > 1) {
-          if (!check_ask("install dependencies")) {
-            return false;
-          }
+        return true;
+      }
+      case Task::Remove: {
+        check_atleast(1);
+        return pkgupd.remove(args);
+      }
+      case Task::Info: {
+        check_exact(1);
+        auto package = pkgupd.info(args[0]);
+        if (!package) {
+          return false;
         }
-      }
 
-      return pkgupd.install(dependencies);
-    }
-    case Task::Compile:
-      check_exact(1);
-      return pkgupd.build(args[0]);
-    case Task::Depends: {
-      check_exact(1);
-      auto dependencies = pkgupd.depends(args[0]);
-      for (auto const &i : dependencies) {
-        cout << i << endl;
+        package->dump(cout);
+        return true;
+      };
+      case Task::Refresh:
+        check_exact(0);
+        return pkgupd.sync();
+
+      case Task::Update: {
+        check_exact(0);
+        auto update_informations = pkgupd.outdate();
+        vector<string> outdated;
+
+        if (update_informations.size() == 0) {
+          cout << "System is upto date" << endl;
+          return true;
+        }
+
+        cout << "Found " << update_informations.size() << endl;
+        for (auto const &i : update_informations) {
+          cout << i.previous.id() << " " << i.previous.version() << " -> "
+               << i.updated.version() << endl;
+          outdated.push_back(i.updated.id());
+        }
+
+        if (!check_ask("update system")) {
+          return true;
+        }
+
+        return pkgupd.update(outdated);
       }
-      return true;
-    }
-    case Task::Info: {
-      check_exact(1);
-      auto package = pkgupd.info(args[0]);
-      if (!package) {
+      default:
+        cerr << "Error! invalid task" << endl;
         return false;
-      }
-
-      package->dump(cout);
-      return true;
-    };
-    case Task::Refresh:
-      check_exact(0);
-      return pkgupd.sync();
-
-    case Task::Update: {
-      check_exact(0);
-      auto update_informations = pkgupd.outdate();
-      vector<string> outdated;
-
-      if (update_informations.size() == 0) {
-        cout << "System is upto date" << endl;
-        return true;
-      }
-
-      cout << "Found " << update_informations.size() << endl;
-      for (auto const &i : update_informations) {
-        cout << i.previous.id() << " " << i.previous.version() << " -> "
-             << i.updated.version() << endl;
-        outdated.push_back(i.updated.id());
-      }
-
-      if (!check_ask("update system")) {
-        return true;
-      }
-
-      return pkgupd.update(outdated);
-    }
-    default:
-      cerr << "Error! invalid task" << endl;
-      return false;
     }
   };
 
