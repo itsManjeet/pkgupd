@@ -3,12 +3,11 @@
 #include <fstream>
 #include <vector>
 
-#include "builders/autoconf.hh"
-#include "builders/cmake.hh"
-#include "builders/meson.hh"
-#include "builders/script.hh"
-
 #include "colors.hh"
+#include "compilers/autoconf.hh"
+#include "compilers/cmake.hh"
+#include "compilers/meson.hh"
+#include "compilers/script.hh"
 #include "downloader.hh"
 #include "exec.hh"
 #include "packager.hh"
@@ -219,6 +218,47 @@ bool Builder::build(Recipe const &recipe) {
   return true;
 }
 
+std::shared_ptr<Compiler> Compiler::create(BuildType buildType) {
+  switch (buildType) {
+    case BuildType::CMAKE:
+      return std::make_shared<Cmake>();
+    case BuildType::MESON:
+      return std::make_shared<Meson>();
+    case BuildType::AUTOCONF:
+      return std::make_shared<AutoConf>();
+    case BuildType::SCRIPT:
+      return std::make_shared<Script>();
+  }
+  throw std::runtime_error("unsupported " + buildTypeToString(buildType));
+}
+
+bool Builder::compile(Recipe const &recipe, std::string dir,
+                      std::string destdir,
+                      std::vector<std::string> const &environ) {
+  std::shared_ptr<Compiler> compiler;
+
+  if (recipe.buildType() != BuildType::INVALID) {
+    compiler = Compiler::create(recipe.buildType());
+  } else if (recipe.script().size() != 0) {
+    compiler = Compiler::create(BuildType::SCRIPT);
+  } else {
+    try {
+      auto buildType = detectBuildType(dir);
+      compiler = Compiler::create(buildType);
+    } catch (std::runtime_error const &err) {
+      p_Error = err.what();
+      return false;
+    }
+  }
+
+  if (!compiler->compile(recipe, dir, destdir, environ)) {
+    p_Error = compiler->error();
+    return false;
+  }
+
+  return true;
+}
+
 bool Builder::pack(std::vector<std::string> const &dirs) {
   for (auto const &i : dirs) {
     auto node = YAML::LoadFile(i + "/info");
@@ -236,18 +276,4 @@ bool Builder::pack(std::vector<std::string> const &dirs) {
   return true;
 }
 
-std::shared_ptr<Builder> Builder::create(BuildType buildType) {
-  switch (buildType) {
-  case BuildType::CMAKE:
-    return std::make_shared<Cmake>();
-  case BuildType::AUTOCONF:
-    return std::make_shared<AutoConf>();
-  case BuildType::MESON:
-    return std::make_shared<Meson>();
-  case BuildType::SCRIPT:
-    return std::make_shared<Script>();
-  }
-
-  throw std::runtime_error("unsupported " + buildTypeToString(buildType));
-}
-} // namespace rlxos::libpkgupd
+}  // namespace rlxos::libpkgupd
