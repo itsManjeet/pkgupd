@@ -218,7 +218,7 @@ int main(int argc, char **argv) {
       if (ch == 'Y' || ch == 'y') {
         return true;
       }
-
+      ERROR("user terminated the request")
       return false;
     };
 
@@ -226,16 +226,16 @@ int main(int argc, char **argv) {
       case Task::Install: {
         check_atleast(1);
         vector<string> dependencies;
-        if (args.size() == 1 || hasFlag(Flag::NoDepends)) {
+        if (hasFlag(Flag::NoDepends)) {
           dependencies = args;
         } else {
-          cout << "calculating dependencies" << endl;
+          PROCESS("calculating dependencies")
           for (auto const &i : args) {
             auto dep = pkgupd.depends(i);
             dependencies.insert(dependencies.end(), dep.begin(), dep.end());
           }
 
-          cout << "found " << dependencies.size() << " dependencies" << endl;
+          INFO("found " << dependencies.size() << " dependencies");
           for (auto const &i : dependencies) {
             cout << i << endl;
           }

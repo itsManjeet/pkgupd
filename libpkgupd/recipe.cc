@@ -36,7 +36,8 @@ Recipe::Recipe(YAML::Node data, std::string file) {
 
     if (data["packages"].size() != 1) {
       throw std::runtime_error(
-          "multiple packages in old recipe format is not supported");
+          "multiple packages in old recipe format is not supported in file '" +
+          file + "', got " + std::to_string(data["packages"].size()));
     }
 
     data = data["packages"][0];
