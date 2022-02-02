@@ -184,6 +184,21 @@ int main(int argc, char **argv) {
         }
       }
 
+      if (config["EnvironmentVariables"]) {
+        for (auto const &i : config["EnvironmentVariables"]) {
+          auto ev = i.as<string>();
+          auto idx = ev.find_first_of('=');
+          if (idx == string::npos) {
+            ERROR("invalid EnvironmentVariable: " << ev);
+            continue;
+          }
+
+          DEBUG("setting " << ev)
+          setenv(ev.substr(0, idx).c_str(),
+                 ev.substr(idx + 1, ev.length() - (idx + 1)).c_str(), 1);
+        }
+      }
+
     } catch (exception const &exp) {
       ERROR("Error! invalid configuration file, " << exp.what());
       return 2;
@@ -231,8 +246,14 @@ int main(int argc, char **argv) {
         } else {
           PROCESS("calculating dependencies")
           for (auto const &i : args) {
-            auto dep = pkgupd.depends(i);
-            dependencies.insert(dependencies.end(), dep.begin(), dep.end());
+            if (std::filesystem::exists(i) &&
+                std::filesystem::path(i).has_extension() &&
+                !std::filesystem::is_directory(i)) {
+              dependencies.push_back(i);
+            } else {
+              auto dep = pkgupd.depends(i);
+              dependencies.insert(dependencies.end(), dep.begin(), dep.end());
+            }
           }
 
           INFO("found " << dependencies.size() << " dependencies");

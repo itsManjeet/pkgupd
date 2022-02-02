@@ -1,5 +1,6 @@
 #include "installer.hh"
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 
@@ -43,6 +44,14 @@ bool Installer::_install(std::vector<std::string> const &packages,
     } catch (...) {
     }
 
+    std::vector<std::string> old_files;
+    if (m_SystemDatabase.isInstalled(*info)) {
+      auto old_info = m_SystemDatabase[info->id()];
+      for (auto const &i : old_info->node()["files"]) {
+        old_files.push_back(i.as<std::string>());
+      }
+    }
+
     if (rootDir == "/") {
       PROCESS("installing " << BLUE(info->id()));
     } else {
@@ -53,8 +62,29 @@ bool Installer::_install(std::vector<std::string> const &packages,
       p_Error = packager->error();
       return false;
     }
-    packagesFiles.push_back(packager->list());
+    auto packageFile = packager->list();
+    packagesFiles.push_back(packageFile);
     packagesList.push_back(*info);
+
+    std::vector<std::string> deprecated_files;
+    for (auto const &file : old_files) {
+      if (std::find(packageFile.begin(), packageFile.end(), file) ==
+          packageFile.end()) {
+        DEBUG("deprecated file '" << file << "'");
+        deprecated_files.push_back(file);
+      }
+    }
+
+    DEBUG("found '" << deprecated_files.size() << "' extra files");
+    PROCESS("cleaning old files");
+    for (auto file = deprecated_files.rbegin(); file != deprecated_files.rend();
+         file++) {
+      std::error_code err;
+      std::filesystem::remove_all(*file, err);
+      if (err) {
+        ERROR("failed to clean old file '" << *file << "'");
+      }
+    }
   }
 
   bool withPkgname = packagesList.size() != 1;

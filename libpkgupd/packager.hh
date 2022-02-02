@@ -46,6 +46,8 @@ class Packager : public Object {
 
   static std::shared_ptr<Packager> create(PackageType packageType,
                                           std::string const &packageFile);
+
+  static std::shared_ptr<Packager> create(std::string const &packageFile);
 };
 }  // namespace rlxos::libpkgupd
 

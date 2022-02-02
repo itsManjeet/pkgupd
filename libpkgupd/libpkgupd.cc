@@ -191,18 +191,30 @@ bool Pkgupd::trigger(std::vector<std::string> const &packages) {
 }
 
 std::optional<Package> Pkgupd::info(std::string packageName) {
-  if (std::filesystem::exists(packageName) &&
-      std::filesystem::path(packageName).extension() == ".yml") {
-    try {
-      YAML::Node node = YAML::LoadFile(packageName);
-      auto recipe = Recipe(node, packageName);
-      return recipe.packages()[0];
+  if (std::filesystem::exists(packageName))
 
-    } catch (std::exception const &err) {
-      p_Error = "failed to read recipe file, " + std::string(err.what());
-      return {};
+    if (std::filesystem::path(packageName).extension() == ".yml") {
+      try {
+        YAML::Node node = YAML::LoadFile(packageName);
+        auto recipe = Recipe(node, packageName);
+        return recipe.packages()[0];
+
+      } catch (std::exception const &err) {
+        p_Error = "failed to read recipe file, " + std::string(err.what());
+        return {};
+      }
+    } else if (std::filesystem::path(packageName).has_extension() &&
+               !std::filesystem::is_directory(packageName)) {
+      try {
+        auto package = Packager::create(packageName);
+        return package->info();
+      } catch (std::runtime_error const &err) {
+        p_Error = "fauled to read recipe file from " + packageName + ", " +
+                  std::string(err.what());
+
+        return {};
+      }
     }
-  }
 
   auto package = m_SystemDatabase[packageName];
   if (package.has_value()) {

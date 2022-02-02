@@ -33,10 +33,11 @@ class Object {
   SET_METHOD(type, var)
 
 #define _CHECK_VALUE(type, variableID, variable) \
+  DEBUG("found " << variableID)                  \
   if (data[variableID]) variable = data[variableID].as<type>();
 
 #define _CHECK_LIST(type, variableID, variable) \
-  if (data[variableID])                        \
+  if (data[variableID])                         \
     for (auto const &i : data[variableID]) variable.push_back(i.as<type>());
 
 #define _THROW_ERROR(variableID) \

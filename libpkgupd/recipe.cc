@@ -92,15 +92,8 @@ Recipe::Recipe(YAML::Node data, std::string file) {
 
     auto configurator = getFlag("configurator");
     if (configurator.length()) {
-      if (configurator == "CMakeLists.txt") {
-        buildType = "cmake";
-      } else if (configurator == "meson.build") {
-        buildType = "meson";
-      } else if (configurator == "configure.sh") {
-        buildType = "autoconf";
-      } else {
-        throw std::runtime_error("invalid configurator '" + configurator + "'");
-      }
+      buildType = buildTypeToString(buildTypeFromFile(configurator));
+      DEBUG("got build type '" + buildType + "'")
     }
 
   } else {
@@ -109,9 +102,7 @@ Recipe::Recipe(YAML::Node data, std::string file) {
      */
     OPTIONAL_VALUE(string, "type", packageType, "pkg");
 
-    if (data["build-type"]) {
-      READ_VALUE(string, "build-type", buildType);
-    }
+    OPTIONAL_VALUE(string, "build-type", buildType, "");
 
     OPTIONAL_VALUE(string, "configure", m_Configure, "");
     OPTIONAL_VALUE(string, "compile", m_Compile, "");

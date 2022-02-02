@@ -49,7 +49,7 @@ static BuildType buildTypeFromFile(std::string file) {
     return BuildType::CMAKE;
   } else if (file == "meson.build") {
     return BuildType::MESON;
-  } else if (file == "configure.sh") {
+  } else if (file == "configure") {
     return BuildType::AUTOCONF;
   }
 
@@ -57,11 +57,13 @@ static BuildType buildTypeFromFile(std::string file) {
 }
 
 static BuildType detectBuildType(std::string path) {
-  for (std::string i : {"CMakeLists.txt", "meson.build", "configure.sh"}) {
+  for (std::string i : {"CMakeLists.txt", "meson.build", "configure"}) {
     if (std::filesystem::exists(path + "/" + i)) {
       return buildTypeFromFile(i);
     }
   }
+
+  system(("ls " + path).c_str());
   throw std::runtime_error("no valid build type found in '" + path + "'");
 }
 
