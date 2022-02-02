@@ -24,7 +24,6 @@ std::shared_ptr<Packager> Packager::create(std::string const& packageFile) {
   if (std::filesystem::path(packageFile).has_extension()) {
     auto ext = std::filesystem::path(packageFile).extension().string();
     ext = ext.substr(1, ext.length() - 1);
-
     packageType = stringToPackageType(ext);
   }
   switch (packageType) {

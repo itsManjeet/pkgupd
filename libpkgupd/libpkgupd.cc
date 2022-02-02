@@ -207,9 +207,11 @@ std::optional<Package> Pkgupd::info(std::string packageName) {
                !std::filesystem::is_directory(packageName)) {
       try {
         auto package = Packager::create(packageName);
-        return package->info();
-      } catch (std::runtime_error const &err) {
-        p_Error = "fauled to read recipe file from " + packageName + ", " +
+        auto info = package->info();
+        p_Error = package->error();
+        return info;
+      } catch (std::exception const &err) {
+        p_Error = "failed to read recipe file from " + packageName + ", " +
                   std::string(err.what());
 
         return {};
@@ -228,5 +230,9 @@ std::optional<Package> Pkgupd::info(std::string packageName) {
 
   p_Error = "no package found with name '" + packageName + "'";
   return {};
+}
+
+bool Pkgupd::isInstalled(std::string const &pkgid) {
+  return m_SystemDatabase[pkgid].has_value();
 }
 }  // namespace rlxos::libpkgupd

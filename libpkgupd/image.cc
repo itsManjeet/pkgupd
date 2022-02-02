@@ -58,7 +58,9 @@ std::optional<Package> Image::info() {
 }
 
 std::vector<std::string> Image::list() {
-  return {"/apps/" + std::filesystem::path(m_PackageFile).filename().string()};
+  return {"/apps/" + std::filesystem::path(m_PackageFile).filename().string(),
+          "/apps/share/pixmaps/" + info()->id() + ".png",
+          "/apps/share/applications/" + info()->id() + ".desktop"};
 }
 
 bool Image::compress(std::string const& srcdir, Package const& package) {
@@ -88,22 +90,77 @@ bool Image::compress(std::string const& srcdir, Package const& package) {
 
 bool Image::extract(std::string const& outdir) {
   std::error_code err;
-  std::string appdir = outdir + "/apps/";
+  std::string appdir = outdir + "/apps";
 
-  std::filesystem::create_directories(appdir, err);
-  if (err) {
-    p_Error = "failed to create app dir: " + appdir + ", " + err.message();
-    return false;
+  std::string appdir_desktop = appdir + "/share/applications";
+  std::string appdir_pixmap = appdir + "/share/pixmaps";
+
+  for (auto const& dir : {appdir, appdir_desktop, appdir_pixmap}) {
+    std::filesystem::create_directories(dir, err);
+    if (err) {
+      p_Error = "failed to create app dir: " + dir + ", " + err.message();
+      return false;
+    }
   }
 
-  std::filesystem::copy(
-      m_PackageFile,
-      outdir + "/apps/" +
-          std::filesystem::path(m_PackageFile).filename().string(),
-      std::filesystem::copy_options::overwrite_existing, err);
+  auto output_file =
+      "/apps/" + std::filesystem::path(m_PackageFile).filename().string();
+
+  std::filesystem::copy(m_PackageFile, outdir + output_file,
+                        std::filesystem::copy_options::overwrite_existing, err);
   if (err) {
     p_Error = "failed to install " + m_PackageFile + ", " + err.message();
     return false;
+  }
+
+  auto package_info = info();
+
+  // Installing desktop file
+  {
+    std::string desktop_file =
+        appdir_desktop + "/" + package_info->id() + ".desktop";
+    auto [status, data] = get("./" + package_info->id() + ".desktop");
+    if (status != 0) {
+      p_Error = data;
+      return false;
+    }
+
+    std::stringstream ss(data);
+    std::string line;
+    std::ofstream file(desktop_file);
+    while (std::getline(ss, line)) {
+      if (!line.size()) {
+        continue;
+      }
+
+      if (line.find("Exec=", 0) == 0) {
+        auto idx = line.find_first_of('=');
+        auto space = line.find_first_of(' ');
+
+        auto newline = line.substr(0, idx) + "=" + output_file;
+        if (space != std::string::npos) {
+          newline += line.substr(space, line.length() - space);
+        }
+        line = newline;
+      } else if (line.find("Icon=", 0) == 0) {
+        line = "Icon=/apps/share/pixmaps/" + package_info->id() + ".png";
+      }
+      file << line << std::endl;
+    }
+    file.close();
+  }
+
+  // Install icon
+  {
+    auto [status, data] = get("./" + package_info->id() + ".png");
+    if (status != 0) {
+      p_Error = data;
+      return false;
+    }
+
+    std::ofstream file(appdir_pixmap + "/" + package_info->id() + ".png");
+    file << data;
+    file.close();
   }
 
   return true;

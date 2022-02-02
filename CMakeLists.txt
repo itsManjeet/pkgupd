@@ -12,6 +12,7 @@ option(INSTALL_GTEST "Enable installation of googletest. (Projects embedding goo
 find_package(YAML-CPP REQUIRED)
 include_directories(${YAML_CPP_INCLUDE_DIRS})
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 find_library(LIBCURL curl REQUIRED)
 
