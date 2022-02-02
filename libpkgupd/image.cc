@@ -14,6 +14,11 @@ std::tuple<int, std::string> Image::get(std::string const& _filepath) {
     filepath = filepath.substr(2, filepath.length() - 2);
   }
 
+  if (chmod(m_PackageFile.c_str(), 0755) != 0) {
+    p_Error = "failed to set executable permission on '" + m_PackageFile + "'";
+    return {1, p_Error};
+  }
+
   auto [status, output] = Executor().output(
       m_PackageFile + " --appimage-extract " + filepath, "/tmp/");
   if (status != 0) {
@@ -35,7 +40,7 @@ std::optional<Package> Image::info() {
   auto [status, content] = get("./info");
   if (status != 0) {
     p_Error = "failed to read package information " + std::to_string(status) +
-             ", " + content;
+              ", " + content;
     return {};
   }
 
@@ -84,6 +89,12 @@ bool Image::compress(std::string const& srcdir, Package const& package) {
 bool Image::extract(std::string const& outdir) {
   std::error_code err;
   std::string appdir = outdir + "/apps/";
+
+  std::filesystem::create_directories(appdir, err);
+  if (err) {
+    p_Error = "failed to create app dir: " + appdir + ", " + err.message();
+    return false;
+  }
 
   std::filesystem::copy(
       m_PackageFile,

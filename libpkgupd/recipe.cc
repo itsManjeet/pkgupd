@@ -15,20 +15,8 @@ Recipe::Recipe(YAML::Node data, std::string file) {
   READ_LIST_FROM(string, runtime, depends, m_Depends);
   READ_LIST_FROM(string, buildtime, depends, m_BuildTime);
 
-  std::string packageType;
-  OPTIONAL_VALUE(string, "type", packageType, "rlx");
-  m_PackageType = stringToPackageType(packageType);
-
   READ_OBJECT_LIST(User, "users", m_Users);
   READ_OBJECT_LIST(Group, "groups", m_Groups);
-
-  if (data["build-type"]) {
-    std::string buildType;
-    READ_VALUE(string, "build-type", buildType);
-    m_BuildType = stringToBuildType(buildType);
-  } else {
-    m_BuildType = BuildType::INVALID;
-  }
 
   READ_LIST(string, "sources", m_Sources);
   READ_LIST(string, "environ", m_Environ);
@@ -37,34 +25,130 @@ Recipe::Recipe(YAML::Node data, std::string file) {
 
   OPTIONAL_VALUE(bool, "strip", m_DoStrip, false);
 
-  OPTIONAL_VALUE(string, "configure", m_Configure, "");
-  OPTIONAL_VALUE(string, "compile", m_Compile, "");
-  OPTIONAL_VALUE(string, "install", m_Install, "");
+  std::string packageType;
+  std::string buildType;
 
-  OPTIONAL_VALUE(string, "build-dir", m_BuildDir, "");
+  if (data["packages"]) {
+    /**
+     * Old recipe file format
+     */
+    DEBUG("using old recipe file");
 
-  OPTIONAL_VALUE(string, "script", m_Script, "");
-  OPTIONAL_VALUE(string, "pre-script", m_PreScript, "");
-  OPTIONAL_VALUE(string, "post-script", m_PostScript, "");
+    if (data["packages"].size() != 1) {
+      throw std::runtime_error(
+          "multiple packages in old recipe format is not supported");
+    }
 
-  if (data["split"]) {
-    for (auto const& i : data["split"]) {
-      SplitPackage splitPackage;
+    data = data["packages"][0];
 
-      splitPackage.into = i["into"].as<std::string>();
-      splitPackage.about = i["about"].as<std::string>();
-
-      for (auto const& file : i["files"]) {
-        splitPackage.files.push_back(file.as<std::string>());
-      }
-
-      if (i["depends"]) {
-        for (auto const& dep : i["depends"]) {
-          splitPackage.depends.push_back(dep.as<std::string>());
+    if (data["depends"]) {
+      if (data["depends"]["runtime"]) {
+        for (auto const& dep : data["depends"]["runtime"]) {
+          m_Depends.push_back(dep.as<string>());
         }
       }
-      m_SplitPackages.push_back(splitPackage);
+      if (data["depends"]["buildtime"]) {
+        for (auto const& dep : data["depends"]["buildtime"]) {
+          m_BuildTime.push_back(dep.as<string>());
+        }
+      }
     }
+
+    if (data["environ"]) {
+      for (auto const& i : data["environ"]) {
+        m_Environ.push_back(i.as<string>());
+      }
+    }
+
+    if (data["sources"]) {
+      for (auto const& i : data["sources"]) {
+        m_Environ.push_back(i.as<string>());
+      }
+    }
+
+    OPTIONAL_VALUE(string, "pack", packageType, "rlx");
+    OPTIONAL_VALUE(string, "script", m_Script, "");
+    OPTIONAL_VALUE(string, "prescript", m_PreScript, "");
+    OPTIONAL_VALUE(string, "postscript", m_PostScript, "");
+
+    OPTIONAL_VALUE(string, "dir", m_BuildDir, "");
+
+    auto getFlag = [&](string flag_id) -> string {
+      if (data["flags"]) {
+        for (auto const& i : data["flags"]) {
+          if (i["id"].as<string>() == flag_id) {
+            return i["value"].as<string>();
+          }
+        }
+      }
+
+      return "";
+    };
+
+    m_Configure = getFlag("configure");
+    m_Compile = getFlag("compile");
+    m_Install = getFlag("install");
+
+    auto configurator = getFlag("configurator");
+    if (configurator.length()) {
+      if (configurator == "CMakeLists.txt") {
+        buildType = "cmake";
+      } else if (configurator == "meson.build") {
+        buildType = "meson";
+      } else if (configurator == "configure.sh") {
+        buildType = "autoconf";
+      } else {
+        throw std::runtime_error("invalid configurator '" + configurator + "'");
+      }
+    }
+
+  } else {
+    /**
+     * New recipe file format
+     */
+    OPTIONAL_VALUE(string, "type", packageType, "pkg");
+
+    if (data["build-type"]) {
+      READ_VALUE(string, "build-type", buildType);
+    }
+
+    OPTIONAL_VALUE(string, "configure", m_Configure, "");
+    OPTIONAL_VALUE(string, "compile", m_Compile, "");
+    OPTIONAL_VALUE(string, "install", m_Install, "");
+
+    OPTIONAL_VALUE(string, "build-dir", m_BuildDir, "");
+
+    OPTIONAL_VALUE(string, "script", m_Script, "");
+    OPTIONAL_VALUE(string, "pre-script", m_PreScript, "");
+    OPTIONAL_VALUE(string, "post-script", m_PostScript, "");
+
+    if (data["split"]) {
+      for (auto const& i : data["split"]) {
+        SplitPackage splitPackage;
+
+        splitPackage.into = i["into"].as<std::string>();
+        splitPackage.about = i["about"].as<std::string>();
+
+        for (auto const& file : i["files"]) {
+          splitPackage.files.push_back(file.as<std::string>());
+        }
+
+        if (i["depends"]) {
+          for (auto const& dep : i["depends"]) {
+            splitPackage.depends.push_back(dep.as<std::string>());
+          }
+        }
+        m_SplitPackages.push_back(splitPackage);
+      }
+    }
+  }
+
+  m_PackageType = stringToPackageType(packageType);
+
+  if (buildType.length()) {
+    m_BuildType = stringToBuildType(buildType);
+  } else {
+    m_BuildType = BuildType::INVALID;
   }
 }
 

@@ -46,6 +46,9 @@ new_data = {
     'build-dir': package['dir'],
 }
 
+if 'pack' in package:
+    new_data['type'] = package['pack']
+
 if len(build_depends) != 0 or len(runtime_depends) != 0:
     new_data["depends"] = {}
 

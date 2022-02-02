@@ -147,7 +147,7 @@ int main(int argc, char **argv) {
   }
 
   auto hasFlag = [&](Flag flag) -> bool {
-    return find(flags.begin(), flags.end(), flag) == flags.end();
+    return find(flags.begin(), flags.end(), flag) != flags.end();
   };
 
   string SystemDatabase = "/var/lib/pkgupd/data";
@@ -185,7 +185,7 @@ int main(int argc, char **argv) {
       }
 
     } catch (exception const &exp) {
-      cerr << "Error! invalid configuration file, " << exp.what() << endl;
+      ERROR("Error! invalid configuration file, " << exp.what());
       return 2;
     }
   }
@@ -316,18 +316,18 @@ int main(int argc, char **argv) {
         return pkgupd.update(outdated);
       }
       default:
-        cerr << "Error! invalid task" << endl;
+        ERROR("invalid task");
         return false;
     }
   };
 
   try {
     if (!doTask(task, pkgupd, args)) {
-      cerr << "Error! " << pkgupd.error() << endl;
+      ERROR(pkgupd.error())
       return 2;
     }
   } catch (exception const &err) {
-    cerr << "Error! " << err.what() << endl;
+    ERROR(err.what())
     return 2;
   }
 

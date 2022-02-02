@@ -45,8 +45,8 @@ class Pkgupd : public Object {
  public:
   Pkgupd(std::string const &dataPath, std::string const &cachePath,
          std::vector<std::string> const &mirrors, std::string const &version,
-         std::string const &rootsPath, bool isForce = false,
-         bool isSkipTriggers = false)
+         std::string const &rootsPath, bool isForce,
+         bool isSkipTriggers)
       : m_SystemDatabase(dataPath),
         m_PackageDir(cachePath + "/pkgs"),
         m_SourceDir(cachePath + "/src"),
