@@ -11,7 +11,10 @@ namespace rlxos::libpkgupd {
 
 std::optional<Package> SystemDatabase::operator[](std::string const &pkgid) {
   auto datafile = p_DataDir + "/" + pkgid;
-  if (!std::filesystem::exists(datafile)) return {};
+  if (!std::filesystem::exists(datafile)) {
+    p_Error = "no package found with name '" + pkgid + "' in system database";
+    return {};
+  }
 
   DEBUG("Found at: " << datafile);
 
@@ -69,7 +72,7 @@ bool SystemDatabase::registerIntoSystem(Package const &pkginfo,
   try {
     if (isInstalled(pkginfo) && !isOutDated(pkginfo) && !toupdate) {
       p_Error = pkginfo.id() + " " + pkginfo.version() +
-               " is already registered in the system";
+                " is already registered in the system";
       return false;
     }
 
