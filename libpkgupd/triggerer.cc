@@ -12,9 +12,12 @@ Triggerer::type Triggerer::_get(std::string const &path) {
   for (auto const &i :
        {type::MIME, type::DESKTOP, type::FONTS_SCALE, type::UDEV, type::ICONS,
         type::GTK3_INPUT_MODULES, type::GTK2_INPUT_MODULES, type::GLIB_SCHEMAS,
-        type::GIO_MODULES, type::GDK_PIXBUF, type::FONTS_CACHE}) {
+        type::GIO_MODULES, type::GDK_PIXBUF, type::FONTS_CACHE,
+        type::LIBRARY_CACHE}) {
     std::string pattern = _regex(i);
-    if (std::regex_match(path, std::regex(pattern))) return i;
+    if (path.find(pattern) != std::string::npos) {
+      return i;
+    }
   }
 
   return type::INVALID;
@@ -60,6 +63,10 @@ bool Triggerer::_exec(type t) {
       cmd = "fc-cache -s";
       break;
 
+    case type::LIBRARY_CACHE:
+      cmd = "ldconfig";
+      break;
+
     case type::FONTS_SCALE: {
       bool status = true;
       for (auto const &i :
@@ -75,14 +82,14 @@ bool Triggerer::_exec(type t) {
         if (int status = Executor().execute("mkfontdir " + i.path().string());
             status != 0) {
           p_Error +=
-              "mkfontdir failed with exit code: " + std::to_string(status);
+              "\nmkfontdir failed with exit code: " + std::to_string(status);
           status = false;
         }
 
         if (int status = Executor().execute("mkfontscale " + i.path().string());
             status != 0) {
           p_Error +=
-              "mkfontscale failed with exit code: " + std::to_string(status);
+              "\nmkfontscale failed with exit code: " + std::to_string(status);
           status = false;
         }
       }
@@ -94,11 +101,11 @@ bool Triggerer::_exec(type t) {
       bool status = true;
       for (auto const &i :
            std::filesystem::directory_iterator("/usr/share/icons")) {
-        if (int status =
-                Executor().execute("gtk-update-icon-cache -q " + i.path().string());
+        if (int status = Executor().execute("gtk-update-icon-cache -q " +
+                                            i.path().string());
             status != 0) {
-          p_Error += "gtk-update-icon-cahce failed with exit code: " +
-                    std::to_string(status);
+          p_Error += "\ngtk-update-icon-cahce failed with exit code: " +
+                     std::to_string(status);
           status = false;
         }
       }
@@ -110,8 +117,9 @@ bool Triggerer::_exec(type t) {
   }
 
   if (int status = Executor().execute(cmd); status != 0) {
-    p_Error += "trigger failed with exit code: " + std::to_string(status);
-    status = false;
+    p_Error += "\nFailed to '" + _mesg(t) +
+               "' command failed with exit code: " + std::to_string(status);
+    return false;
   }
 
   return true;
@@ -122,37 +130,40 @@ std::string Triggerer::_regex(
   // https://github.com/venomlinux/scratchpkg/blob/master/scratch#L284
   switch (t) {
     case type::MIME:
-      return "share/mime/$";
+      return "share/mime/";
 
     case type::DESKTOP:
-      return "share/applications/$";
+      return "share/applications/";
 
     case type::FONTS_SCALE:
-      return "share/fonts/$";
+      return "share/fonts/";
 
     case type::UDEV:
-      return "udev/hwdb.d/$";
+      return "udev/hwdb.d/";
 
     case type::ICONS:
-      return "share/icons/$";
+      return "share/icons/";
 
     case type::GTK3_INPUT_MODULES:
-      return "lib/gtk-3.0/3.0.0/immodules/.*.so";
+      return "lib/gtk-3.0/3.0.0/immodules/";
 
     case type::GTK2_INPUT_MODULES:
-      return "lib/gtk-2.0/2.10.0/immodules/.*.so";
+      return "lib/gtk-2.0/2.10.0/immodules/";
 
     case type::GLIB_SCHEMAS:
-      return "share/glib-2.0/schemas/$";
+      return "share/glib-2.0/schemas/";
 
     case type::GIO_MODULES:
-      return "lib/gio/modules/.*.so";
+      return "lib/gio/modules/";
 
     case type::GDK_PIXBUF:
-      return "lib/gdk-pixbuf-2.0/2.10.0/loaders/.*.so";
+      return "lib/gdk-pixbuf-2.0/2.10.0/loaders/";
 
     case type::FONTS_CACHE:
-      return "share/fonts/$";
+      return "share/fonts/";
+
+    case type::LIBRARY_CACHE:
+      return "lib/";
   }
 
   throw std::runtime_error(
@@ -185,6 +196,8 @@ std::string Triggerer::_mesg(type t) {
       return "Probing GDK Pixbuf loader modules";
     case type::FONTS_CACHE:
       return "Updating fontconfig cache";
+    case type::LIBRARY_CACHE:
+      return "Updating library cache";
   }
 
   throw std::runtime_error(
@@ -194,22 +207,26 @@ std::string Triggerer::_mesg(type t) {
 std::vector<Triggerer::type> Triggerer::_get(
     std::vector<std::vector<std::string>> const &fileslist) {
   std::vector<Triggerer::type> requiredTriggers;
+
+  auto checkTrigger = [&](Triggerer::type type) -> bool {
+    for (auto const &i : fileslist) {
+      for (auto const &j : i) {
+        auto trigger = this->_get(j);
+        if (trigger == type) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
   for (auto i :
        {type::MIME, type::DESKTOP, type::FONTS_SCALE, type::UDEV, type::ICONS,
         type::GTK3_INPUT_MODULES, type::GTK2_INPUT_MODULES, type::GLIB_SCHEMAS,
-        type::GIO_MODULES, type::GDK_PIXBUF, type::FONTS_CACHE}) {
-    for (auto const &pkgfiles : fileslist) {
-      if (std::find(requiredTriggers.begin(), requiredTriggers.end(), i) ==
-          requiredTriggers.end())
-        break;
-
-      for (auto const &file : pkgfiles) {
-        auto trigger = _get(file);
-        if (trigger != type::INVALID) {
-          requiredTriggers.push_back(trigger);
-          break;
-        }
-      }
+        type::GIO_MODULES, type::GDK_PIXBUF, type::FONTS_CACHE,
+        type::LIBRARY_CACHE}) {
+    if (checkTrigger(i)) {
+      requiredTriggers.push_back(i);
     }
   }
 
@@ -220,8 +237,8 @@ bool Triggerer::trigger(std::vector<Package> const &pkgs) {
   bool status = true;
   for (auto const &i : pkgs) {
     for (auto const &grp : i.groups()) {
-      PROCESS("creating group " + grp.name());
       if (!grp.exists()) {
+        PROCESS("creating group " + grp.name());
         if (!grp.create()) {
           ERROR("failed to create " + grp.name() + " group");
           status = false;
@@ -229,8 +246,8 @@ bool Triggerer::trigger(std::vector<Package> const &pkgs) {
       }
     }
     for (auto const &usr : i.users()) {
-      PROCESS("creating user " + usr.name());
       if (!usr.exists()) {
+        PROCESS("creating user " + usr.name());
         if (!usr.create()) {
           ERROR("failed to create " + usr.name() + " user");
           status = false;
@@ -256,15 +273,6 @@ bool Triggerer::trigger(
       status = false;
     }
   }
-
-  {
-    PROCESS("Updating library cache");
-
-    if (int status = Executor().execute("/bin/ldconfig"); status != 0) {
-      p_Error = "failed to update library cache";
-      return false;
-    }
-  }
   return status;
 }
 
@@ -281,6 +289,7 @@ bool Triggerer::trigger() {
            type::GIO_MODULES,
            type::GDK_PIXBUF,
            type::FONTS_CACHE,
+           type::LIBRARY_CACHE,
        }) {
     PROCESS(_mesg(i));
     try {

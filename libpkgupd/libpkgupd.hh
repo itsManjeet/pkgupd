@@ -1,6 +1,8 @@
 #ifndef _LIBPKGUPD_HH_
 #define _LIBPKGUPD_HH_
 
+#include <filesystem>
+
 #include "builder.hh"
 #include "colors.hh"
 #include "image.hh"
@@ -10,7 +12,6 @@
 #include "remover.hh"
 #include "resolver.hh"
 #include "tar.hh"
-#include <filesystem>
 
 namespace rlxos::libpkgupd {
 
@@ -18,8 +19,13 @@ struct UpdateInformation {
   Package previous;
   Package updated;
 };
+enum class ListType : int {
+  Installed,
+  Available,
+};
+
 class Pkgupd : public Object {
-private:
+ private:
   SystemDatabase m_SystemDatabase;
   Repository m_Repository;
   Installer m_Installer;
@@ -36,17 +42,23 @@ private:
   bool m_IsForce;
   bool m_IsSkipTriggers;
 
-public:
+ public:
   Pkgupd(std::string const &dataPath, std::string const &cachePath,
          std::vector<std::string> const &mirrors, std::string const &version,
          std::string const &rootsPath, bool isForce = false,
          bool isSkipTriggers = false)
-      : m_SystemDatabase(dataPath), m_PackageDir(cachePath + "/pkgs"),
-        m_SourceDir(cachePath + "/src"), m_Repository(cachePath + "/recipes"),
-        m_Installer(m_SystemDatabase, m_Repository, m_Downloader, cachePath + "/pkgs"),
-        m_RootDir(rootsPath), m_Remover(m_SystemDatabase, rootsPath),
-        m_Resolver(m_SystemDatabase, m_Repository), m_IsForce(isForce),
-        m_IsSkipTriggers(isSkipTriggers), m_Downloader(mirrors, version) {
+      : m_SystemDatabase(dataPath),
+        m_PackageDir(cachePath + "/pkgs"),
+        m_SourceDir(cachePath + "/src"),
+        m_Repository(cachePath + "/recipes"),
+        m_Installer(m_SystemDatabase, m_Repository, m_Downloader,
+                    cachePath + "/pkgs"),
+        m_RootDir(rootsPath),
+        m_Remover(m_SystemDatabase, rootsPath),
+        m_Resolver(m_SystemDatabase, m_Repository),
+        m_IsForce(isForce),
+        m_IsSkipTriggers(isSkipTriggers),
+        m_Downloader(mirrors, version) {
     auto pkgupd_dir = std::filesystem::path(cachePath);
   }
 
@@ -68,9 +80,11 @@ public:
 
   std::vector<Package> search(std::string query);
 
+  std::vector<Package> list(ListType listType);
+
   bool trigger(std::vector<std::string> const &packages);
 
   bool sync();
 };
-} // namespace rlxos::libpkgupd
+}  // namespace rlxos::libpkgupd
 #endif

@@ -21,6 +21,7 @@ class Triggerer : public Object {
     GIO_MODULES,
     GDK_PIXBUF,
     FONTS_CACHE,
+    LIBRARY_CACHE,
   };
 
  protected:

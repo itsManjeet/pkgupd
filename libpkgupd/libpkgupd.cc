@@ -83,6 +83,18 @@ std::vector<std::string> Pkgupd::depends(std::string const &package) {
   return m_Resolver.list();
 }
 
+std::vector<Package> Pkgupd::list(ListType listType) {
+  switch (listType) {
+    case ListType::Available:
+      return m_Repository.all();
+    case ListType::Installed:
+      return m_SystemDatabase.all();
+    default:
+      p_Error = "no valid list type specified";
+      return {};
+  }
+}
+
 std::vector<Package> Pkgupd::search(std::string query) {
   std::vector<Package> packages;
   for (auto const &package : m_SystemDatabase.all()) {
@@ -151,6 +163,7 @@ bool Pkgupd::sync() {
 
 bool Pkgupd::trigger(std::vector<std::string> const &packages) {
   std::vector<Package> packagesList;
+  std::vector<std::vector<std::string>> packagesFilesList;
   for (auto const &i : packages) {
     auto package = m_SystemDatabase[i];
     if (!package) {
@@ -158,10 +171,21 @@ bool Pkgupd::trigger(std::vector<std::string> const &packages) {
       return false;
     }
     packagesList.push_back(*package);
+
+    std::vector<std::string> packageFiles;
+    for (auto const &i : package->node()["files"]) {
+      packageFiles.push_back(i.as<std::string>());
+    }
+    packagesFilesList.push_back(packageFiles);
   }
 
   bool status = m_Triggerer.trigger(packagesList);
   p_Error = m_Triggerer.error();
+
+  if (status) {
+    status = m_Triggerer.trigger(packagesFilesList);
+    p_Error = m_Triggerer.error();
+  }
 
   return status;
 }

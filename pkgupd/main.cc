@@ -20,6 +20,7 @@ enum class Task : int {
   Info,
   Update,
   Refresh,
+  Trigger,
 };
 
 Task getTask(const char *task) {
@@ -35,6 +36,8 @@ Task getTask(const char *task) {
     return Task::Refresh;
   } else if (!strcmp(task, "remove") || !strcmp(task, "rm")) {
     return Task::Remove;
+  } else if (!strcmp(task, "trigger")) {
+    return Task::Trigger;
   }
 
   return Task::Invalid;
@@ -64,7 +67,47 @@ Flag getFlag(const char *flag) {
   return Flag::Invalid;
 }
 
-void printHelp(const char *prog) {}
+void printHelp(const char *prog) {
+  cout << "Usage: " << prog << " [TASK] [ARGS]... [PKGS]..\n"
+       << "PKGUPD is a system package manager for rlxos.\n"
+          "Perfrom system level package transactions like installations, "
+          "upgradations and removal.\n\n"
+          "TASK:\n"
+          "  in,  install                 download and install specified "
+          "package(s) from repository into the system\n"
+          "  rm,  remove                  remove specified package(s) from the "
+          "system if already installed\n"
+          "  rf,  refresh                 synchronize local data with "
+          "repositories\n"
+          //           "  up,  update                  upgarde specified
+          //           package(s) to their latest avaliable version\n"
+          "  co,  compile                 try to compile specified package(s) "
+          "from repository recipe files\n"
+          "  depends                      perform dependencies test for "
+          "specified package\n"
+          "  info                         print information of specified "
+          "package\n"
+          "  trigger                      execute require triggers and create "
+          "required users & groups\n"
+          "\n"
+          "To override default values simply pass argument as "
+          "--config=config.yml\n"
+          "Parameters:\n"
+          "  SystemDatabase               specify system database of installed "
+          "packages\n"
+       << "  CachePath                    specify dynamic cache for path for\n"
+       << "  RootDir                      override the default root directory "
+          "path\n"
+       << "  Version                      alter the release version of rlxos\n"
+       << "  Mirrors                      list of mirrors to search packages\n"
+       << "Exit Status:\n"
+          "  0  if OK\n"
+          "  1  if issue with input data provided.\n"
+          "  2  if build to perform specified task.\n"
+          "\n"
+          "Full documentation <https://docs.rlxos.dev/pkgupd>\n"
+       << endl;
+}
 
 int main(int argc, char **argv) {
   vector<Flag> flags;
@@ -238,6 +281,16 @@ int main(int argc, char **argv) {
       case Task::Refresh:
         check_exact(0);
         return pkgupd.sync();
+
+      case Task::Trigger: {
+        auto all_packages = pkgupd.list(libpkgupd::ListType::Installed);
+        vector<string> all_packages_name;
+        for (auto const &i : all_packages) {
+          all_packages_name.push_back(i.id());
+        }
+
+        return pkgupd.trigger(all_packages_name);
+      };
 
       case Task::Update: {
         check_exact(0);

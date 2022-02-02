@@ -32,7 +32,9 @@ class Executor : public Object {
               std::vector<std::string> const &environ = {}) {
     auto cmd = _get_cmd(command, dir, environ);
     PROCESS("executing: '" << cmd << "'");
-    return WEXITSTATUS(system(cmd.c_str()));
+    auto exit_status = WEXITSTATUS(system(cmd.c_str()));
+    DEBUG("exit status: " << exit_status);
+    return exit_status;
   }
 
   std::tuple<int, std::string> output(
