@@ -7,9 +7,6 @@ depends:
   buildtime:
     - cmake
 
-type: pkg
-
-build-type: cmake
 build-dir: pkgupd-main
 
 sources:

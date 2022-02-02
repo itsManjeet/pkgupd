@@ -32,13 +32,13 @@ bool AutoConf::compile(Recipe const& recipe, std::string dir,
   if (int status =
           Executor().execute(configurator + " " + configure, dir, environ);
       status != 0) {
-    p_Error = "failed to do meson configuration";
+    p_Error = "failed to do autoconf configuration";
     return false;
   }
 
   if (int status = Executor().execute("make " + recipe.compile(), dir, environ);
       status != 0) {
-    p_Error = "failed to build with meson";
+    p_Error = "failed to build with autoconf";
     return false;
   }
 
@@ -50,7 +50,7 @@ bool AutoConf::compile(Recipe const& recipe, std::string dir,
   if (int status = Executor().execute("make DESTDIR=" + destdir + " " + install,
                                       dir, environ);
       status != 0) {
-    p_Error = "failed to install with meson";
+    p_Error = "failed to install with autoconf";
     return false;
   }
 

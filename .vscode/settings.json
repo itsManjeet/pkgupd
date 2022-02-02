@@ -87,5 +87,6 @@
         "semaphore": "cpp",
         "source_location": "cpp",
         "syncstream": "cpp"
-    }
+    },
+    "python.formatting.provider": "yapf"
 }

@@ -20,6 +20,7 @@ namespace rlxos::libpkgupd {
 enum class PackageType : int {
   APPIMAGE,
   PACKAGE,
+  RLXOS,
 };
 
 static std::string packageTypeToString(PackageType type) {
@@ -28,6 +29,8 @@ static std::string packageTypeToString(PackageType type) {
       return "app";
     case PackageType::PACKAGE:
       return "pkg";
+    case PackageType::RLXOS:
+      return "rlx";
     default:
       throw std::runtime_error("invalid package type");
   }
@@ -38,6 +41,8 @@ static PackageType stringToPackageType(std::string const& type) {
     return PackageType::APPIMAGE;
   } else if (type == "pkg") {
     return PackageType::PACKAGE;
+  } else if (type == "rlx") {
+    return PackageType::RLXOS;
   }
 
   throw std::runtime_error("invalid package type " + type);
@@ -90,9 +95,10 @@ class Package {
     READ_OBJECT_LIST(User, users, m_Users);
     READ_OBJECT_LIST(Group, groups, m_Groups);
 
-    m_PackageType = PackageType::PACKAGE;
+    m_PackageType = PackageType::RLXOS;
     if (data["type"]) {
       m_PackageType = stringToPackageType(data["type"].as<std::string>());
+      DEBUG("got type " << data["type"])
     }
 
     OPTIONAL_VALUE(std::string, "script", m_Script, "");
@@ -115,6 +121,7 @@ class Package {
   YAML::Node const& node() const { return m_Node; }
 
   std::string file() const {
+    DEBUG("package type: " << packageTypeToString(m_PackageType))
     return m_ID + "-" + m_Version + "." + packageTypeToString(m_PackageType);
   }
 
@@ -143,13 +150,6 @@ class Package {
       for (auto const& i : m_Groups) {
         i.dump(os);
       }
-    }
-
-    if (m_Script.size()) {
-      os << "script: | " << std::endl;
-      std::stringstream ss(m_Script);
-      std::string line;
-      while (std::getline(ss, line, '\n')) os << "  " << line << std::endl;
     }
   }
 };

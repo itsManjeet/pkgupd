@@ -66,11 +66,9 @@ static BuildType detectBuildType(std::string path) {
 }
 
 class Recipe;
+class Builder;
 
 class Compiler : public Object {
- private:
-  Builder *builder;
-
  protected:
   std::string const PREFIX = "/usr";
   std::string const SYSCONF_DIR = "/etc";
@@ -82,8 +80,6 @@ class Compiler : public Object {
   std::string const CACHEDIR = "/var";
 
  public:
-  Compiler(Builder *builder) : builder(builder) {}
-
   virtual bool compile(Recipe const &recipe, std::string dir,
                        std::string destdir,
                        std::vector<std::string> const &environ) = 0;

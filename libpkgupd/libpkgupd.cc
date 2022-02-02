@@ -1,11 +1,13 @@
 #include "libpkgupd.hh"
-#include "recipe.hh"
+
+#include <yaml-cpp/node/parse.h>
 
 #include <exception>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
-#include <yaml-cpp/node/parse.h>
+
+#include "recipe.hh"
 
 namespace rlxos::libpkgupd {
 bool Pkgupd::install(std::vector<std::string> const &packages) {
@@ -21,11 +23,20 @@ bool Pkgupd::build(std::string const &recipefile) {
 
   m_BuildDir = "/tmp/pkgupd-" + recipe.id();
 
-  auto builder = Builder::create(recipe.buildType());
-  builder->set(m_BuildDir, m_SourceDir, m_PackageDir);
+  auto builder = Builder();
+  builder.set(m_BuildDir, m_SourceDir, m_PackageDir);
 
-  bool status = builder->build(recipe);
-  p_Error = builder->error();
+  for (auto const &i : {m_BuildDir, m_SourceDir, m_PackageDir}) {
+    std::error_code err;
+    std::filesystem::create_directories(i, err);
+    if (err) {
+      p_Error = "failed to create required dir '" + err.message() + "'";
+      return false;
+    }
+  }
+
+  bool status = builder.build(recipe);
+  p_Error = builder.error();
 
   return status;
 }
@@ -63,8 +74,10 @@ std::vector<UpdateInformation> Pkgupd::outdate() {
 }
 
 std::vector<std::string> Pkgupd::depends(std::string const &package) {
+  DEBUG("resolving " << package);
   if (!m_Resolver.resolve(package)) {
     p_Error = m_Resolver.error();
+    DEBUG("got error " << m_Resolver.error());
     return {};
   }
   return m_Resolver.list();
@@ -160,7 +173,7 @@ std::optional<Package> Pkgupd::info(std::string packageName) {
       YAML::Node node = YAML::LoadFile(packageName);
       auto recipe = Recipe(node, packageName);
       return recipe.packages()[0];
-      
+
     } catch (std::exception const &err) {
       p_Error = "failed to read recipe file, " + std::string(err.what());
       return {};
@@ -180,4 +193,4 @@ std::optional<Package> Pkgupd::info(std::string packageName) {
   p_Error = "no package found with name '" + packageName + "'";
   return {};
 }
-} // namespace rlxos::libpkgupd
+}  // namespace rlxos::libpkgupd

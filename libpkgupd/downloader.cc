@@ -1,9 +1,9 @@
 #include "downloader.hh"
 
 #include <curl/curl.h>
-#include <filesystem>
 #include <math.h>
 
+#include <filesystem>
 #include <iostream>
 #include <system_error>
 
@@ -129,8 +129,7 @@ bool Downloader::valid(std::string const &url) {
   curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 
   curl_easy_cleanup(curl);
-  if ((resp == CURLE_OK) && http_code == 200)
-    return true;
+  if ((resp == CURLE_OK) && http_code == 200) return true;
 
   p_Error = "invalid url " + url;
   return false;
@@ -143,13 +142,13 @@ bool Downloader::get(std::string const &file, std::string const &outdir) {
   }
 
   for (auto const &mirror : m_Mirrors) {
-    DEBUG("checking  mirror: " << mirror << " " << file);
+    DEBUG("checking  mirror: " << mirror << " " << m_Version << " " << file);
 
     std::string fileurl = mirror + "/" + m_Version + "/pkgs/" + file;
 
+    DEBUG("url: " << fileurl)
     if (!getenv("NO_CURL_CHECK"))
-      if (!valid(fileurl))
-        continue;
+      if (!valid(fileurl)) continue;
 
     return download(fileurl, outdir);
   }
@@ -158,4 +157,4 @@ bool Downloader::get(std::string const &file, std::string const &outdir) {
 
   return false;
 }
-} // namespace rlxos::libpkgupd
+}  // namespace rlxos::libpkgupd

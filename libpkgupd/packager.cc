@@ -8,6 +8,7 @@ std::shared_ptr<Packager> Packager::create(PackageType packageType,
                                            std::string const& packageFile) {
   switch (packageType) {
     case PackageType::PACKAGE:
+    case PackageType::RLXOS:
       return std::make_shared<Tar>(packageFile);
     case PackageType::APPIMAGE:
       return std::make_shared<Image>(packageFile);

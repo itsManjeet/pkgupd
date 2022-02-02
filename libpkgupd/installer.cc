@@ -71,23 +71,6 @@ bool Installer::_install(std::vector<std::string> const &packages,
       p_Error = m_SystemDatabase.error();
       return false;
     }
-
-    if (!isSkipTriggers) {
-      if (packagesList[i].script().size()) {
-        if (withPkgname) {
-          PROCESS("post install script " << BLUE(packagesList[i].id()));
-        } else {
-          PROCESS("post installation script");
-        }
-
-        if (int status = Executor().execute(packagesList[i].script());
-            status != 0) {
-          p_Error =
-              "install script failed to exit code: " + std::to_string(status);
-          return false;
-        }
-      }
-    }
   }
 
   if (isSkipTriggers) {

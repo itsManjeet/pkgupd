@@ -1,4 +1,5 @@
 #include "recipe.hh"
+
 #include "defines.hh"
 
 using std::string;
@@ -11,20 +12,23 @@ Recipe::Recipe(YAML::Node data, std::string file) {
   READ_VALUE(string, "version", m_Version);
   READ_VALUE(string, "about", m_About);
 
-  READ_LIST_FROM(string, depends, runtime, m_Depends);
-  READ_LIST_FROM(string, depends, buildtime, m_BuildTime);
+  READ_LIST_FROM(string, runtime, depends, m_Depends);
+  READ_LIST_FROM(string, buildtime, depends, m_BuildTime);
 
   std::string packageType;
-  READ_VALUE(string, "type", packageType);
+  OPTIONAL_VALUE(string, "type", packageType, "rlx");
   m_PackageType = stringToPackageType(packageType);
 
-  OPTIONAL_VALUE(string, "script", m_Script, "");
   READ_OBJECT_LIST(User, "users", m_Users);
   READ_OBJECT_LIST(Group, "groups", m_Groups);
 
-  std::string buildType;
-  READ_VALUE(string, "build-type", buildType);
-  m_BuildType = stringToBuildType(buildType);
+  if (data["build-type"]) {
+    std::string buildType;
+    READ_VALUE(string, "build-type", buildType);
+    m_BuildType = stringToBuildType(buildType);
+  } else {
+    m_BuildType = BuildType::INVALID;
+  }
 
   READ_LIST(string, "sources", m_Sources);
   READ_LIST(string, "environ", m_Environ);

@@ -215,6 +215,10 @@ int main(int argc, char **argv) {
         for (auto const &i : dependencies) {
           cout << i << endl;
         }
+        if (pkgupd.error().length() != 0) {
+          cerr << "Error! " << pkgupd.error() << endl;
+          return false;
+        }
         return true;
       }
       case Task::Remove: {
