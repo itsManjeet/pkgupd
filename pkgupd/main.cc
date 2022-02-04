@@ -8,6 +8,7 @@
 #include <vector>
 using namespace std;
 
+#include "../libpkgupd/defines.hh"
 #include "../libpkgupd/libpkgupd.hh"
 using namespace rlxos;
 
@@ -21,6 +22,7 @@ enum class Task : int {
   Update,
   Refresh,
   Trigger,
+  Search,
 };
 
 Task getTask(const char *task) {
@@ -38,6 +40,8 @@ Task getTask(const char *task) {
     return Task::Remove;
   } else if (!strcmp(task, "trigger")) {
     return Task::Trigger;
+  } else if (!strcmp(task, "search")) {
+    return Task::Search;
   }
 
   return Task::Invalid;
@@ -335,7 +339,17 @@ int main(int argc, char **argv) {
         }
 
         return pkgupd.update(outdated);
-      }
+      };
+
+      case Task::Search: {
+        check_exact(1);
+        auto result = pkgupd.search(args[0]);
+        cout << "Found " << result.size() << " result(s)" << endl;
+        for (auto const &i : result) {
+          cout << i.id() << " : " << i.about() << endl;
+        }
+        return true;
+      } break;
       default:
         ERROR("invalid task");
         return false;

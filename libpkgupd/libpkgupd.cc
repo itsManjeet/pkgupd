@@ -97,12 +97,6 @@ std::vector<Package> Pkgupd::list(ListType listType) {
 
 std::vector<Package> Pkgupd::search(std::string query) {
   std::vector<Package> packages;
-  for (auto const &package : m_SystemDatabase.all()) {
-    if (package.id().find(query) != std::string::npos ||
-        package.about().find(query) != std::string::npos) {
-      packages.push_back(package);
-    }
-  }
   for (auto const &package : m_Repository.all()) {
     if (package.id().find(query) != std::string::npos ||
         package.about().find(query) != std::string::npos) {
