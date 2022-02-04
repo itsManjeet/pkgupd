@@ -17,27 +17,60 @@ bool Pkgupd::install(std::vector<std::string> const &packages) {
   return status;
 }
 
-bool Pkgupd::build(std::string const &recipefile) {
+bool Pkgupd::build(std::string recipefile) {
+  if (!std::filesystem::exists(recipefile) ||
+      std::filesystem::is_directory(recipefile)) {
+    recipefile = m_Repository.path() + "/" + recipefile + ".yml";
+    if (!std::filesystem::exists(recipefile)) {
+      p_Error = "no recipe file found for '" + recipefile + "'";
+      return false;
+    }
+  }
   auto node = YAML::LoadFile(recipefile);
   auto recipe = Recipe(node, recipefile);
 
-  m_BuildDir = "/tmp/pkgupd-" + recipe.id() + "-" + generateRandom(10);
+  bool to_build = false;
+  for (auto const &i : recipe.packages()) {
+    auto packagefile_Path = m_PackageDir + "/" + i.file();
+    if (!std::filesystem::exists(packagefile_Path)) {
+      to_build = true;
+      break;
+    }
+  }
 
-  auto builder = Builder(m_BuildDir, m_SourceDir, m_PackageDir);
+  if (to_build) {
+    m_BuildDir = "/tmp/pkgupd-" + recipe.id() + "-" + generateRandom(10);
 
-  for (auto const &i : {m_BuildDir, m_SourceDir, m_PackageDir}) {
-    std::error_code err;
-    std::filesystem::create_directories(i, err);
-    if (err) {
-      p_Error = "failed to create required dir '" + err.message() + "'";
+    auto builder = Builder(m_BuildDir, m_SourceDir, m_PackageDir);
+
+    for (auto const &i : {m_BuildDir, m_SourceDir, m_PackageDir}) {
+      std::error_code err;
+      std::filesystem::create_directories(i, err);
+      if (err) {
+        p_Error = "failed to create required dir '" + err.message() + "'";
+        return false;
+      }
+    }
+
+    if (!builder.build(recipe)) {
+      p_Error = builder.error();
       return false;
     }
   }
 
-  bool status = builder.build(recipe);
-  p_Error = builder.error();
+  std::vector<std::string> packages;
+  for (auto const &i : recipe.packages()) {
+    auto packagefile_Path = m_PackageDir + "/" + i.file();
+    if (!std::filesystem::exists(packagefile_Path)) {
+      p_Error = "no package generated for '" + i.id() + "' at " + m_PackageDir;
+      return false;
+    }
+    packages.push_back(packagefile_Path);
+  }
 
-  return status;
+  // Force true to update package
+  m_IsForce = true;
+  return install(packages);
 }
 
 bool Pkgupd::remove(std::vector<std::string> const &packages) {

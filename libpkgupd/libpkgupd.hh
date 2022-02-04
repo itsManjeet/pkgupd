@@ -116,7 +116,7 @@ class Pkgupd : public Object {
 
   bool install(std::vector<std::string> const &packages);
 
-  bool build(std::string const &recipefile);
+  bool build(std::string recipefile);
 
   bool remove(std::vector<std::string> const &packages);
 
