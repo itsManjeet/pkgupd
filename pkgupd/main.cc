@@ -34,6 +34,8 @@ Task getTask(const char *task) {
     return Task::Depends;
   } else if (!strcmp(task, "info")) {
     return Task::Info;
+  } else if (!strcmp(task, "update") || !strcmp(task, "up")) {
+    return Task::Update;
   } else if (!strcmp(task, "refresh")) {
     return Task::Refresh;
   } else if (!strcmp(task, "remove") || !strcmp(task, "rm")) {
