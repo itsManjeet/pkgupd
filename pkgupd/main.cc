@@ -83,8 +83,8 @@ void printHelp(const char *prog) {
           "system if already installed\n"
           "  rf,  refresh                 synchronize local data with "
           "repositories\n"
-          //           "  up,  update                  upgarde specified
-          //           package(s) to their latest avaliable version\n"
+          "  up,  update                  upgarde specified"
+          "package(s) to their latest avaliable version\n"
           "  co,  compile                 try to compile specified package(s) "
           "from repository recipe files\n"
           "  depends                      perform dependencies test for "
@@ -163,7 +163,7 @@ int main(int argc, char **argv) {
                             "https://apps.rlxos.dev"};
 
   if (configFile) {
-    DEBUG("loading configuration file '" << *configFile << "'")
+    DEBUG("loading configuration file '" << *configFile << "'");
     try {
       YAML::Node config = YAML::LoadFile(*configFile);
 
@@ -197,7 +197,7 @@ int main(int argc, char **argv) {
             continue;
           }
 
-          DEBUG("setting " << ev)
+          DEBUG("setting " << ev);
           setenv(ev.substr(0, idx).c_str(),
                  ev.substr(idx + 1, ev.length() - (idx + 1)).c_str(), 1);
         }
@@ -237,7 +237,7 @@ int main(int argc, char **argv) {
       if (ch == 'Y' || ch == 'y') {
         return true;
       }
-      ERROR("user terminated the request")
+      ERROR("user terminated the request");
       return false;
     };
 
@@ -248,7 +248,7 @@ int main(int argc, char **argv) {
         if (hasFlag(Flag::NoDepends)) {
           dependencies = args;
         } else {
-          PROCESS("calculating dependencies")
+          PROCESS("calculating dependencies");
           for (auto const &i : args) {
             if (std::filesystem::exists(i) &&
                 std::filesystem::path(i).has_extension() &&
@@ -358,11 +358,11 @@ int main(int argc, char **argv) {
 
   try {
     if (!doTask(task, pkgupd, args)) {
-      ERROR(pkgupd.error())
+      ERROR(pkgupd.error());
       return 2;
     }
   } catch (exception const &err) {
-    ERROR(err.what())
+    ERROR(err.what());
     return 2;
   }
 

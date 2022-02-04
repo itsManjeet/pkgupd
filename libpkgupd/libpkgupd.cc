@@ -21,10 +21,9 @@ bool Pkgupd::build(std::string const &recipefile) {
   auto node = YAML::LoadFile(recipefile);
   auto recipe = Recipe(node, recipefile);
 
-  m_BuildDir = "/tmp/pkgupd-" + recipe.id();
+  m_BuildDir = "/tmp/pkgupd-" + recipe.id() + "-" + generateRandom(10);
 
-  auto builder = Builder();
-  builder.set(m_BuildDir, m_SourceDir, m_PackageDir);
+  auto builder = Builder(m_BuildDir, m_SourceDir, m_PackageDir);
 
   for (auto const &i : {m_BuildDir, m_SourceDir, m_PackageDir}) {
     std::error_code err;

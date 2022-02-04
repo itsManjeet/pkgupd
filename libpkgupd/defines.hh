@@ -2,8 +2,11 @@
 #define _LIBPKGUPD_DEFINES_HH_
 
 #include <assert.h>
+#include <unistd.h>
 
+#include <ctime>
 #include <filesystem>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -19,6 +22,19 @@ class Object {
  public:
   std::string const &error() const { return p_Error; }
 };
+
+static inline std::string generateRandom(int const len) {
+  static const char alnum[] =
+      "0123456789"
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+      "abcdefghijklmnopqrstuvwxyz";
+
+  std::string res;
+  for (auto i = 0; i < len; i++) {
+    res += alnum[rand() % (sizeof(alnum) - 1)];
+  }
+  return res;
+}
 
 }  // namespace rlxos::libpkgupd
 

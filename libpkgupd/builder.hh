@@ -101,16 +101,17 @@ class Builder : public Object {
                std::vector<std::string> const &environ);
 
  public:
+  Builder(std::string const &builddir, std::string const &sourcedir,
+          std::string const &packagedir)
+      : m_BuildDir(builddir),
+        m_SourceDir(sourcedir),
+        m_PackageDir(packagedir) {}
+
   ~Builder() {
     std::error_code err;
-    std::filesystem::remove_all(m_BuildDir, err);
-  }
-
-  void set(std::string const &builddir, std::string const &sourcedir,
-           std::string const &packagedir) {
-    m_BuildDir = builddir;
-    m_SourceDir = sourcedir;
-    m_PackageDir = packagedir;
+    if (std::filesystem::exists(m_BuildDir)) {
+      std::filesystem::remove_all(m_BuildDir, err);
+    }
   }
 
   bool build(Recipe const &recipe);
