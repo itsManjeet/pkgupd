@@ -36,7 +36,8 @@ int progress_func(void *ptr, double TotalToDownload, double NowDownloaded,
   }
   // and back to line begin - do not forget the fflush to avoid output buffering
   // problems!
-  printf("\033[1m]\033[0m\r");
+  printf("\033[1m] [%.10s]\033[0m\r",
+         humanize(static_cast<size_t>(TotalToDownload)).c_str());
   fflush(stdout);
   // if you don't return 0, the transfer will be aborted - see the documentation
   return 0;
@@ -84,6 +85,7 @@ bool Downloader::download(std::string const &url, std::string const &outfile) {
   curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1000);
   curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 10);
 
+  PROCESS("downloading " << std::filesystem::path(outfile).filename());
   res = curl_easy_perform(curl);
 
   std::cout << std::endl;

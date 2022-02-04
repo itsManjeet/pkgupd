@@ -36,6 +36,17 @@ static inline std::string generateRandom(int const len) {
   return res;
 }
 
+static inline std::string humanize(size_t bytes) {
+  if (bytes >= 1073741824) {
+    return std::to_string(bytes / 1073741824) + " GiB";
+  } else if (bytes >= 1048576) {
+    return std::to_string(bytes / 1048576) + " MiB";
+  } else if (bytes >= 1024) {
+    return std::to_string(bytes / 1024) + " KiB";
+  }
+  return std::to_string(bytes) + " Bytes";
+}
+
 }  // namespace rlxos::libpkgupd
 
 #define GET_METHOD(type, var) \
