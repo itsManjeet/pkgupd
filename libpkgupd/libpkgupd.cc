@@ -72,13 +72,17 @@ std::vector<UpdateInformation> Pkgupd::outdate() {
   return informations;
 }
 
-std::vector<std::string> Pkgupd::depends(std::string const &package) {
-  DEBUG("resolving " << package);
-  if (!m_Resolver.resolve(package)) {
-    p_Error = m_Resolver.error();
-    DEBUG("got error " << m_Resolver.error());
-    return {};
+std::vector<std::string> Pkgupd::depends(
+    std::vector<std::string> const &packages) {
+  for (auto const &package : packages) {
+    DEBUG("resolving " << package);
+    if (!m_Resolver.resolve(package)) {
+      p_Error = m_Resolver.error();
+      DEBUG("got error " << m_Resolver.error());
+      return {};
+    }
   }
+
   return m_Resolver.list();
 }
 

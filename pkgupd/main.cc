@@ -253,14 +253,22 @@ int main(int argc, char **argv) {
           dependencies = args;
         } else {
           PROCESS("calculating dependencies");
+          vector<string> for_dependencies_resolv;
           for (auto const &i : args) {
             if (std::filesystem::exists(i) &&
                 std::filesystem::path(i).has_extension() &&
                 !std::filesystem::is_directory(i)) {
               dependencies.push_back(i);
             } else {
-              auto dep = pkgupd.depends(i);
-              dependencies.insert(dependencies.end(), dep.begin(), dep.end());
+              for_dependencies_resolv.push_back(i);
+            }
+          }
+
+          for_dependencies_resolv = pkgupd.depends(for_dependencies_resolv);
+          for (auto const &i : for_dependencies_resolv) {
+            if (find(dependencies.begin(), dependencies.end(), i) ==
+                dependencies.end()) {
+              dependencies.push_back(i);
             }
           }
 
@@ -282,8 +290,8 @@ int main(int argc, char **argv) {
         check_exact(1);
         return pkgupd.build(args[0]);
       case Task::Depends: {
-        check_exact(1);
-        auto dependencies = pkgupd.depends(args[0]);
+        check_atleast(1);
+        auto dependencies = pkgupd.depends(args);
         for (auto const &i : dependencies) {
           cout << i << endl;
         }
