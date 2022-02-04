@@ -29,7 +29,7 @@ bool Pkgupd::build(std::string recipefile) {
   auto node = YAML::LoadFile(recipefile);
   auto recipe = Recipe(node, recipefile);
 
-  bool to_build = false;
+  bool to_build = m_IsForce;
   for (auto const &i : recipe.packages()) {
     auto packagefile_Path = m_PackageDir + "/" + i.file();
     if (!std::filesystem::exists(packagefile_Path)) {
@@ -68,8 +68,6 @@ bool Pkgupd::build(std::string recipefile) {
     packages.push_back(packagefile_Path);
   }
 
-  // Force true to update package
-  m_IsForce = true;
   return install(packages);
 }
 
