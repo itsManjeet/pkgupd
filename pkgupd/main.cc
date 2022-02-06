@@ -293,7 +293,7 @@ int main(int argc, char **argv) {
         return pkgupd.build(args[0]);
       case Task::Depends: {
         check_atleast(1);
-        auto dependencies = pkgupd.depends(args);
+        auto dependencies = pkgupd.depends(args, hasFlag(Flag::Force));
         for (auto const &i : dependencies) {
           cout << i << endl;
         }

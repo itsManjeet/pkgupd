@@ -128,7 +128,7 @@ class Pkgupd : public Object {
 
   std::vector<UpdateInformation> outdate();
 
-  std::vector<std::string> depends(std::vector<std::string> const &package);
+  std::vector<std::string> depends(std::vector<std::string> const &package, bool all = false);
 
   std::vector<Package> search(std::string query);
 

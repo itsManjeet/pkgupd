@@ -104,10 +104,10 @@ std::vector<UpdateInformation> Pkgupd::outdate() {
 }
 
 std::vector<std::string> Pkgupd::depends(
-    std::vector<std::string> const &packages) {
+    std::vector<std::string> const &packages, bool all) {
   for (auto const &package : packages) {
     DEBUG("resolving " << package);
-    if (!m_Resolver.resolve(package)) {
+    if (!m_Resolver.resolve(package, all)) {
       p_Error = m_Resolver.error();
       DEBUG("got error " << m_Resolver.error());
       return {};
