@@ -186,7 +186,8 @@ bool Builder::build(Recipe const &recipe) {
         return false;
       }
 
-      fs::copy_file(srcfile_Path, destfile_Path, err);
+      fs::copy(srcfile_Path, destfile_Path, fs::copy_options::copy_symlinks,
+               err);
       if (err) {
         p_Error = "failed to copy file " + file + " " + err.message();
         return false;
