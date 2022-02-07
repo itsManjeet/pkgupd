@@ -7,16 +7,6 @@
 #include <fstream>
 
 namespace rlxos::libpkgupd {
-auto const AppRun = R"END(#!/bin/sh
-SELF=$(readlink -f "$0")
-HERE=${SELF%/*}
-export PATH=${HERE}:${HERE}/usr/bin:${HERE}/bin:${HERE}/usr/sbin:${HERE}/sbin:${PATH}
-export LD_LIBRARY_PATH=${HERE}:${HERE}/usr/lib:${HERE}/usr/lib/x86_64-linux-gnu:${HERE}/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}
-export XDG_DATA_DIRS=${HERE}/usr/share:${XDG_DATA_DIRS}
-export GSETTINGS_SCHEMA_DIR=${HERE}/usr/share/glib-2.0/schemas:${GSETTINGS_SCHEMA_DIR}
-EXEC=$(grep -e '^Exec=.*' "${HERE}"/*.desktop | head -n 1 | cut -d "=" -f 2 | cut -d " " -f 1)
-exec "${EXEC}" "$@"
-)END";
 
 std::tuple<int, std::string> Image::get(std::string const& _filepath) {
   std::string filepath = _filepath;
@@ -81,36 +71,6 @@ bool Image::compress(std::string const& srcdir, Package const& package) {
     if (err) {
       p_Error = "failed to create " + pardir + ", " + err.message();
       return false;
-    }
-  }
-
-  {
-    // Write AppRun
-    auto apprun = std::filesystem::path(srcdir) / "AppRun";
-    if (!std::filesystem::exists(apprun)) {
-      std::ofstream file(apprun);
-      if (package.node()["AppRun"]) {
-        file << package.node()["AppRun"].as<std::string>();
-      } else {
-        file << AppRun;
-      }
-      file.close();
-    }
-  }
-
-  {
-    // Write desktopfile
-    auto desktopfile =
-        std::filesystem::path(srcdir) / (package.id() + ".desktop");
-
-    if (!std::filesystem::exists(desktopfile)) {
-      std::ofstream file(desktopfile);
-      if (package.node()["DesktopFile"]) {
-        file << package.node()["DesktopFile"].as<std::string>();
-      } else {
-        p_Error = "no desktop file found '" + desktopfile.string() + "'";
-        return false;
-      }
     }
   }
 
