@@ -63,7 +63,7 @@ Recipe::Recipe(YAML::Node data, std::string file) {
 
     if (data["sources"]) {
       for (auto const& i : data["sources"]) {
-        m_Environ.push_back(i.as<string>());
+        m_Sources.push_back(i.as<string>());
       }
     }
 
