@@ -1,7 +1,8 @@
 #include "common.hh"
 
 TEST_F(LibPkgupdTest, DependenciesResolveTest) {
-  auto depend = pkgupd->depends({"d", "a"});
+  auto [depend, status] = pkgupd->depends({"d", "a"});
+  ASSERT_TRUE(status);
   ASSERT_EQ(depend.size(), 4);
   ASSERT_EQ(depend[0], "a");
   ASSERT_EQ(depend[1], "b");

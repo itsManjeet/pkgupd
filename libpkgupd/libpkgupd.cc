@@ -103,18 +103,18 @@ std::vector<UpdateInformation> Pkgupd::outdate() {
   return informations;
 }
 
-std::vector<std::string> Pkgupd::depends(
+std::tuple<std::vector<std::string>, bool> Pkgupd::depends(
     std::vector<std::string> const &packages, bool all) {
   for (auto const &package : packages) {
     DEBUG("resolving " << package);
     if (!m_Resolver.resolve(package, all)) {
       p_Error = m_Resolver.error();
       DEBUG("got error " << m_Resolver.error());
-      return {};
+      return {std::vector<std::string>(), false};
     }
   }
 
-  return m_Resolver.list();
+  return {m_Resolver.list(), true};
 }
 
 std::vector<Package> Pkgupd::list(ListType listType) {

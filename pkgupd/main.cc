@@ -265,9 +265,11 @@ int main(int argc, char **argv) {
               for_dependencies_resolv.push_back(i);
             }
           }
-
-          for_dependencies_resolv = pkgupd.depends(for_dependencies_resolv);
-          for (auto const &i : for_dependencies_resolv) {
+          auto [deps, status] = pkgupd.depends(for_dependencies_resolv);
+          if (!status) {
+            return false;
+          }
+          for (auto const &i : deps) {
             if (find(dependencies.begin(), dependencies.end(), i) ==
                 dependencies.end()) {
               dependencies.push_back(i);
@@ -293,7 +295,10 @@ int main(int argc, char **argv) {
         return pkgupd.build(args[0]);
       case Task::Depends: {
         check_atleast(1);
-        auto dependencies = pkgupd.depends(args, hasFlag(Flag::Force));
+        auto [dependencies, status] = pkgupd.depends(args, hasFlag(Flag::Force));
+        if (!status) {
+          return false;
+        }
         for (auto const &i : dependencies) {
           cout << i << endl;
         }
