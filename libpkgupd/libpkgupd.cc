@@ -18,7 +18,7 @@ bool Pkgupd::install(std::vector<std::string> const &packages) {
 }
 
 bool Pkgupd::build(std::string recipefile) {
-  if (isInstalled(recipefile)) {
+  if (isInstalled(recipefile) && !m_IsForce) {
     INFO(recipefile << " already installed");
     return true;
   }
