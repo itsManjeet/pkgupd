@@ -18,12 +18,47 @@ bool Pkgupd::install(std::vector<std::string> const &packages) {
 }
 
 bool Pkgupd::build(std::string recipefile) {
+  if (isInstalled(recipefile)) {
+    INFO(recipefile << " already installed");
+    return true;
+  }
   if (!std::filesystem::exists(recipefile) ||
       std::filesystem::is_directory(recipefile)) {
-    recipefile = m_Repository.path() + "/" + recipefile + ".yml";
-    if (!std::filesystem::exists(recipefile)) {
-      p_Error = "no recipe file found for '" + recipefile + "'";
-      return false;
+    if (!std::filesystem::exists(m_Repository.path() + "/" + recipefile +
+                                 ".yml")) {
+      bool found = false;
+      for (auto const &i :
+           std::filesystem::directory_iterator(m_Repository.path())) {
+        if (i.is_directory()) {
+          continue;
+        }
+        try {
+          YAML::Node node = YAML::LoadFile(m_Repository.path() + "/" +
+                                           i.path().filename().string());
+          auto recipe = Recipe(
+              node, m_Repository.path() + "/" + i.path().filename().string());
+
+          for (auto const &pkg : recipe.packages()) {
+            if (pkg.id() == recipefile) {
+              found = true;
+              recipefile =
+                  m_Repository.path() + "/" + i.path().filename().string();
+              break;
+            }
+          }
+          if (found) {
+            break;
+          }
+        } catch (...) {
+          continue;
+        }
+      }
+      if (!found) {
+        p_Error = "no recipe file found for '" + recipefile + "'";
+        return false;
+      }
+    } else {
+      recipefile = m_Repository.path() + "/" + recipefile + ".yml";
     }
   }
   auto node = YAML::LoadFile(recipefile);
