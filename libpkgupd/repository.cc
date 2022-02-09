@@ -4,29 +4,13 @@
 
 namespace rlxos::libpkgupd {
 std::optional<Package> Repository::operator[](std::string const &packageName) {
-  auto recipeFilePath =
-      std::filesystem::path(p_DataDir) / (packageName + ".yml");
-
-  if (std::filesystem::exists(recipeFilePath)) {
-    try {
-      auto node = YAML::LoadFile(recipeFilePath);
-      auto recipe = Recipe(node, recipeFilePath);
-
-      auto package = recipe[packageName];
-      if (!package) {
-        p_Error = "no package with id '" + packageName +
-                 "' found in recipe file " + recipeFilePath.string();
-        return {};
-      }
-
-      return package;
-
-    } catch (YAML::Exception const &ee) {
-      p_Error = "failed to read recipe file '" + recipeFilePath.string() + "' " +
-               std::string(ee.what());
-      return {};
+  for (auto const &i : all()) {
+    if (i.id() == packageName) {
+      return i;
     }
   }
+
+  p_Error = "no recipe file found for " + packageName;
   return {};
 }
 
