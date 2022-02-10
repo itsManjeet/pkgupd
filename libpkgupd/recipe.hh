@@ -52,12 +52,10 @@ class Recipe {
 
   PackageType const packageType() const { return m_PackageType; }
 
-  BuildType const buildType() const {
-    return m_BuildType;
-  }
+  BuildType const buildType() const { return m_BuildType; }
 
   std::vector<std::string> const& depends() const { return m_Depends; }
-  std::vector<std::string> const& buildtype() const { return m_BuildTime; }
+  std::vector<std::string> const& buildTime() const { return m_BuildTime; }
 
   std::string const& buildDir() const { return m_BuildDir; }
 
@@ -80,6 +78,15 @@ class Recipe {
   bool dostrip() const { return m_DoStrip; }
 
   YAML::Node const& node() const { return m_Node; }
+
+  bool contains(std::string const& pkgid) {
+    for (auto const& i : packages()) {
+      if (i.id() == pkgid) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   std::optional<Package> operator[](std::string const& name) const;
   std::vector<Package> packages() const;

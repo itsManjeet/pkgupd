@@ -2,6 +2,7 @@
 #define _PKGUPD_REPOSITORY_DATABASE_HH_
 
 #include "database.hh"
+#include "recipe.hh"
 
 namespace rlxos::libpkgupd {
 class Repository : public Database {
@@ -11,6 +12,7 @@ class Repository : public Database {
   }
 
   std::vector<Package> all();
+  std::optional<Recipe> recipe(std::string const& pkgid);
   std::optional<Package> operator[](std::string const &pkgid);
 };
 }  // namespace rlxos::libpkgupd

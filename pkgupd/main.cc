@@ -265,7 +265,7 @@ int main(int argc, char **argv) {
               for_dependencies_resolv.push_back(i);
             }
           }
-          auto [deps, status] = pkgupd.depends(for_dependencies_resolv);
+          auto [deps, status] = pkgupd.depends(for_dependencies_resolv, false);
           if (!status) {
             return false;
           }

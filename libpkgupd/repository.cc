@@ -14,6 +14,39 @@ std::optional<Package> Repository::operator[](std::string const &packageName) {
   return {};
 }
 
+std::optional<Recipe> Repository::recipe(std::string const &pkgid) {
+  auto recipe_path = p_DataDir + "/" + pkgid + ".yml";
+  if (std::filesystem::exists(recipe_path)) {
+    try {
+      auto node = YAML::LoadFile(recipe_path);
+      auto recipe_data = Recipe(node, recipe_path);
+      return recipe_data;
+    } catch (std::exception const &exc) {
+      p_Error = "failed to load recipe file " + std::string(exc.what());
+      return {};
+    }
+  }
+
+  for (auto const &i : std::filesystem::directory_iterator(p_DataDir)) {
+    if (!(i.is_regular_file() && i.path().has_extension() &&
+          i.path().extension() == ".yml")) {
+      continue;
+    }
+    recipe_path = p_DataDir + "/" + i.path().filename().string() + ".yml";
+    try {
+      YAML::Node node = YAML::LoadFile(recipe_path);
+      auto recipe_data = Recipe(node, recipe_path);
+      if (recipe_data.contains(pkgid)) {
+        return recipe_data;
+      }
+    } catch (std::exception const &exc) {
+      ERROR(exc.what() << " " << recipe_path);
+      continue;
+    }
+  }
+  return {};
+}
+
 std::vector<Package> Repository::all() {
   std::vector<Package> packages;
   for (auto const &i : std::filesystem::directory_iterator(p_DataDir)) {

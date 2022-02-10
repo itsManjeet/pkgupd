@@ -60,7 +60,6 @@ static inline std::string humanize(size_t bytes) {
   SET_METHOD(type, var)
 
 #define _CHECK_VALUE(type, variableID, variable) \
-  DEBUG("found " << variableID)                  \
   if (data[variableID]) variable = data[variableID].as<type>();
 
 #define _CHECK_LIST(type, variableID, variable) \

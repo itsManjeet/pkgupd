@@ -17,14 +17,20 @@ bool Resolver::resolve(std::string const &pkgid, bool all) {
   if (_to_skip(pkgid)) return true;
 
   DEBUG("checking " << pkgid);
-  auto pkginfo_ = m_Repository[pkgid];
+  auto recipe = m_Repository.recipe(pkgid);
 
-  if (!pkginfo_) {
+  if (!recipe) {
     p_Error = "missing required dependency '" + pkgid + "'";
     return false;
   }
 
-  for (auto const &i : pkginfo_->depends()) {
+  auto depends = recipe->depends();
+  if (all) {
+    auto build_depends = recipe->buildTime();
+    depends.insert(depends.begin(), build_depends.begin(), build_depends.end());
+  }
+
+  for (auto const &i : depends) {
     DEBUG("depends " << i)
     if (!resolve(i, all)) {
       p_Error += "\n Trace Required by " + pkgid;
