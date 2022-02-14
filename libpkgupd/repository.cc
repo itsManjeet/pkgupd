@@ -32,7 +32,7 @@ std::optional<Recipe> Repository::recipe(std::string const &pkgid) {
           i.path().extension() == ".yml")) {
       continue;
     }
-    recipe_path = p_DataDir + "/" + i.path().filename().string() + ".yml";
+    recipe_path = p_DataDir + "/" + i.path().filename().string();
     try {
       YAML::Node node = YAML::LoadFile(recipe_path);
       auto recipe_data = Recipe(node, recipe_path);
