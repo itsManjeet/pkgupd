@@ -72,6 +72,8 @@ Recipe::Recipe(YAML::Node data, std::string file) {
     OPTIONAL_VALUE(string, "prescript", m_PreScript, "");
     OPTIONAL_VALUE(string, "postscript", m_PostScript, "");
 
+    OPTIONAL_VALUE(string, "install_script", m_InstallScript, "");
+
     OPTIONAL_VALUE(string, "dir", m_BuildDir, "");
 
     auto getFlag = [&](string flag_id) -> string {
@@ -113,6 +115,8 @@ Recipe::Recipe(YAML::Node data, std::string file) {
     OPTIONAL_VALUE(string, "script", m_Script, "");
     OPTIONAL_VALUE(string, "pre-script", m_PreScript, "");
     OPTIONAL_VALUE(string, "post-script", m_PostScript, "");
+
+    OPTIONAL_VALUE(string, "install-script", m_InstallScript, "");
 
     if (data["split"]) {
       for (auto const& i : data["split"]) {
@@ -157,7 +161,7 @@ std::optional<Package> Recipe::operator[](std::string const& name) const {
 std::vector<Package> Recipe::packages() const {
   std::vector<Package> packagesList;
   packagesList.push_back(Package(m_ID, m_Version, m_About, m_PackageType,
-                                 m_Depends, m_Users, m_Groups, m_Script));
+                                 m_Depends, m_Users, m_Groups, m_InstallScript));
 
   for (auto const& i : m_SplitPackages) {
     std::string id = i.into;
@@ -167,7 +171,7 @@ std::vector<Package> Recipe::packages() const {
 
     packagesList.push_back(Package(
         id, m_Version, i.about.size() ? i.about : m_About, m_PackageType,
-        i.depends.size() ? i.depends : m_Depends, m_Users, m_Groups, m_Script));
+        i.depends.size() ? i.depends : m_Depends, m_Users, m_Groups, m_InstallScript));
   }
 
   return packagesList;

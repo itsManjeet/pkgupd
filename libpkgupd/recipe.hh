@@ -36,6 +36,8 @@ class Recipe {
   std::vector<std::string> m_SkipStrip;
   bool m_DoStrip;
 
+  std::string m_InstallScript;
+
   std::string m_Script;
 
   std::vector<User> m_Users;
@@ -67,6 +69,8 @@ class Recipe {
   std::string const& postscript() const { return m_PostScript; }
 
   std::string const& script() const { return m_Script; }
+
+  std::string const& installScript() const { return m_InstallScript; }
 
   std::vector<std::string> const& environ() const { return m_Environ; }
   std::vector<std::string> const& sources() const { return m_Sources; }

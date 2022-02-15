@@ -79,8 +79,8 @@ static inline std::string humanize(size_t bytes) {
   _CHECK_LIST(type, variableID, variable)
 
 #define READ_OBJECT_LIST(type, variableID, variable) \
-  if (data[#variableID])                             \
-    for (auto const &i : data[#variableID]) variable.push_back(type(i, file));
+  if (data[variableID])                             \
+    for (auto const &i : data[variableID]) variable.push_back(type(i, file));
 
 #define READ_LIST_FROM(type, variable, from, into) \
   if (data[#from] && data[#from][#variable])       \

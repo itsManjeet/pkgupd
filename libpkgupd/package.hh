@@ -92,8 +92,8 @@ class Package {
     READ_VALUE(std::string, "about", m_About);
     READ_LIST(std::string, "depends", m_Depends);
 
-    READ_OBJECT_LIST(User, users, m_Users);
-    READ_OBJECT_LIST(Group, groups, m_Groups);
+    READ_OBJECT_LIST(User, "users", m_Users);
+    READ_OBJECT_LIST(Group, "groups", m_Groups);
 
     m_PackageType = PackageType::RLXOS;
     if (data["type"]) {
@@ -150,6 +150,10 @@ class Package {
       for (auto const& i : m_Groups) {
         i.dump(os);
       }
+    }
+
+    if (m_Script.size()) {
+      os << "script: \"" << m_Script << "\"" << std::endl;
     }
   }
 };

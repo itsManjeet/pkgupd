@@ -7,6 +7,7 @@
 namespace rlxos::libpkgupd {
 
 User::User(YAML::Node const &data, std::string const &file) {
+  std::cout << "reading: user" << std::endl;
   READ_VALUE(unsigned int, "id", m_ID);
   READ_VALUE(std::string, "name", m_Name);
   READ_VALUE(std::string, "about", m_About);
