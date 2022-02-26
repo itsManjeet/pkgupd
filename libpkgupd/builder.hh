@@ -15,6 +15,7 @@ enum class BuildType {
   MESON,
   SCRIPT,
   AUTOCONF,
+  PYSETUP,
 };
 
 static std::string buildTypeToString(BuildType type) {
@@ -27,6 +28,8 @@ static std::string buildTypeToString(BuildType type) {
       return "script";
     case BuildType::AUTOCONF:
       return "autoconf";
+    case BuildType::PYSETUP:
+      return "pysetup";
     default:
       throw std::runtime_error("unimplemented buildtype");
   }
@@ -40,6 +43,8 @@ static BuildType stringToBuildType(std::string type) {
     return BuildType::SCRIPT;
   } else if (type == "autoconf") {
     return BuildType::AUTOCONF;
+  } else if (type == "pysetup") {
+    return BuildType::PYSETUP;
   }
   throw std::runtime_error("unimplemented build type '" + type + "'");
 }
@@ -51,13 +56,15 @@ static BuildType buildTypeFromFile(std::string file) {
     return BuildType::MESON;
   } else if (file == "configure") {
     return BuildType::AUTOCONF;
+  } else if (file == "setup.py") {
+    return BuildType::PYSETUP;
   }
 
   throw std::runtime_error("no valid build type for file '" + file + "'");
 }
 
 static BuildType detectBuildType(std::string path) {
-  for (std::string i : {"CMakeLists.txt", "meson.build", "configure"}) {
+  for (std::string i : {"CMakeLists.txt", "meson.build", "configure", "setup.py"}) {
     if (std::filesystem::exists(path + "/" + i)) {
       return buildTypeFromFile(i);
     }
