@@ -75,7 +75,7 @@ bool Installer::_install(std::vector<std::string> const &packages,
       }
     }
 
-    DEBUG("found '" << deprecated_files.size() << "' extra files");
+    PROCESS("found '" << deprecated_files.size() << "' extra files");
     PROCESS("cleaning old files");
     for (auto file = deprecated_files.rbegin(); file != deprecated_files.rend();
          file++) {
