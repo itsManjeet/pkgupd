@@ -10,6 +10,12 @@ Recipe::Recipe(YAML::Node data, std::string file) {
 
   READ_VALUE(string, "id", m_ID);
   READ_VALUE(string, "version", m_Version);
+
+  // If release is provided respect it
+  if (data["release"]) {
+    m_Version += "-" + data["release"].as<string>();
+  }
+
   READ_VALUE(string, "about", m_About);
 
   READ_LIST_FROM(string, runtime, depends, m_Depends);
@@ -161,7 +167,8 @@ std::optional<Package> Recipe::operator[](std::string const& name) const {
 std::vector<Package> Recipe::packages() const {
   std::vector<Package> packagesList;
   packagesList.push_back(Package(m_ID, m_Version, m_About, m_PackageType,
-                                 m_Depends, m_Users, m_Groups, m_InstallScript));
+                                 m_Depends, m_Users, m_Groups,
+                                 m_InstallScript));
 
   for (auto const& i : m_SplitPackages) {
     std::string id = i.into;
@@ -169,9 +176,10 @@ std::vector<Package> Recipe::packages() const {
       id += m_ID;
     }
 
-    packagesList.push_back(Package(
-        id, m_Version, i.about.size() ? i.about : m_About, m_PackageType,
-        i.depends.size() ? i.depends : m_Depends, m_Users, m_Groups, m_InstallScript));
+    packagesList.push_back(
+        Package(id, m_Version, i.about.size() ? i.about : m_About,
+                m_PackageType, i.depends.size() ? i.depends : m_Depends,
+                m_Users, m_Groups, m_InstallScript));
   }
 
   return packagesList;
