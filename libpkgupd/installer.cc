@@ -85,6 +85,18 @@ bool Installer::_install(std::vector<std::string> const &packages,
         ERROR("failed to clean old file '" << *file << "'");
       }
     }
+
+    if (info->script().length()) {
+      if (isSkipTriggers) {
+        INFO("skipped install script")
+      } else {
+        auto env = std::vector<std::string>();
+        env.push_back("VERSION=" + info->version());
+        if (Executor().execute(info->script(), "/", env) != 0) {
+          ERROR("failed to execute install script");
+        }
+      }
+    }
   }
 
   bool withPkgname = packagesList.size() != 1;
