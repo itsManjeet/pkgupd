@@ -90,6 +90,7 @@ bool Installer::_install(std::vector<std::string> const &packages,
       if (isSkipTriggers) {
         INFO("skipped install script")
       } else {
+        PROCESS("executing install script");
         auto env = std::vector<std::string>();
         env.push_back("VERSION=" + info->version());
         if (Executor().execute(info->script(), "/", env) != 0) {
