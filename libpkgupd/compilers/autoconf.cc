@@ -5,8 +5,7 @@
 
 namespace rlxos::libpkgupd {
 bool AutoConf::compile(Recipe const& recipe, std::string dir,
-                       std::string destdir,
-                       std::vector<std::string> const& environ) {
+                       std::string destdir, std::vector<std::string>& environ) {
   auto configure = recipe.configure();
 
   bool same_dir = false;

@@ -5,7 +5,7 @@
 
 namespace rlxos::libpkgupd {
 bool Cmake::compile(Recipe const &recipe, std::string dir, std::string destdir,
-                    std::vector<std::string> const &environ) {
+                    std::vector<std::string>&environ) {
   auto configure = recipe.configure();
   if (configure.find("-DCMAKE_INSTALL_PREFIX") == std::string::npos) {
     configure = " -DCMAKE_INSTALL_PREFIX=" + PREFIX +

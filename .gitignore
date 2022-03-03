@@ -2,3 +2,4 @@ build/
 cache/
 /pkgupd.yml
 /.cache
+tests/data

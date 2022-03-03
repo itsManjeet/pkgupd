@@ -16,6 +16,10 @@ enum class BuildType {
   SCRIPT,
   AUTOCONF,
   PYSETUP,
+  GO,
+  CARGO,
+  GEM,
+  QMAKE,
 };
 
 static std::string buildTypeToString(BuildType type) {
@@ -30,6 +34,14 @@ static std::string buildTypeToString(BuildType type) {
       return "autoconf";
     case BuildType::PYSETUP:
       return "pysetup";
+    case BuildType::GO:
+      return "go";
+    case BuildType::CARGO:
+      return "cargo";
+    case BuildType::GEM:
+      return "gem";
+    case BuildType::QMAKE:
+      return "qmake";
     default:
       throw std::runtime_error("unimplemented buildtype");
   }
@@ -45,6 +57,14 @@ static BuildType stringToBuildType(std::string type) {
     return BuildType::AUTOCONF;
   } else if (type == "pysetup") {
     return BuildType::PYSETUP;
+  } else if (type == "go") {
+    return BuildType::GO;
+  } else if (type == "cargo") {
+    return BuildType::CARGO;
+  } else if (type == "gem") {
+    return BuildType::GEM;
+  } else if (type == "qmake") {
+    return BuildType::QMAKE;
   }
   throw std::runtime_error("unimplemented build type '" + type + "'");
 }
@@ -58,13 +78,18 @@ static BuildType buildTypeFromFile(std::string file) {
     return BuildType::AUTOCONF;
   } else if (file == "setup.py") {
     return BuildType::PYSETUP;
+  } else if (file == "go.mod") {
+    return BuildType::GO;
+  } else if (file == "Cargo.toml") {
+    return BuildType::CARGO;
   }
 
   throw std::runtime_error("no valid build type for file '" + file + "'");
 }
 
 static BuildType detectBuildType(std::string path) {
-  for (std::string i : {"CMakeLists.txt", "meson.build", "configure", "setup.py"}) {
+  for (std::string i : {"CMakeLists.txt", "meson.build", "configure",
+                        "setup.py", "go.mod", "Cargo.toml"}) {
     if (std::filesystem::exists(path + "/" + i)) {
       return buildTypeFromFile(i);
     }
@@ -91,7 +116,7 @@ class Compiler : public Object {
  public:
   virtual bool compile(Recipe const &recipe, std::string dir,
                        std::string destdir,
-                       std::vector<std::string> const &environ) = 0;
+                       std::vector<std::string> &environ) = 0;
 
   static std::shared_ptr<Compiler> create(BuildType buildType);
 };
@@ -105,7 +130,7 @@ class Builder : public Object {
   bool pack(std::vector<std::string> const &dirs);
 
   bool compile(Recipe const &recipe, std::string dir, std::string destdir,
-               std::vector<std::string> const &environ);
+               std::vector<std::string> &environ);
 
  public:
   Builder(std::string const &builddir, std::string const &sourcedir,

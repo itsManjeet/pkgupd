@@ -5,7 +5,7 @@
 
 namespace rlxos::libpkgupd {
 bool Meson::compile(Recipe const& recipe, std::string dir, std::string destdir,
-                    std::vector<std::string> const& environ) {
+                    std::vector<std::string>& environ) {
   auto configure = recipe.configure();
   if (configure.find("--prefix") == std::string::npos) {
     configure = " --prefix=" + PREFIX + " --sysconfdir=" + SYSCONF_DIR +

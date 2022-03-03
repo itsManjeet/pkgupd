@@ -5,8 +5,7 @@
 
 namespace rlxos::libpkgupd {
 bool PySetup::compile(Recipe const& recipe, std::string dir,
-                      std::string destdir,
-                      std::vector<std::string> const& environ) {
+                      std::string destdir, std::vector<std::string>& environ) {
   if (int status = Executor().execute(
           "python pysetup.py build " + recipe.compile(), dir, environ);
       status != 0) {

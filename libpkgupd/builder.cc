@@ -8,8 +8,12 @@
 
 #include "colors.hh"
 #include "compilers/autoconf.hh"
+#include "compilers/cargo.hh"
 #include "compilers/cmake.hh"
+#include "compilers/gem.hh"
+#include "compilers/go.hh"
 #include "compilers/meson.hh"
+#include "compilers/qmake.hh"
 #include "compilers/script.hh"
 #include "downloader.hh"
 #include "exec.hh"
@@ -281,13 +285,20 @@ std::shared_ptr<Compiler> Compiler::create(BuildType buildType) {
       return std::make_shared<AutoConf>();
     case BuildType::SCRIPT:
       return std::make_shared<Script>();
+    case BuildType::GO:
+      return std::make_shared<Go>();
+    case BuildType::CARGO:
+      return std::make_shared<Cargo>();
+    case BuildType::GEM:
+      return std::make_shared<Gem>();
+    case BuildType::QMAKE:
+      return std::make_shared<QMake>();
   }
   throw std::runtime_error("unsupported " + buildTypeToString(buildType));
 }
 
 bool Builder::compile(Recipe const &recipe, std::string dir,
-                      std::string destdir,
-                      std::vector<std::string> const &environ) {
+                      std::string destdir, std::vector<std::string> &environ) {
   std::shared_ptr<Compiler> compiler;
 
   if (recipe.buildType() != BuildType::INVALID) {
