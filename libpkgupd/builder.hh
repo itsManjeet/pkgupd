@@ -20,6 +20,7 @@ enum class BuildType {
   CARGO,
   GEM,
   QMAKE,
+  MAKEFILE,
 };
 
 static std::string buildTypeToString(BuildType type) {
@@ -42,6 +43,8 @@ static std::string buildTypeToString(BuildType type) {
       return "gem";
     case BuildType::QMAKE:
       return "qmake";
+    case BuildType::MAKEFILE:
+      return "makefile";
     default:
       throw std::runtime_error("unimplemented buildtype");
   }
@@ -65,6 +68,8 @@ static BuildType stringToBuildType(std::string type) {
     return BuildType::GEM;
   } else if (type == "qmake") {
     return BuildType::QMAKE;
+  } else if (type == "makefile") {
+    return BuildType::MAKEFILE;
   }
   throw std::runtime_error("unimplemented build type '" + type + "'");
 }
@@ -82,6 +87,8 @@ static BuildType buildTypeFromFile(std::string file) {
     return BuildType::GO;
   } else if (file == "Cargo.toml") {
     return BuildType::CARGO;
+  } else if (file == "Makefile") {
+    return BuildType::MAKEFILE;
   }
 
   throw std::runtime_error("no valid build type for file '" + file + "'");
@@ -89,7 +96,7 @@ static BuildType buildTypeFromFile(std::string file) {
 
 static BuildType detectBuildType(std::string path) {
   for (std::string i : {"CMakeLists.txt", "meson.build", "configure",
-                        "setup.py", "go.mod", "Cargo.toml"}) {
+                        "setup.py", "go.mod", "Cargo.toml", "Makefile"}) {
     if (std::filesystem::exists(path + "/" + i)) {
       return buildTypeFromFile(i);
     }

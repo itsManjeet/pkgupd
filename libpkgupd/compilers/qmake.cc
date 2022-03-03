@@ -16,16 +16,15 @@ bool QMake::compile(Recipe const& recipe, std::string dir, std::string destdir,
     return false;
   }
 
-  int status = Executor().execute("make " + recipe.compile(), dir, environ);
+  status = Executor().execute("make " + recipe.compile(), dir, environ);
   if (status != 0) {
     p_Error = "failed to compile with qmake";
     return false;
   }
 
-  int status =
-      Executor().execute("make STRIP=true PREFIX=/usr DESTDIR=" + destdir +
-                             " install " + recipe.install(),
-                         dir, environ);
+  status = Executor().execute("make STRIP=true PREFIX=/usr DESTDIR=" + destdir +
+                                  " install " + recipe.install(),
+                              dir, environ);
   if (status != 0) {
     p_Error = "failed to install with qmake";
     return false;

@@ -15,6 +15,7 @@
 #include "compilers/meson.hh"
 #include "compilers/qmake.hh"
 #include "compilers/script.hh"
+#include "compilers/makefile.hh"
 #include "downloader.hh"
 #include "exec.hh"
 #include "packager.hh"
@@ -293,6 +294,8 @@ std::shared_ptr<Compiler> Compiler::create(BuildType buildType) {
       return std::make_shared<Gem>();
     case BuildType::QMAKE:
       return std::make_shared<QMake>();
+    case BuildType::MAKEFILE:
+      return std::make_shared<Makefile>();
   }
   throw std::runtime_error("unsupported " + buildTypeToString(buildType));
 }
