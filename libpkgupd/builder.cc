@@ -12,10 +12,10 @@
 #include "compilers/cmake.hh"
 #include "compilers/gem.hh"
 #include "compilers/go.hh"
+#include "compilers/makefile.hh"
 #include "compilers/meson.hh"
 #include "compilers/qmake.hh"
 #include "compilers/script.hh"
-#include "compilers/makefile.hh"
 #include "downloader.hh"
 #include "exec.hh"
 #include "packager.hh"
@@ -139,6 +139,20 @@ bool Builder::build(Recipe const &recipe) {
   environ.push_back("DESTDIR=" + pkgdir.string());
 
   auto wrkdir = srcdir / recipe.buildDir();
+  if (recipe.buildDir().length() == 0 && recipe.sources().size()) {
+    auto [status, output] = Executor().output(
+        "tar -taf " +
+            std::filesystem::path(recipe.sources()[0]).filename().string() +
+            " | head -n1",
+        m_SourceDir);
+    if (status != 0 || output.length() == 0) {
+    } else {
+      if (output[output.length() - 1] == '\n') {
+        output = output.substr(0, output.length() - 1);
+      }
+      wrkdir = srcdir / output;
+    }
+  }
 
   if (recipe.prescript().size()) {
     PROCESS("executing prescript")
