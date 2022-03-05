@@ -14,6 +14,7 @@
 #include "compilers/go.hh"
 #include "compilers/makefile.hh"
 #include "compilers/meson.hh"
+#include "compilers/pysetup.hh"
 #include "compilers/qmake.hh"
 #include "compilers/script.hh"
 #include "downloader.hh"
@@ -300,6 +301,8 @@ std::shared_ptr<Compiler> Compiler::create(BuildType buildType) {
       return std::make_shared<AutoConf>();
     case BuildType::SCRIPT:
       return std::make_shared<Script>();
+    case BuildType::PYSETUP:
+      return std::make_shared<PySetup>();
     case BuildType::GO:
       return std::make_shared<Go>();
     case BuildType::CARGO:
