@@ -298,4 +298,27 @@ std::optional<Package> Pkgupd::info(std::string packageName) {
 bool Pkgupd::isInstalled(std::string const &pkgid) {
   return m_SystemDatabase[pkgid].has_value();
 }
+
+bool Pkgupd::genSync(std::string const& path) {
+  std::ofstream file(path + "/recipe");
+
+  for(auto const& i : std::filesystem::directory_iterator(path)) {
+    if (i.path().filename().string() == "recipe") {
+      continue;
+    }
+    try {
+      auto packages = Packager::create(i.path().string());
+      auto info = packages->info();
+      if (!info) {
+        throw std::runtime_error("invalid package type");
+      }
+      info->dump(file);
+      file << std::endl;
+    } catch(std::exception const& exc) {
+      ERROR("failed to generate sync data for " << i.path() << ", " << exc.what());
+    }
+  }
+
+  return true;
+}
 }  // namespace rlxos::libpkgupd

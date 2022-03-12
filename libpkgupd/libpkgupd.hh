@@ -124,6 +124,8 @@ class Pkgupd : public Object {
 
   bool isInstalled(std::string const &pkgid);
 
+  bool genSync(std::string const& path);
+
   std::optional<Package> info(std::string packageName);
 
   std::vector<UpdateInformation> outdate();

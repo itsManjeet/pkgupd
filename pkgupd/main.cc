@@ -23,6 +23,7 @@ enum class Task : int {
   Refresh,
   Trigger,
   Search,
+  GenSync,
 };
 
 Task getTask(const char *task) {
@@ -44,6 +45,8 @@ Task getTask(const char *task) {
     return Task::Trigger;
   } else if (!strcmp(task, "search")) {
     return Task::Search;
+  } else if (!strcmp(task, "gen-sync")) {
+    return Task::GenSync;
   }
 
   return Task::Invalid;
@@ -96,6 +99,7 @@ void printHelp(const char *prog) {
           "package\n"
           "  trigger                      execute require triggers and create "
           "required users & groups\n"
+          "  gen-sync                     generate sync data for pkgupd\n"
           "\n"
           "To override default values simply pass argument as "
           "--config=config.yml\n"
@@ -295,7 +299,8 @@ int main(int argc, char **argv) {
         return pkgupd.build(args[0]);
       case Task::Depends: {
         check_atleast(1);
-        auto [dependencies, status] = pkgupd.depends(args, hasFlag(Flag::Force));
+        auto [dependencies, status] =
+            pkgupd.depends(args, hasFlag(Flag::Force));
         if (!status) {
           return false;
         }
@@ -359,6 +364,11 @@ int main(int argc, char **argv) {
 
         return pkgupd.update(outdated);
       };
+
+      case Task::GenSync: {
+        check_exact(1);
+        return pkgupd.genSync(args[0]);
+      } break;
 
       case Task::Search: {
         check_exact(1);
