@@ -125,35 +125,41 @@ class Package {
     return m_ID + "-" + m_Version + "." + packageTypeToString(m_PackageType);
   }
 
-  void dump(std::ostream& os) const {
-    os << "id: " << m_ID << "\n"
-       << "version: " << m_Version << "\n"
-       << "about: " << m_About << "\n";
+  void dump(std::ostream& os, bool as_meta = false) const {
+    auto prefix = as_meta ? "    " : "";
+    if (as_meta) {
+      os << "  - id: " << m_ID << "\n";
+    } else {
+      os << "id: " << m_ID << "\n";
+    }
+    
+    os << prefix << "version: " << m_Version << "\n"
+       << prefix << "about: " << m_About << "\n";
 
-    os << "type: " << packageTypeToString(m_PackageType) << '\n';
+    os << prefix << "type: " << packageTypeToString(m_PackageType) << '\n';
 
     if (m_Depends.size()) {
-      os << "depends:"
+      os << prefix << "depends:"
          << "\n";
-      for (auto const& i : m_Depends) os << " - " << i << "\n";
+      for (auto const& i : m_Depends) os << prefix << " - " << i << "\n";
     }
 
     if (m_Users.size()) {
-      os << "users: " << std::endl;
+      os << prefix << "users: " << std::endl;
       for (auto const& i : m_Users) {
-        i.dump(os);
+        i.dump(os, prefix);
       }
     }
 
     if (m_Groups.size()) {
-      os << "groups: " << std::endl;
+      os << prefix << "groups: " << std::endl;
       for (auto const& i : m_Groups) {
-        i.dump(os);
+        i.dump(os, prefix);
       }
     }
 
     if (m_Script.size()) {
-      os << "script: \"" << m_Script << "\"" << std::endl;
+      os << prefix << "script: \"" << m_Script << "\"" << std::endl;
     }
   }
 };

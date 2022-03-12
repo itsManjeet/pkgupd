@@ -74,7 +74,7 @@ class User {
    *
    * @param os
    */
-  void dump(std::ostream &os) const;
+  void dump(std::ostream &os, std::string prefix= "") const;
 };
 }  // namespace rlxos::libpkgupd
 

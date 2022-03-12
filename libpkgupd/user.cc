@@ -23,13 +23,13 @@ bool User::create() const {
                             " -s " + m_Shell + " " + m_Name) == 0;
 }
 
-void User::dump(std::ostream &os) const {
-  os << " - id: " << m_ID << "\n"
-     << "   name: " << m_Name << "\n"
-     << "   about: " << m_About << "\n"
-     << "   group: " << m_Group << "\n"
-     << "   dir: " << m_Dir << "\n"
-     << "   shell: " << m_Shell << std::endl;
+void User::dump(std::ostream &os, std::string prefix) const {
+  os << prefix << " - id: " << m_ID << "\n"
+     << prefix << "   name: " << m_Name << "\n"
+     << prefix << "   about: " << m_About << "\n"
+     << prefix << "   group: " << m_Group << "\n"
+     << prefix << "   dir: " << m_Dir << "\n"
+     << prefix << "   shell: " << m_Shell << std::endl;
 }
 
 }  // namespace rlxos::libpkgupd

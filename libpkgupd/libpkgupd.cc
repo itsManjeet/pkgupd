@@ -302,6 +302,9 @@ bool Pkgupd::isInstalled(std::string const &pkgid) {
 bool Pkgupd::genSync(std::string const& path) {
   std::ofstream file(path + "/recipe");
 
+  file << "version: stable" << std::endl;
+  file << "recipes:" << std::endl;
+
   for(auto const& i : std::filesystem::directory_iterator(path)) {
     if (i.path().filename().string() == "recipe") {
       continue;
@@ -312,7 +315,7 @@ bool Pkgupd::genSync(std::string const& path) {
       if (!info) {
         throw std::runtime_error("invalid package type");
       }
-      info->dump(file);
+      info->dump(file, true);
       file << std::endl;
     } catch(std::exception const& exc) {
       ERROR("failed to generate sync data for " << i.path() << ", " << exc.what());
