@@ -44,12 +44,13 @@ class Pkgupd : public Object {
 
  public:
   Pkgupd(std::string const &dataPath, std::string const &cachePath,
-         std::vector<std::string> const &mirrors, std::string const &version,
+         std::vector<std::string> const &mirrors,
+         std::vector<std::string> const &repos, std::string const &version,
          std::string const &rootsPath, bool isForce, bool isSkipTriggers)
       : m_SystemDatabase(dataPath),
         m_PackageDir(cachePath + "/pkgs"),
         m_SourceDir(cachePath + "/src"),
-        m_Repository(cachePath + "/recipes"),
+        m_Repository(cachePath + "/recipes", repos),
         m_Installer(m_SystemDatabase, m_Repository, m_Downloader,
                     cachePath + "/pkgs"),
         m_RootDir(rootsPath),
@@ -71,6 +72,7 @@ class Pkgupd : public Object {
 
     std::vector<std::string> mirrors = {"https://rlxos.cloudtb.online/",
                                         "https://apps.rlxos.dev/"};
+    std::vector<std::string> repositories = {"core"};
 
     auto getConfig = [&](std::string id, std::string fallback) -> std::string {
       if (config[id]) {
@@ -93,6 +95,14 @@ class Pkgupd : public Object {
       }
     }
 
+    if (config["Repositories"]) {
+      repositories.clear();
+      for (auto const &i : config["Repositories"]) {
+        DEBUG("got repo " << i.as<std::string>());
+        repositories.push_back(i.as<std::string>());
+      }
+    }
+
     if (config["EnvironmentVariables"]) {
       for (auto const &i : config["EnvironmentVariables"]) {
         auto ev = i.as<std::string>();
@@ -109,7 +119,8 @@ class Pkgupd : public Object {
     }
 
     return std::make_shared<Pkgupd>(systemDatabasePath, cachePath, mirrors,
-                                    version, rootDir, false, false);
+                                    repositories, version, rootDir, false,
+                                    false);
   }
 
   ~Pkgupd() {}
@@ -124,13 +135,14 @@ class Pkgupd : public Object {
 
   bool isInstalled(std::string const &pkgid);
 
-  bool genSync(std::string const& path);
+  bool genSync(std::string const &path, std::string const &id);
 
   std::optional<Package> info(std::string packageName);
 
   std::vector<UpdateInformation> outdate();
 
-  std::tuple<std::vector<std::string>, bool> depends(std::vector<std::string> const &package, bool all = false);
+  std::tuple<std::vector<std::string>, bool> depends(
+      std::vector<std::string> const &package, bool all = false);
 
   std::vector<Package> search(std::string query);
 

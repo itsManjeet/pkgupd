@@ -14,56 +14,53 @@ std::optional<Package> Repository::operator[](std::string const &packageName) {
   return {};
 }
 
-std::optional<Recipe> Repository::recipe(std::string const &pkgid) {
-  auto recipe_path = p_DataDir + "/" + pkgid + ".yml";
-  if (std::filesystem::exists(recipe_path)) {
+std::vector<Recipe> Repository::recipes(std::string const &repo) {
+  std::string repoPath = p_DataDir + "/" + repo;
+  if (!std::filesystem::exists(repoPath)) {
+    p_Error = repoPath + " repository not exists";
+    return {};
+  }
+
+  std::vector<Recipe> recipes;
+  for (auto const &i : std::filesystem::directory_iterator(repoPath)) {
+    std::string recipePath = repoPath + "/" + i.path().filename().string();
     try {
-      auto node = YAML::LoadFile(recipe_path);
-      auto recipe_data = Recipe(node, recipe_path);
-      return recipe_data;
+      auto node = YAML::LoadFile(recipePath);
+      auto recipe_data = Recipe(node, recipePath, repo);
+      recipes.push_back(recipe_data);
+
     } catch (std::exception const &exc) {
-      p_Error = "failed to load recipe file " + std::string(exc.what());
-      return {};
+      ERROR("failed to load " << recipePath);
     }
   }
 
-  for (auto const &i : std::filesystem::directory_iterator(p_DataDir)) {
-    if (!(i.is_regular_file() && i.path().has_extension() &&
-          i.path().extension() == ".yml")) {
-      continue;
-    }
-    recipe_path = p_DataDir + "/" + i.path().filename().string();
-    try {
-      YAML::Node node = YAML::LoadFile(recipe_path);
-      auto recipe_data = Recipe(node, recipe_path);
-      if (recipe_data.contains(pkgid)) {
-        return recipe_data;
+  return recipes;
+}
+
+std::optional<Recipe> Repository::recipe(std::string const &pkgid) {
+  for (auto const &repo : mRepos) {
+    for (auto const &rec : recipes(repo)) {
+      if (rec.id() == pkgid) {
+        return rec;
       }
-    } catch (std::exception const &exc) {
-      ERROR(exc.what() << " " << recipe_path);
-      continue;
+
+      for (auto const &pkg : rec.packages()) {
+        if (pkg.id() == pkgid) {
+          return rec;
+        }
+      }
     }
   }
+  p_Error = "no recipe file found for " + pkgid;
   return {};
 }
 
 std::vector<Package> Repository::all() {
   std::vector<Package> packages;
-  for (auto const &i : std::filesystem::directory_iterator(p_DataDir)) {
-    try {
-      if (i.is_directory()) {
-        continue;
-      }
-
-      auto recipeFilePath = std::filesystem::path(p_DataDir) / i;
-      auto node = YAML::LoadFile(recipeFilePath.string());
-
-      auto recipe = Recipe(node, recipeFilePath.string());
-      for (auto const &package : recipe.packages()) {
-        packages.push_back(package);
-      }
-    } catch (std::exception const &e) {
-      ERROR("failed to read " << e.what() << " skipping");
+  for (auto const &repo : mRepos) {
+    for (auto const &rec : recipes(repo)) {
+      auto pkgs = rec.packages();
+      packages.insert(packages.end(), pkgs.begin(), pkgs.end());
     }
   }
   return packages;

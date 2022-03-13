@@ -39,6 +39,7 @@ class Recipe {
   std::string m_InstallScript;
 
   std::string m_Script;
+  std::string m_Repository;
 
   std::vector<User> m_Users;
   std::vector<Group> m_Groups;
@@ -46,7 +47,7 @@ class Recipe {
   YAML::Node m_Node;
 
  public:
-  Recipe(YAML::Node data, std::string file);
+  Recipe(YAML::Node data, std::string file, std::string const& repo);
 
   std::string const& id() const { return m_ID; }
   std::string const& version() const { return m_Version; }

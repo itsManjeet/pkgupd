@@ -13,8 +13,9 @@ class LibPkgupdTest : public testing::Test {
   LibPkgupdTest() {
     pkgupd = std::make_shared<libpkgupd::Pkgupd>(
         DATA_DIR "/system", DATA_DIR "/cache",
-        std::vector<std::string>{"https://apps.rlxos.dev"}, "2200",
-        DATA_DIR "/roots", false, false);
+        std::vector<std::string>{"https://apps.rlxos.dev"},
+        std::vector<std::string>{"core"}, "2200", DATA_DIR "/roots", false,
+        false);
   }
 };
 

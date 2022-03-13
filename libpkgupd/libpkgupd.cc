@@ -22,50 +22,15 @@ bool Pkgupd::build(std::string recipefile) {
     INFO(recipefile << " already installed");
     return true;
   }
-  if (!std::filesystem::exists(recipefile) ||
-      std::filesystem::is_directory(recipefile)) {
-    if (!std::filesystem::exists(m_Repository.path() + "/" + recipefile +
-                                 ".yml")) {
-      bool found = false;
-      for (auto const &i :
-           std::filesystem::directory_iterator(m_Repository.path())) {
-        if (i.is_directory()) {
-          continue;
-        }
-        try {
-          YAML::Node node = YAML::LoadFile(m_Repository.path() + "/" +
-                                           i.path().filename().string());
-          auto recipe = Recipe(
-              node, m_Repository.path() + "/" + i.path().filename().string());
 
-          for (auto const &pkg : recipe.packages()) {
-            if (pkg.id() == recipefile) {
-              found = true;
-              recipefile =
-                  m_Repository.path() + "/" + i.path().filename().string();
-              break;
-            }
-          }
-          if (found) {
-            break;
-          }
-        } catch (...) {
-          continue;
-        }
-      }
-      if (!found) {
-        p_Error = "no recipe file found for '" + recipefile + "'";
-        return false;
-      }
-    } else {
-      recipefile = m_Repository.path() + "/" + recipefile + ".yml";
-    }
+  auto recipe = m_Repository.recipe(recipefile);
+  if (!recipe) {
+    p_Error = "no recipe file found for " + recipefile;
+    return false;
   }
-  auto node = YAML::LoadFile(recipefile);
-  auto recipe = Recipe(node, recipefile);
 
   bool to_build = m_IsForce;
-  for (auto const &i : recipe.packages()) {
+  for (auto const &i : recipe->packages()) {
     auto packagefile_Path = m_PackageDir + "/" + i.file();
     if (!std::filesystem::exists(packagefile_Path)) {
       to_build = true;
@@ -74,7 +39,7 @@ bool Pkgupd::build(std::string recipefile) {
   }
 
   if (to_build) {
-    m_BuildDir = "/tmp/pkgupd-" + recipe.id() + "-" + generateRandom(10);
+    m_BuildDir = "/tmp/pkgupd-" + recipe->id() + "-" + generateRandom(10);
 
     auto builder = Builder(m_BuildDir, m_SourceDir, m_PackageDir);
 
@@ -87,14 +52,14 @@ bool Pkgupd::build(std::string recipefile) {
       }
     }
 
-    if (!builder.build(recipe)) {
+    if (!builder.build(*recipe)) {
       p_Error = builder.error();
       return false;
     }
   }
 
   std::vector<std::string> packages;
-  for (auto const &i : recipe.packages()) {
+  for (auto const &i : recipe->packages()) {
     auto packagefile_Path = m_PackageDir + "/" + i.file();
     if (!std::filesystem::exists(packagefile_Path)) {
       p_Error = "no package generated for '" + i.id() + "' at " + m_PackageDir;
@@ -177,48 +142,52 @@ std::vector<Package> Pkgupd::search(std::string query) {
 }
 
 bool Pkgupd::sync() {
-  if (!m_Downloader.get("recipe", "/tmp/.rcp")) {
-    p_Error = m_Downloader.error();
-    return false;
-  }
-
-  try {
-    std::error_code err;
-
-    auto node = YAML::LoadFile("/tmp/.rcp");
-    if (std::filesystem::exists(m_Repository.path())) {
-      std::filesystem::remove_all(m_Repository.path(), err);
-      if (err) {
-        p_Error = "Failed to remove old repository data, " + err.message();
-        return false;
-      }
-    }
-
-    std::filesystem::create_directories(m_Repository.path(), err);
-    if (err) {
-      p_Error = "failed to create repository data, " + err.message();
+  for (auto const &repo : m_Repository.repos()) {
+    if (!m_Downloader.get(repo + "/recipe", "/tmp/" + repo)) {
+      p_Error = m_Downloader.error();
       return false;
     }
 
-    for (auto const &i : node["recipes"]) {
-      if (i["id"]) {
-        auto id = i["id"].as<std::string>();
-        DEBUG("found " << id);
-        std::ofstream file(m_Repository.path() + "/" + id + ".yml");
-        if (!file.is_open()) {
-          p_Error = "failed to open file in " + m_Repository.path() +
-                    " to write recipe file for " + id;
+    try {
+      std::error_code err;
+
+      auto node = YAML::LoadFile("/tmp/" + repo);
+      if (std::filesystem::exists(m_Repository.path() + "/" + repo)) {
+        std::filesystem::remove_all(m_Repository.path() + "/" + repo, err);
+        if (err) {
+          p_Error = "Failed to remove old repository data, " + err.message();
           return false;
         }
-
-        file << i << std::endl;
-        file.close();
       }
-    }
 
-  } catch (YAML::Exception const &err) {
-    p_Error = "corrupt data, " + err.msg;
-    return false;
+      std::filesystem::create_directories(m_Repository.path() + "/" + repo,
+                                          err);
+      if (err) {
+        p_Error = "failed to create repository data, " + err.message();
+        return false;
+      }
+
+      for (auto const &i : node["recipes"]) {
+        if (i["id"]) {
+          auto id = i["id"].as<std::string>();
+          DEBUG("found " << id);
+          std::ofstream file(m_Repository.path() + "/" + repo + "/" + id +
+                             ".yml");
+          if (!file.is_open()) {
+            p_Error = "failed to open file in " + m_Repository.path() + "/" +
+                      repo + " to write recipe file for " + id;
+            return false;
+          }
+
+          file << i << std::endl;
+          file.close();
+        }
+      }
+
+    } catch (YAML::Exception const &err) {
+      p_Error = "corrupt data, " + err.msg;
+      return false;
+    }
   }
 
   return true;
@@ -259,7 +228,7 @@ std::optional<Package> Pkgupd::info(std::string packageName) {
     if (std::filesystem::path(packageName).extension() == ".yml") {
       try {
         YAML::Node node = YAML::LoadFile(packageName);
-        auto recipe = Recipe(node, packageName);
+        auto recipe = Recipe(node, packageName, "");
         return recipe.packages()[0];
 
       } catch (std::exception const &err) {
@@ -299,13 +268,13 @@ bool Pkgupd::isInstalled(std::string const &pkgid) {
   return m_SystemDatabase[pkgid].has_value();
 }
 
-bool Pkgupd::genSync(std::string const& path) {
+bool Pkgupd::genSync(std::string const &path, std::string const &id) {
   std::ofstream file(path + "/recipe");
 
-  file << "version: stable" << std::endl;
+  file << "id: " << id << std::endl;
   file << "recipes:" << std::endl;
 
-  for(auto const& i : std::filesystem::directory_iterator(path)) {
+  for (auto const &i : std::filesystem::directory_iterator(path)) {
     if (i.path().filename().string() == "recipe") {
       continue;
     }
@@ -317,8 +286,9 @@ bool Pkgupd::genSync(std::string const& path) {
       }
       info->dump(file, true);
       file << std::endl;
-    } catch(std::exception const& exc) {
-      ERROR("failed to generate sync data for " << i.path() << ", " << exc.what());
+    } catch (std::exception const &exc) {
+      ERROR("failed to generate sync data for " << i.path() << ", "
+                                                << exc.what());
     }
   }
 

@@ -66,6 +66,7 @@ class Package {
   std::vector<Group> m_Groups;
 
   std::string m_Script;
+  std::string m_Repository;
 
   YAML::Node m_Node;
 
@@ -76,7 +77,7 @@ class Package {
           std::string const& about, PackageType packageType,
           std::vector<std::string> const& depends,
           std::vector<User> const& users, std::vector<Group> const& groups,
-          std::string const& script)
+          std::string const& repo, std::string const& script)
       : m_ID(id),
         m_Version(version),
         m_About(about),
@@ -84,13 +85,15 @@ class Package {
         m_Depends(depends),
         m_Users(users),
         m_Groups(groups),
-        m_Script(script) {}
+        m_Script(script),
+        m_Repository(repo) {}
 
   Package(YAML::Node const& data, std::string const& file) {
     READ_VALUE(std::string, "id", m_ID);
     READ_VALUE(std::string, "version", m_Version);
     READ_VALUE(std::string, "about", m_About);
     READ_LIST(std::string, "depends", m_Depends);
+    OPTIONAL_VALUE(std::string, "repository", m_Repository, "core");
 
     READ_OBJECT_LIST(User, "users", m_Users);
     READ_OBJECT_LIST(Group, "groups", m_Groups);
@@ -109,6 +112,7 @@ class Package {
   std::string const& id() const { return m_ID; }
   std::string const& version() const { return m_Version; }
   std::string const& about() const { return m_About; }
+  std::string const& repository() const { return m_Repository; }
   PackageType type() const { return m_PackageType; }
 
   std::vector<std::string> const& depends() const { return m_Depends; }
@@ -132,9 +136,11 @@ class Package {
     } else {
       os << "id: " << m_ID << "\n";
     }
-    
+
     os << prefix << "version: " << m_Version << "\n"
        << prefix << "about: " << m_About << "\n";
+
+    os << prefix << "repository: " << m_Repository << "\n";
 
     os << prefix << "type: " << packageTypeToString(m_PackageType) << '\n';
 

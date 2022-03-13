@@ -5,7 +5,8 @@
 using std::string;
 
 namespace rlxos::libpkgupd {
-Recipe::Recipe(YAML::Node data, std::string file) {
+Recipe::Recipe(YAML::Node data, std::string file, std::string const& repo)
+    : m_Repository(repo) {
   m_Node = data;
 
   READ_VALUE(string, "id", m_ID);
@@ -167,7 +168,7 @@ std::optional<Package> Recipe::operator[](std::string const& name) const {
 std::vector<Package> Recipe::packages() const {
   std::vector<Package> packagesList;
   packagesList.push_back(Package(m_ID, m_Version, m_About, m_PackageType,
-                                 m_Depends, m_Users, m_Groups,
+                                 m_Depends, m_Users, m_Groups, m_Repository,
                                  m_InstallScript));
 
   for (auto const& i : m_SplitPackages) {
@@ -179,7 +180,7 @@ std::vector<Package> Recipe::packages() const {
     packagesList.push_back(
         Package(id, m_Version, i.about.size() ? i.about : m_About,
                 m_PackageType, i.depends.size() ? i.depends : m_Depends,
-                m_Users, m_Groups, m_InstallScript));
+                m_Users, m_Groups, m_Repository, m_InstallScript));
   }
 
   return packagesList;

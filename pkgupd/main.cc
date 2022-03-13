@@ -170,6 +170,8 @@ int main(int argc, char **argv) {
   string RootDir = "/";
   string Version = "2200";
 
+  vector<string> Repositories = {"core"};
+
   vector<string> Mirrors = {"https://rlxos.cloudtb.online",
                             "https://apps.rlxos.dev"};
 
@@ -199,6 +201,14 @@ int main(int argc, char **argv) {
         }
       }
 
+      if (config["Repositories"]) {
+        Repositories.clear();
+        for (auto const &i : config["Repositories"]) {
+          DEBUG("got repostory " << i.as<string>());
+          Repositories.push_back(i.as<string>());
+        }
+      }
+
       if (config["EnvironmentVariables"]) {
         for (auto const &i : config["EnvironmentVariables"]) {
           auto ev = i.as<string>();
@@ -219,8 +229,9 @@ int main(int argc, char **argv) {
     }
   }
 
-  libpkgupd::Pkgupd pkgupd(SystemDatabase, CachePath, Mirrors, Version, RootDir,
-                           hasFlag(Flag::Force), hasFlag(Flag::NoTriggers));
+  libpkgupd::Pkgupd pkgupd(SystemDatabase, CachePath, Mirrors, Repositories,
+                           Version, RootDir, hasFlag(Flag::Force),
+                           hasFlag(Flag::NoTriggers));
 
   auto doTask = [&](Task task, libpkgupd::Pkgupd &pkgupd,
                     vector<string> const &args) -> bool {
@@ -366,8 +377,8 @@ int main(int argc, char **argv) {
       };
 
       case Task::GenSync: {
-        check_exact(1);
-        return pkgupd.genSync(args[0]);
+        check_exact(2);
+        return pkgupd.genSync(args[1], args[0]);
       } break;
 
       case Task::Search: {
