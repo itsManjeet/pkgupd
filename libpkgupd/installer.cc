@@ -161,7 +161,7 @@ bool Installer::install(std::vector<std::string> const &packages,
     }
 
     auto archiveFile = package->file();
-    auto archiveFilePath = m_PackageDir + "/" + archiveFile;
+    auto archiveFilePath = m_PackageDir + "/" + package->repository() + "/" + archiveFile;
 
     if (!std::filesystem::exists(archiveFilePath)) {
       PROCESS("getting " << archiveFile);
