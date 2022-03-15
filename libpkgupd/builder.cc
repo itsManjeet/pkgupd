@@ -348,7 +348,7 @@ bool Builder::pack(std::vector<std::string> const &dirs) {
     auto node = YAML::LoadFile(i + "/info");
     auto package = Package(node, i + "/info");
 
-    auto packagefile_Path = m_PackageDir + "/" + package.file();
+    auto packagefile_Path = m_PackageDir + "/" + package.repository() + "/" + package.file();
 
     auto packager = Packager::create(package.type(), packagefile_Path);
     if (!packager->compress(i, package)) {
