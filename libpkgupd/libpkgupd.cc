@@ -31,7 +31,7 @@ bool Pkgupd::build(std::string recipefile) {
 
   bool to_build = m_IsForce;
   for (auto const &i : recipe->packages()) {
-    auto packagefile_Path = m_PackageDir + "/" + i.file();
+    auto packagefile_Path = m_PackageDir + "/" + i.repository() + "/" + i.file();
     if (!std::filesystem::exists(packagefile_Path)) {
       to_build = true;
       break;
@@ -60,7 +60,7 @@ bool Pkgupd::build(std::string recipefile) {
 
   std::vector<std::string> packages;
   for (auto const &i : recipe->packages()) {
-    auto packagefile_Path = m_PackageDir + "/" + i.file();
+    auto packagefile_Path = m_PackageDir + "/" + i.repository() + "/" + i.file();
     if (!std::filesystem::exists(packagefile_Path)) {
       p_Error = "no package generated for '" + i.id() + "' at " + m_PackageDir;
       return false;
