@@ -165,7 +165,7 @@ bool Installer::install(std::vector<std::string> const &packages,
 
     if (!std::filesystem::exists(archiveFilePath)) {
       PROCESS("getting " << archiveFile);
-      if (!m_Downloader.get(archiveFile, archiveFilePath)) {
+      if (!m_Downloader.get(archiveFile, package->repository(), archiveFilePath)) {
         p_Error = m_Downloader.error();
         return false;
       }

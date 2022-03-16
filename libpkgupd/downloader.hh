@@ -17,7 +17,7 @@ class Downloader : public Object {
   Downloader(std::vector<std::string> mirrors, std::string version)
       : m_Mirrors(mirrors), m_Version(version) {}
 
-  bool get(std::string const &file, std::string const &out);
+  bool get(std::string const &file, std::string const& repo, std::string const &out);
 
   bool download(std::string const &url, std::string const &out);
 };

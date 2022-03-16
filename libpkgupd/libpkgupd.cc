@@ -143,7 +143,7 @@ std::vector<Package> Pkgupd::search(std::string query) {
 
 bool Pkgupd::sync() {
   for (auto const &repo : m_Repository.repos()) {
-    if (!m_Downloader.get(repo + "/recipe", "/tmp/" + repo)) {
+    if (!m_Downloader.get("recipe", repo, "/tmp/" + repo)) {
       p_Error = m_Downloader.error();
       return false;
     }

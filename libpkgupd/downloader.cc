@@ -137,7 +137,7 @@ bool Downloader::valid(std::string const &url) {
   return false;
 }
 
-bool Downloader::get(std::string const &file, std::string const &outdir) {
+bool Downloader::get(std::string const &file, std::string const& repo, std::string const &outdir) {
   if (m_Mirrors.size() == 0) {
     p_Error = "No mirror specified";
     return false;
@@ -146,7 +146,7 @@ bool Downloader::get(std::string const &file, std::string const &outdir) {
   for (auto const &mirror : m_Mirrors) {
     DEBUG("checking  mirror: " << mirror << " " << m_Version << " " << file);
 
-    std::string fileurl = mirror + "/" + m_Version + "/pkgs/" + file;
+    std::string fileurl = mirror + "/" + m_Version + "/pkgs/" + repo + "/" + file;
 
     DEBUG("url: " << fileurl)
     if (!getenv("NO_CURL_CHECK"))
