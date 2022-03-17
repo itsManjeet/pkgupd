@@ -46,20 +46,22 @@ bool Pkgupd::build(std::string recipefile) {
     }
   }
 
-  PROCESS("Installing dependencies");
-  m_Resolver.clear();
-  if (!m_Resolver.resolve(recipe->id(), true)) {
-    p_Error = m_Resolver.error();
-    return false;
-  }
+  if (getenv("NO_DEPENDS") == nullptr) {
+    PROCESS("Installing dependencies");
+    m_Resolver.clear();
+    if (!m_Resolver.resolve(recipe->id(), true)) {
+      p_Error = m_Resolver.error();
+      return false;
+    }
 
-  auto dependencies = m_Resolver.list();
-  if (dependencies.size()) {
-    dependencies.pop_back();
-    PROCESS("installing required " << dependencies.size());
-  }
-  if (!install(dependencies)) {
-    return false;
+    auto dependencies = m_Resolver.list();
+    if (dependencies.size()) {
+      dependencies.pop_back();
+      PROCESS("installing required " << dependencies.size());
+    }
+    if (!install(dependencies)) {
+      return false;
+    }
   }
   auto OUTPUT_BUILD_DIR = getenv("OUTPUT_BUILD_DIR") == nullptr
                               ? m_PackageDir
