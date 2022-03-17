@@ -22,6 +22,8 @@ class Resolver : public Object {
 
   bool resolve(std::string const &pkgid, bool all = false);
 
+  void clear();
+
   std::vector<std::string> const &list() const { return m_PackagesList; }
 };
 }  // namespace rlxos::libpkgupd

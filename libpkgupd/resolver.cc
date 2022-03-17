@@ -1,5 +1,10 @@
 #include "resolver.hh"
 namespace rlxos::libpkgupd {
+void Resolver::clear() {
+  m_PackagesList.clear();
+  m_Visited.clear();
+}
+
 bool Resolver::_to_skip(std::string const &pkgid) {
   if ((std::find(m_PackagesList.begin(), m_PackagesList.end(), pkgid) !=
        m_PackagesList.end()))
