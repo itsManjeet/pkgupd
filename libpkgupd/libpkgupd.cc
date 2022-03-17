@@ -23,7 +23,14 @@ bool Pkgupd::build(std::string recipefile) {
     return true;
   }
 
-  auto recipe = m_Repository.recipe(recipefile);
+  std::optional<Recipe> recipe;
+  if (std::filesystem::exists(recipefile)) {
+    auto node = YAML::LoadFile(recipefile);
+    recipe = Recipe(node, recipefile, "");
+  } else {
+    recipe = m_Repository.recipe(recipefile);
+  }
+
   if (!recipe) {
     p_Error = "no recipe file found for " + recipefile;
     return false;
@@ -31,17 +38,37 @@ bool Pkgupd::build(std::string recipefile) {
 
   bool to_build = m_IsForce;
   for (auto const &i : recipe->packages()) {
-    auto packagefile_Path = m_PackageDir + "/" + i.repository() + "/" + i.file();
+    auto packagefile_Path =
+        m_PackageDir + "/" + i.repository() + "/" + i.file();
     if (!std::filesystem::exists(packagefile_Path)) {
       to_build = true;
       break;
     }
   }
 
+  PROCESS("Installing dependencies");
+  m_Resolver.clear();
+  if (!m_Resolver.resolve(recipe->id())) {
+    p_Error = m_Resolver.error();
+    return false;
+  }
+
+  auto dependencies = m_Resolver.list();
+  if (dependencies.size()) {
+    dependencies.pop_back();
+    PROCESS("installing required " << dependencies.size());
+  }
+  if (!install(dependencies)) {
+    return false;
+  }
   if (to_build) {
     m_BuildDir = "/tmp/pkgupd-" + recipe->id() + "-" + generateRandom(10);
 
-    auto builder = Builder(m_BuildDir, m_SourceDir, m_PackageDir);
+    auto OUTPUT_BUILD_DIR = getenv("OUTPUT_BUILD_DIR") == nullptr
+                                ? m_BuildDir
+                                : getenv("OUTPUT_BUILD_DIR");
+
+    auto builder = Builder(m_BuildDir, m_SourceDir, OUTPUT_BUILD_DIR);
 
     for (auto const &i : {m_BuildDir, m_SourceDir, m_PackageDir}) {
       std::error_code err;
@@ -60,7 +87,8 @@ bool Pkgupd::build(std::string recipefile) {
 
   std::vector<std::string> packages;
   for (auto const &i : recipe->packages()) {
-    auto packagefile_Path = m_PackageDir + "/" + i.repository() + "/" + i.file();
+    auto packagefile_Path =
+        m_PackageDir + "/" + i.repository() + "/" + i.file();
     if (!std::filesystem::exists(packagefile_Path)) {
       p_Error = "no package generated for '" + i.id() + "' at " + m_PackageDir;
       return false;
@@ -68,7 +96,10 @@ bool Pkgupd::build(std::string recipefile) {
     packages.push_back(packagefile_Path);
   }
 
-  return install(packages);
+  if (getenv("NO_INSTALL") == nullptr) {
+    return install(packages);
+  }
+  return true;
 }
 
 bool Pkgupd::remove(std::vector<std::string> const &packages) {
