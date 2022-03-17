@@ -61,12 +61,11 @@ bool Pkgupd::build(std::string recipefile) {
   if (!install(dependencies)) {
     return false;
   }
+  auto OUTPUT_BUILD_DIR = getenv("OUTPUT_BUILD_DIR") == nullptr
+                              ? m_BuildDir
+                              : getenv("OUTPUT_BUILD_DIR");
   if (to_build) {
     m_BuildDir = "/tmp/pkgupd-" + recipe->id() + "-" + generateRandom(10);
-
-    auto OUTPUT_BUILD_DIR = getenv("OUTPUT_BUILD_DIR") == nullptr
-                                ? m_BuildDir
-                                : getenv("OUTPUT_BUILD_DIR");
 
     auto builder = Builder(m_BuildDir, m_SourceDir, OUTPUT_BUILD_DIR);
 
@@ -88,9 +87,9 @@ bool Pkgupd::build(std::string recipefile) {
   std::vector<std::string> packages;
   for (auto const &i : recipe->packages()) {
     auto packagefile_Path =
-        m_PackageDir + "/" + i.repository() + "/" + i.file();
+        OUTPUT_BUILD_DIR + "/" + i.repository() + "/" + i.file();
     if (!std::filesystem::exists(packagefile_Path)) {
-      p_Error = "no package generated for '" + i.id() + "' at " + m_PackageDir;
+      p_Error = "no package generated for '" + i.id() + "' at " + packagefile_Path;
       return false;
     }
     packages.push_back(packagefile_Path);
