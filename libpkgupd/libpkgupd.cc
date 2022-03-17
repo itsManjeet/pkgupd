@@ -48,7 +48,7 @@ bool Pkgupd::build(std::string recipefile) {
 
   PROCESS("Installing dependencies");
   m_Resolver.clear();
-  if (!m_Resolver.resolve(recipe->id())) {
+  if (!m_Resolver.resolve(recipe->id(), true)) {
     p_Error = m_Resolver.error();
     return false;
   }
