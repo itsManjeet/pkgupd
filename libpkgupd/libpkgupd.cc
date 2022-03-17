@@ -62,7 +62,7 @@ bool Pkgupd::build(std::string recipefile) {
     return false;
   }
   auto OUTPUT_BUILD_DIR = getenv("OUTPUT_BUILD_DIR") == nullptr
-                              ? m_BuildDir
+                              ? m_PackageDir
                               : getenv("OUTPUT_BUILD_DIR");
   if (to_build) {
     m_BuildDir = "/tmp/pkgupd-" + recipe->id() + "-" + generateRandom(10);
