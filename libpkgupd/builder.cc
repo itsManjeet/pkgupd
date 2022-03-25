@@ -113,7 +113,7 @@ bool Builder::prepare(std::vector<std::string> const &sources,
   return true;
 }
 
-bool Builder::build(Recipe const &recipe) {
+bool Builder::build(Recipe const &recipe, bool local_build) {
   auto srcdir = path(m_BuildDir) / "src";
   auto pkgdir = path(m_BuildDir) / "pkg" / recipe.id();
 
@@ -128,8 +128,10 @@ bool Builder::build(Recipe const &recipe) {
     }
   }
 
-  if (!prepare(recipe.sources(), srcdir)) {
-    return false;
+  if (!local_build) {
+    if (!prepare(recipe.sources(), srcdir)) {
+      return false;
+    }
   }
 
   auto environ = recipe.environ();
@@ -139,19 +141,24 @@ bool Builder::build(Recipe const &recipe) {
   environ.push_back("pkgupd_pkgdir=" + pkgdir.string());
   environ.push_back("DESTDIR=" + pkgdir.string());
 
-  auto wrkdir = srcdir / recipe.buildDir();
-  if (recipe.buildDir().length() == 0 && recipe.sources().size()) {
-    auto [status, output] = Executor().output(
-        "tar -taf " +
-            std::filesystem::path(recipe.sources()[0]).filename().string() +
-            " | head -n1",
-        m_SourceDir);
-    if (status != 0 || output.length() == 0) {
-    } else {
-      if (output[output.length() - 1] == '\n') {
-        output = output.substr(0, output.length() - 1);
+  std::filesystem::path wrkdir;
+  if (local_build) {
+    wrkdir = std::filesystem::current_path();
+  } else {
+    wrkdir = srcdir / recipe.buildDir();
+    if (recipe.buildDir().length() == 0 && recipe.sources().size()) {
+      auto [status, output] = Executor().output(
+          "tar -taf " +
+              std::filesystem::path(recipe.sources()[0]).filename().string() +
+              " | head -n1",
+          m_SourceDir);
+      if (status != 0 || output.length() == 0) {
+      } else {
+        if (output[output.length() - 1] == '\n') {
+          output = output.substr(0, output.length() - 1);
+        }
+        wrkdir = srcdir / output;
       }
-      wrkdir = srcdir / output;
     }
   }
 
@@ -348,7 +355,8 @@ bool Builder::pack(std::vector<std::string> const &dirs) {
     auto node = YAML::LoadFile(i + "/info");
     auto package = Package(node, i + "/info");
 
-    auto packagefile_Path = m_PackageDir + "/" + package.repository() + "/" + package.file();
+    auto packagefile_Path =
+        m_PackageDir + "/" + package.repository() + "/" + package.file();
 
     auto packager = Packager::create(package.type(), packagefile_Path);
     if (!packager->compress(i, package)) {

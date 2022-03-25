@@ -6,6 +6,7 @@ depends:
     - libyaml-cpp
   buildtime:
     - cmake
+type: app
 
 build-dir: pkgupd-main
 
@@ -13,10 +14,23 @@ sources:
   - pkgupd-2200.tar.gz::https://github.com/itsManjeet/pkgupd/archive/refs/heads/main.tar.gz
 
 post-script: |
-  touch ${pkgupd_pkgdir}/usr/bin/pkgpkg
+  install -v -D -m 0644 assets/pkgupd.png ${pkgupd_pkgdir}/pkgupd.png
+  install -v -D -m 0755 pkgupd-ui/main.py ${pkgupd_pkgdir}/usr/bin/pkgupd-ui.py
 
-split:
-  - into: pkgpkg
-    about: test package
-    files:
-      - usr/bin/pkgpkg
+AppRun: |
+  #!/bin/sh
+  SELF=$(readlink -f "$0")
+  HERE=${SELF%/*}
+  exec ${HERE}/usr/bin/pkgupd-ui.py $@
+
+
+DesktopFile: |
+  [Desktop Entry]
+  Name=pkgupd
+  Type=Application
+  Version=1.0
+  Comment=A Universal Package Manager URI Handler
+  Exec=pkgupd %u
+  Icon=pkgupd
+  MimeType=x-scheme-handler/pkgupd;
+  Categories=System;

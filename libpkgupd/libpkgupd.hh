@@ -135,7 +135,7 @@ class Pkgupd : public Object {
 
   bool isInstalled(std::string const &pkgid);
 
-  bool genSync(std::string const &path, std::string const &id);
+  bool genSync(std::string const &path, std::string const &id, std::string const& repo, bool source);
 
   std::optional<Package> info(std::string packageName);
 

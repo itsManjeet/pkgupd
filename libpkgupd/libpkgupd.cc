@@ -91,7 +91,8 @@ bool Pkgupd::build(std::string recipefile) {
     auto packagefile_Path =
         OUTPUT_BUILD_DIR + "/" + i.repository() + "/" + i.file();
     if (!std::filesystem::exists(packagefile_Path)) {
-      p_Error = "no package generated for '" + i.id() + "' at " + packagefile_Path;
+      p_Error =
+          "no package generated for '" + i.id() + "' at " + packagefile_Path;
       return false;
     }
     packages.push_back(packagefile_Path);
@@ -300,7 +301,8 @@ bool Pkgupd::isInstalled(std::string const &pkgid) {
   return m_SystemDatabase[pkgid].has_value();
 }
 
-bool Pkgupd::genSync(std::string const &path, std::string const &id) {
+bool Pkgupd::genSync(std::string const &path, std::string const &id,
+                     std::string const &repo, bool source) {
   std::ofstream file(path + "/recipe");
 
   file << "id: " << id << std::endl;
@@ -311,12 +313,19 @@ bool Pkgupd::genSync(std::string const &path, std::string const &id) {
       continue;
     }
     try {
-      auto packages = Packager::create(i.path().string());
-      auto info = packages->info();
-      if (!info) {
-        throw std::runtime_error("invalid package type");
+      if (source) {
+        auto node = YAML::LoadFile(i.path().string());
+        auto recipe = Recipe(node, i.path().string(), repo);
+        recipe.dump(file, true);
+      } else {
+        auto packager = Packager::create(i.path().string());
+        auto info = packager->info();
+        if (!info) {
+          throw std::runtime_error("invalid package type");
+        }
+        info->dump(file, true);
       }
-      info->dump(file, true);
+
       file << std::endl;
     } catch (std::exception const &exc) {
       ERROR("failed to generate sync data for " << i.path() << ", "

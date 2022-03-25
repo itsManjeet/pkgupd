@@ -132,13 +132,6 @@ class Builder : public Object {
  private:
   std::string m_BuildDir, m_SourceDir, m_PackageDir;
 
-  bool prepare(std::vector<std::string> const &sources, std::string const &dir);
-
-  bool pack(std::vector<std::string> const &dirs);
-
-  bool compile(Recipe const &recipe, std::string dir, std::string destdir,
-               std::vector<std::string> &environ);
-
  public:
   Builder(std::string const &builddir, std::string const &sourcedir,
           std::string const &packagedir)
@@ -153,7 +146,14 @@ class Builder : public Object {
     }
   }
 
-  bool build(Recipe const &recipe);
+  bool prepare(std::vector<std::string> const &sources, std::string const &dir);
+
+  bool pack(std::vector<std::string> const &dirs);
+
+  bool compile(Recipe const &recipe, std::string dir, std::string destdir,
+               std::vector<std::string> &environ);
+
+  bool build(Recipe const &recipe, bool local_build = false);
 };
 }  // namespace rlxos::libpkgupd
 

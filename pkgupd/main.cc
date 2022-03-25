@@ -55,6 +55,7 @@ Task getTask(const char *task) {
 enum class Flag : int {
   Invalid,
   ConfigFile,
+  Source,
   NoTriggers,
   NoDepends,
   Force,
@@ -72,6 +73,8 @@ Flag getFlag(const char *flag) {
     return Flag::NoAsk;
   } else if (!strcmp(flag, "--no-depends")) {
     return Flag::NoDepends;
+  } else if (!strcmp(flag, "--source")) {
+    return Flag::Source;
   }
   return Flag::Invalid;
 }
@@ -176,13 +179,13 @@ int main(int argc, char **argv) {
                             "https://apps.rlxos.dev"};
 
   if (configFile) {
-    DEBUG("loading configuration file '" << *configFile << "'");
+    // DEBUG("loading configuration file '" << *configFile << "'");
     try {
       YAML::Node config = YAML::LoadFile(*configFile);
 
       auto getConfig = [&](string id, string fallback) -> string {
         if (config[id]) {
-          DEBUG("using '" << id << "' : " << config[id].as<string>());
+          // DEBUG("using '" << id << "' : " << config[id].as<string>());
           return config[id].as<string>();
         }
         return fallback;
@@ -196,7 +199,7 @@ int main(int argc, char **argv) {
       if (config["Mirrors"]) {
         Mirrors.clear();
         for (auto const &i : config["Mirrors"]) {
-          DEBUG("got mirror " << i.as<string>());
+          // DEBUG("got mirror " << i.as<string>());
           Mirrors.push_back(i.as<string>());
         }
       }
@@ -204,7 +207,7 @@ int main(int argc, char **argv) {
       if (config["Repositories"]) {
         Repositories.clear();
         for (auto const &i : config["Repositories"]) {
-          DEBUG("got repostory " << i.as<string>());
+          // DEBUG("got repostory " << i.as<string>());
           Repositories.push_back(i.as<string>());
         }
       }
@@ -214,17 +217,17 @@ int main(int argc, char **argv) {
           auto ev = i.as<string>();
           auto idx = ev.find_first_of('=');
           if (idx == string::npos) {
-            ERROR("invalid EnvironmentVariable: " << ev);
+            // ERROR("invalid EnvironmentVariable: " << ev);
             continue;
           }
 
-          DEBUG("setting " << ev);
+          // DEBUG("setting " << ev);
           setenv(ev.substr(0, idx).c_str(),
                  ev.substr(idx + 1, ev.length() - (idx + 1)).c_str(), 1);
         }
       }
     } catch (exception const &exp) {
-      ERROR("Error! invalid configuration file, " << exp.what());
+      cout << "Error! invalid configuration file, " << exp.what() << endl;
       return 2;
     }
   }
@@ -258,7 +261,7 @@ int main(int argc, char **argv) {
       if (ch == 'Y' || ch == 'y') {
         return true;
       }
-      ERROR("user terminated the request");
+      cout << "Error! user terminated the request" << endl;
       return false;
     };
 
@@ -269,7 +272,7 @@ int main(int argc, char **argv) {
         if (hasFlag(Flag::NoDepends)) {
           dependencies = args;
         } else {
-          PROCESS("calculating dependencies");
+          cout << ":: calculating dependencies" << endl;
           vector<string> for_dependencies_resolv;
           for (auto const &i : args) {
             if (std::filesystem::exists(i) &&
@@ -291,7 +294,7 @@ int main(int argc, char **argv) {
             }
           }
 
-          INFO("found " << dependencies.size() << " dependencies");
+          // INFO("found " << dependencies.size() << " dependencies");
           for (auto const &i : dependencies) {
             cout << i << endl;
           }
@@ -378,7 +381,7 @@ int main(int argc, char **argv) {
 
       case Task::GenSync: {
         check_exact(2);
-        return pkgupd.genSync(args[1], args[0]);
+        return pkgupd.genSync(args[1], args[0], args[2], hasFlag(Flag::Source));
       } break;
 
       case Task::Search: {
@@ -391,18 +394,18 @@ int main(int argc, char **argv) {
         return true;
       } break;
       default:
-        ERROR("invalid task");
+        cout << "Error! invalid task" << endl;
         return false;
     }
   };
 
   try {
     if (!doTask(task, pkgupd, args)) {
-      ERROR(pkgupd.error());
+      cout << "Error! " << pkgupd.error() << endl;
       return 2;
     }
   } catch (exception const &err) {
-    ERROR(err.what());
+    cout << "Exception! " << err.what() << endl;
     return 2;
   }
 

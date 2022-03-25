@@ -1,5 +1,7 @@
 #include "recipe.hh"
 
+#include <sstream>
+
 #include "defines.hh"
 
 using std::string;
@@ -163,6 +165,22 @@ std::optional<Package> Recipe::operator[](std::string const& name) const {
   }
 
   return {};
+}
+
+void Recipe::dump(std::ostream& os, bool as_meta) {
+  if (!as_meta) {
+    os << as_meta;
+    return;
+  }
+  std::stringstream ss;
+  ss << m_Node;
+
+  std::string line;
+  std::getline(ss, line, '\n');
+  os << "  - " << line << std::endl;
+  while (std::getline(ss, line, '\n')) {
+    os << "    " << line << std::endl;
+  }
 }
 
 std::vector<Package> Recipe::packages() const {

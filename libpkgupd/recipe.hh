@@ -84,6 +84,8 @@ class Recipe {
 
   YAML::Node const& node() const { return m_Node; }
 
+  void dump(std::ostream& os, bool as_meta = false);
+
   bool contains(std::string const& pkgid) {
     for (auto const& i : packages()) {
       if (i.id() == pkgid) {

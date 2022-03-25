@@ -25,7 +25,10 @@ add_executable(pkgupd ${PKGUPD_Src})
 add_dependencies(pkgupd libpkgupd)
 target_link_libraries(pkgupd libpkgupd)
 
-
+file(GLOB PKGUPD_BUILD_Src "pkgupd-build/*.cc" "pkgupd/*.hh")
+add_executable(pkgupd-build ${PKGUPD_BUILD_Src})
+add_dependencies(pkgupd-build libpkgupd)
+target_link_libraries(pkgupd-build libpkgupd)
 
 option(BUILD_TESTS "Build Test programs" ON)
 

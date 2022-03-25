@@ -2,4 +2,6 @@ build/
 cache/
 /pkgupd.yml
 /.cache
-tests/data
+tests/data/
+/_pkgupd_builddir
+/_pkgupd_workdir
