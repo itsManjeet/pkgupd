@@ -175,7 +175,7 @@ int main(int argc, char **argv) {
 
   vector<string> Repositories = {"core"};
 
-  vector<string> Mirrors = {"https://apps.rlxos.dev"};
+  vector<string> Mirrors = {"https://rlxos.dev/storage"};
 
   if (configFile) {
     // DEBUG("loading configuration file '" << *configFile << "'");

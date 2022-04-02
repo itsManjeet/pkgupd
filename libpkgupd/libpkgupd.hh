@@ -70,8 +70,7 @@ class Pkgupd : public Object {
     std::string rootDir = "/";
     std::string version = "2200";
 
-    std::vector<std::string> mirrors = {"https://rlxos.cloudtb.online/",
-                                        "https://apps.rlxos.dev/"};
+    std::vector<std::string> mirrors = {"https://rlxos.dev/storage"};
     std::vector<std::string> repositories = {"core"};
 
     auto getConfig = [&](std::string id, std::string fallback) -> std::string {
