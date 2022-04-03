@@ -187,7 +187,7 @@ bool Builder::build(Recipe const &recipe, bool local_build) {
       return false;
     }
   }
-  for (auto const &i : std::filesystem::recursive_directory_iterator(wrkdir)) {
+  for (auto const &i : std::filesystem::recursive_directory_iterator(pkgdir)) {
     if (i.is_regular_file() && i.path().filename().extension() == ".la") {
       DEBUG("removing " + i.path().string());
       std::filesystem::remove(i);
