@@ -75,14 +75,20 @@ bool Installer::_install(std::vector<std::string> const &packages,
       }
     }
 
-    PROCESS("found '" << deprecated_files.size() << "' extra files");
-    PROCESS("cleaning old files");
-    for (auto file = deprecated_files.rbegin(); file != deprecated_files.rend();
-         file++) {
-      std::error_code err;
-      std::filesystem::remove_all(*file, err);
-      if (err) {
-        ERROR("failed to clean old file '" << *file << "'");
+    if (deprecated_files.size()) {
+      PROCESS("found '" << deprecated_files.size() << "' extra files");
+      PROCESS("cleaning old files");
+      for (auto file = deprecated_files.rbegin();
+           file != deprecated_files.rend(); file++) {
+        std::error_code err;
+        std::string filepath = *file;
+        if (filepath[0] == '.') {
+          filepath = filepath.substr(1, filepath.length()-1);
+        }
+        std::filesystem::remove_all(filepath, err);
+        if (err) {
+          ERROR("failed to clean old file '" << *file << "'");
+        }
       }
     }
 
@@ -161,11 +167,13 @@ bool Installer::install(std::vector<std::string> const &packages,
     }
 
     auto archiveFile = package->file();
-    auto archiveFilePath = m_PackageDir + "/" + package->repository() + "/" + archiveFile;
+    auto archiveFilePath =
+        m_PackageDir + "/" + package->repository() + "/" + archiveFile;
 
     if (!std::filesystem::exists(archiveFilePath)) {
       PROCESS("getting " << archiveFile);
-      if (!m_Downloader.get(archiveFile, package->repository(), archiveFilePath)) {
+      if (!m_Downloader.get(archiveFile, package->repository(),
+                            archiveFilePath)) {
         p_Error = m_Downloader.error();
         return false;
       }
