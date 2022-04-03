@@ -7,21 +7,23 @@ depends:
   buildtime:
     - cmake
 type: app
-
+bundle: true
 build-dir: pkgupd-main
 
 sources:
   - pkgupd-2200.tar.gz::https://github.com/itsManjeet/pkgupd/archive/refs/heads/main.tar.gz
 
+pre-script: |
+  mkdir -p ${pkgupd_pkgdir}/usr/lib
+
 post-script: |
   install -v -D -m 0644 assets/pkgupd.png ${pkgupd_pkgdir}/pkgupd.png
-  install -v -D -m 0755 pkgupd-ui/main.py ${pkgupd_pkgdir}/usr/bin/pkgupd-ui.py
-
 AppRun: |
   #!/bin/sh
   SELF=$(readlink -f "$0")
   HERE=${SELF%/*}
-  exec ${HERE}/usr/bin/pkgupd-ui.py $@
+  export LD_LIBRARY_PATH=${HERE}/usr/lib:${LD_LIBRARY_PATH}
+  exec ${HERE}/usr/bin/pkgupd $@
 
 
 DesktopFile: |

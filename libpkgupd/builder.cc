@@ -6,6 +6,7 @@
 #include <fstream>
 #include <vector>
 
+#include "bundler.hh"
 #include "colors.hh"
 #include "compilers/autoconf.hh"
 #include "compilers/cargo.hh"
@@ -205,6 +206,14 @@ bool Builder::build(Recipe const &recipe, bool local_build) {
   std::ofstream file(pkgdir / "info");
   recipe[recipe.id()]->dump(file);
   file.close();
+
+  if (recipe.node()["bundle"] && recipe.node()["bundle"].as<bool>()) {
+    Bundler bunder = Bundler(pkgdir, "/");
+    if (!bunder.resolveLibraries({})) {
+      p_Error = "Failed to bundle libraries, " + bunder.error();
+      return false;
+    }
+  }
 
   if (recipe.packageType() == PackageType::APPIMAGE) {
     {

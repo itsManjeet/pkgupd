@@ -8,10 +8,8 @@
             "name": "g++-10 - Build and debug active file",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/pkgupd",
+            "program": "${workspaceFolder}/build/pkgupd-build",
             "args": [
-                "info",
-                "acl"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
