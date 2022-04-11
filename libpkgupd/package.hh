@@ -20,6 +20,9 @@ namespace rlxos::libpkgupd {
 enum class PackageType : int {
   APPIMAGE,
   PACKAGE,
+  THEME,
+  ICON,
+  FONT,
   RLXOS,
 };
 
@@ -31,6 +34,12 @@ static std::string packageTypeToString(PackageType type) {
       return "pkg";
     case PackageType::RLXOS:
       return "rlx";
+    case PackageType::FONT:
+      return "fonts";
+    case PackageType::ICON:
+      return "icons";
+    case PackageType::THEME:
+      return "theme";
     default:
       throw std::runtime_error("invalid package type");
   }
@@ -43,8 +52,13 @@ static PackageType stringToPackageType(std::string const& type) {
     return PackageType::PACKAGE;
   } else if (type == "rlx") {
     return PackageType::RLXOS;
+  } else if (type == "theme") {
+    return PackageType::THEME;
+  } else if (type == "icons") {
+    return PackageType::ICON;
+  } else if (type == "fonts") {
+    return PackageType::FONT;
   }
-
   throw std::runtime_error("invalid package type " + type);
 }
 

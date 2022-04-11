@@ -1,5 +1,8 @@
 #include "packager.hh"
 
+#include "formats/fonts.hh"
+#include "formats/icons.hh"
+#include "formats/theme.hh"
 #include "image.hh"
 #include "tar.hh"
 
@@ -12,6 +15,12 @@ std::shared_ptr<Packager> Packager::create(PackageType packageType,
       return std::make_shared<Tar>(packageFile);
     case PackageType::APPIMAGE:
       return std::make_shared<Image>(packageFile);
+    case PackageType::FONT:
+      return std::make_shared<Fonts>(packageFile);
+    case PackageType::ICON:
+      return std::make_shared<Icons>(packageFile);
+    case PackageType::THEME:
+      return std::make_shared<Themes>(packageFile);
     default:
       throw std::runtime_error("unsupport package type: " +
                                packageTypeToString(packageType));
@@ -32,6 +41,12 @@ std::shared_ptr<Packager> Packager::create(std::string const& packageFile) {
       return std::make_shared<Tar>(packageFile);
     case PackageType::APPIMAGE:
       return std::make_shared<Image>(packageFile);
+    case PackageType::FONT:
+      return std::make_shared<Fonts>(packageFile);
+    case PackageType::ICON:
+      return std::make_shared<Icons>(packageFile);
+    case PackageType::THEME:
+      return std::make_shared<Themes>(packageFile);
     default:
       throw std::runtime_error("unsupport package type: " +
                                packageTypeToString(packageType));
