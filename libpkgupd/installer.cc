@@ -89,7 +89,7 @@ bool Installer::_install(std::vector<std::string> const &packages,
         // Skip symbolic links update
         if (filepath.find("/usr/sbin", 0) == 0 ||
             filepath.find("/sbin", 0) == 0 || filepath.find("/bin", 0) == 0 ||
-            filepath.find("/lib64", 0) == 0 ||
+            filepath.find("/lib64", 0) == 0 || filepath.find("/lib", 0) == 0 ||
             filepath.find("/usr/lib64", 0) == 0) {
           DEBUG("skipping " << filepath);
           continue;
