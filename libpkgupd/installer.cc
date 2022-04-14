@@ -83,7 +83,16 @@ bool Installer::_install(std::vector<std::string> const &packages,
         std::error_code err;
         std::string filepath = *file;
         if (filepath[0] == '.') {
-          filepath = filepath.substr(1, filepath.length()-1);
+          filepath = filepath.substr(1, filepath.length() - 1);
+        }
+
+        // Skip symbolic links update
+        if (filepath.find("./usr/sbin", 0) == 0 ||
+            filepath.find("./sbin", 0) == 0 || filepath.find("./bin", 0) == 0 ||
+            filepath.find("./lib64", 0) == 0 ||
+            filepath.find("./usr/lib64", 0) == 0) {
+          DEBUG("skipping " << filepath);
+          continue;
         }
         std::filesystem::remove_all(filepath, err);
         if (err) {
