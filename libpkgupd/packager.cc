@@ -1,10 +1,10 @@
 #include "packager.hh"
 
-#include "formats/fonts.hh"
-#include "formats/icons.hh"
-#include "formats/theme.hh"
-#include "image.hh"
-#include "tar.hh"
+#include "formats/tar/fonts.hh"
+#include "formats/tar/icons.hh"
+#include "formats/tar/theme.hh"
+#include "formats/image.hh"
+#include "formats/tar.hh"
 
 namespace rlxos::libpkgupd {
 std::shared_ptr<Packager> Packager::create(PackageType packageType,

@@ -1,7 +1,7 @@
 #ifndef _PKGUPD_IMAGE_HH_
 #define _PKGUPD_IMAGE_HH_
 
-#include "packager.hh"
+#include "../packager.hh"
 
 namespace rlxos::libpkgupd {
 class Image : public Packager {

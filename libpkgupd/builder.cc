@@ -29,17 +29,6 @@ using fs::path;
 using std::string;
 namespace rlxos::libpkgupd {
 
-auto const AppRun = R"END(#!/bin/sh
-SELF=$(readlink -f "$0")
-HERE=${SELF%/*}
-export PATH=${HERE}:${HERE}/usr/bin:${HERE}/bin:${HERE}/usr/sbin:${HERE}/sbin:${PATH}
-export LD_LIBRARY_PATH=${HERE}:${HERE}/usr/lib:${HERE}/usr/lib/x86_64-linux-gnu:${HERE}/lib/x86_64-linux-gnu:${LD_LIBRARY_PATH}
-export XDG_DATA_DIRS=${HERE}/usr/share:${XDG_DATA_DIRS}
-export GSETTINGS_SCHEMA_DIR=${HERE}/usr/share/glib-2.0/schemas:${GSETTINGS_SCHEMA_DIR}
-EXEC=$(grep -e '^Exec=.*' "${HERE}"/*.desktop | head -n 1 | cut -d "=" -f 2 | cut -d " " -f 1)
-exec "${EXEC}" "$@"
-)END";
-
 bool Builder::prepare(std::vector<std::string> const &sources,
                       std::string const &dir) {
   for (auto const &source : sources) {
@@ -212,43 +201,6 @@ bool Builder::build(Recipe const &recipe, bool local_build) {
     if (!bunder.resolveLibraries({})) {
       p_Error = "Failed to bundle libraries, " + bunder.error();
       return false;
-    }
-  }
-
-  if (recipe.packageType() == PackageType::APPIMAGE) {
-    {
-      // Write AppRun
-      auto apprun = std::filesystem::path(pkgdir) / "AppRun";
-      if (!std::filesystem::exists(apprun)) {
-        std::ofstream file(apprun);
-        if (recipe.node()["AppRun"]) {
-          file << recipe.node()["AppRun"].as<std::string>();
-        } else {
-          file << AppRun;
-        }
-        file.close();
-      }
-      if (chmod(apprun.c_str(), 0755) != 0) {
-        p_Error = "failed to change AppRun permission " +
-                  std::string(strerror(errno));
-        return false;
-      }
-    }
-
-    {
-      // Write desktopfile
-      auto desktopfile =
-          std::filesystem::path(pkgdir) / (recipe.id() + ".desktop");
-
-      if (!std::filesystem::exists(desktopfile)) {
-        std::ofstream file(desktopfile);
-        if (recipe.node()["DesktopFile"]) {
-          file << recipe.node()["DesktopFile"].as<std::string>();
-        } else {
-          p_Error = "no desktop file found '" + desktopfile.string() + "'";
-          return false;
-        }
-      }
     }
   }
 

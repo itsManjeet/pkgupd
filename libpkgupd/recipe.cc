@@ -187,7 +187,7 @@ std::vector<Package> Recipe::packages() const {
   std::vector<Package> packagesList;
   packagesList.push_back(Package(m_ID, m_Version, m_About, m_PackageType,
                                  m_Depends, m_Users, m_Groups, m_Repository,
-                                 m_InstallScript));
+                                 m_InstallScript, m_Node));
 
   for (auto const& i : m_SplitPackages) {
     std::string id = i.into;
@@ -198,7 +198,7 @@ std::vector<Package> Recipe::packages() const {
     packagesList.push_back(
         Package(id, m_Version, i.about.size() ? i.about : m_About,
                 m_PackageType, i.depends.size() ? i.depends : m_Depends,
-                m_Users, m_Groups, m_Repository, m_InstallScript));
+                m_Users, m_Groups, m_Repository, m_InstallScript, m_Node));
   }
 
   return packagesList;

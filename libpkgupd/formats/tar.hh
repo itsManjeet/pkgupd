@@ -1,7 +1,7 @@
 #ifndef LIBPKGUPD_TAR
 #define LIBPKGUPD_TAR
 
-#include "packager.hh"
+#include "../packager.hh"
 
 namespace rlxos::libpkgupd {
 class Tar : public Packager {

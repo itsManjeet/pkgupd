@@ -91,7 +91,8 @@ class Package {
           std::string const& about, PackageType packageType,
           std::vector<std::string> const& depends,
           std::vector<User> const& users, std::vector<Group> const& groups,
-          std::string const& repo, std::string const& script)
+          std::string const& repo, std::string const& script,
+          YAML::Node const& node)
       : m_ID(id),
         m_Version(version),
         m_About(about),
@@ -100,7 +101,8 @@ class Package {
         m_Users(users),
         m_Groups(groups),
         m_Script(script),
-        m_Repository(repo) {}
+        m_Repository(repo),
+        m_Node(node) {}
 
   Package(YAML::Node const& data, std::string const& file) {
     READ_VALUE(std::string, "id", m_ID);
@@ -142,8 +144,6 @@ class Package {
     DEBUG("package type: " << packageTypeToString(m_PackageType))
     return m_ID + "-" + m_Version + "." + packageTypeToString(m_PackageType);
   }
-
-  YAML::Node const& extra() const { return m_Node["extra"]; }
 
   void dump(std::ostream& os, bool as_meta = false) const {
     auto prefix = as_meta ? "    " : "";

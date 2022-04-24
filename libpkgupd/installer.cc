@@ -5,9 +5,7 @@
 #include <iostream>
 
 #include "exec.hh"
-#include "image.hh"
 #include "packager.hh"
-#include "tar.hh"
 #include "triggerer.hh"
 
 namespace rlxos::libpkgupd {

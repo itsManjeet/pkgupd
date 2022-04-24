@@ -5,13 +5,11 @@
 
 #include "builder.hh"
 #include "colors.hh"
-#include "image.hh"
 #include "installer.hh"
 #include "packager.hh"
 #include "recipe.hh"
 #include "remover.hh"
 #include "resolver.hh"
-#include "tar.hh"
 
 namespace rlxos::libpkgupd {
 
