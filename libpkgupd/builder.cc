@@ -252,8 +252,8 @@ bool Builder::build(Recipe const &recipe, bool local_build) {
     }
   }
 
-  std::vector<std::string> packagesdir;
-  packagesdir.push_back(pkgdir);
+  std::vector<std::pair<Package, std::string>> packagesdir;
+  packagesdir.push_back({*recipe[recipe.id()], pkgdir});
 
   for (auto const &split : recipe.splits()) {
     std::error_code err;
@@ -297,7 +297,7 @@ bool Builder::build(Recipe const &recipe, bool local_build) {
     recipe[id]->dump(file);
     file.close();
 
-    packagesdir.push_back(splitdir_Path);
+    packagesdir.push_back({*recipe[id], splitdir_Path});
   }
 
   if (!pack(packagesdir)) {
@@ -359,16 +359,13 @@ bool Builder::compile(Recipe const &recipe, std::string dir,
   return true;
 }
 
-bool Builder::pack(std::vector<std::string> const &dirs) {
+bool Builder::pack(std::vector<std::pair<Package, std::string>> const &dirs) {
   for (auto const &i : dirs) {
-    auto node = YAML::LoadFile(i + "/info");
-    auto package = Package(node, i + "/info");
-
     auto packagefile_Path =
-        m_PackageDir + "/" + package.repository() + "/" + package.file();
+        m_PackageDir + "/" + i.first.repository() + "/" + i.first.file();
 
-    auto packager = Packager::create(package.type(), packagefile_Path);
-    if (!packager->compress(i, package)) {
+    auto packager = Packager::create(i.first.type(), packagefile_Path);
+    if (!packager->compress(i.second, i.first)) {
       p_Error = "failed to compress " + packager->error();
       return false;
     }

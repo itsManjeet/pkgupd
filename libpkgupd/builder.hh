@@ -148,7 +148,7 @@ class Builder : public Object {
 
   bool prepare(std::vector<std::string> const &sources, std::string const &dir);
 
-  bool pack(std::vector<std::string> const &dirs);
+  bool pack(std::vector<std::pair<Package, std::string>> const &dirs);
 
   bool compile(Recipe const &recipe, std::string dir, std::string destdir,
                std::vector<std::string> &environ);
