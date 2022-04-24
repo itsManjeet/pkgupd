@@ -143,6 +143,8 @@ class Package {
     return m_ID + "-" + m_Version + "." + packageTypeToString(m_PackageType);
   }
 
+  YAML::Node const& extra() const { return m_Node["extra"]; }
+
   void dump(std::ostream& os, bool as_meta = false) const {
     auto prefix = as_meta ? "    " : "";
     if (as_meta) {
@@ -180,6 +182,10 @@ class Package {
 
     if (m_Script.size()) {
       os << prefix << "script: \"" << m_Script << "\"" << std::endl;
+    }
+
+    if (m_Node["extra"]) {
+      os << m_Node["extra"] << std::endl;
     }
   }
 };
