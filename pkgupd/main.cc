@@ -171,7 +171,7 @@ int main(int argc, char **argv) {
   string SystemDatabase = "/var/lib/pkgupd/data";
   string CachePath = "/var/cache/pkgupd";
   string RootDir = "/";
-  string Version = "2200";
+  string Version = "2204";
 
   vector<string> Repositories = {"core"};
 
