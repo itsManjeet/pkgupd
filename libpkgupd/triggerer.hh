@@ -2,7 +2,8 @@
 #define _PKGUPD_TRIGGERER_HH_
 
 #include "defines.hh"
-#include "package.hh"
+#include "package-info.hh"
+#include "system-database.hh"
 
 namespace rlxos::libpkgupd {
 class Triggerer : public Object {
@@ -33,14 +34,12 @@ class Triggerer : public Object {
 
   bool _exec(type t);
 
-  std::vector<type> _get(
-      std::vector<std::vector<std::string>> const &fileslist);
+  std::vector<type> _get(std::vector<std::string> const &fileslist);
 
  public:
   Triggerer() {}
-  bool trigger(std::vector<std::vector<std::string>> const &fileslist);
 
-  bool trigger(std::vector<Package> const &pkgs);
+  bool trigger(InstalledPackageInfo *info);
 
   bool trigger();
 };

@@ -20,16 +20,18 @@ file(GLOB_RECURSE LIBPKGUPD_Src "libpkgupd/*.cc" "libpkgupd/*.hh")
 add_library(libpkgupd ${LIBPKGUPD_Src})
 target_link_libraries(libpkgupd ${LIBCURL} ${YAML_CPP_LIBRARIES})
 
-file(GLOB PKGUPD_Src "pkgupd/*.cc" "pkgupd/*.hh")
-add_executable(pkgupd ${PKGUPD_Src})
-add_dependencies(pkgupd libpkgupd)
-target_link_libraries(pkgupd libpkgupd)
 
-file(GLOB PKGUPD_BUILD_Src "pkgupd-build/*.cc" "pkgupd/*.hh")
-add_executable(pkgupd-build ${PKGUPD_BUILD_Src})
-add_dependencies(pkgupd-build libpkgupd)
-target_link_libraries(pkgupd-build libpkgupd)
+# file(GLOB PKGUPD_Src "pkgupd/*.cc" "pkgupd/*.hh")
+# add_executable(pkgupd ${PKGUPD_Src})
+# add_dependencies(pkgupd libpkgupd)
+# target_link_libraries(pkgupd libpkgupd)
 
+# file(GLOB PKGUPD_BUILD_Src "pkgupd-build/*.cc" "pkgupd/*.hh")
+# add_executable(pkgupd-build ${PKGUPD_BUILD_Src})
+# add_dependencies(pkgupd-build libpkgupd)
+# target_link_libraries(pkgupd-build libpkgupd)
+
+add_subdirectory(pkgupd)
 option(BUILD_TESTS "Build Test programs" ON)
 
 if (BUILD_TESTS)
@@ -37,5 +39,5 @@ if (BUILD_TESTS)
   add_subdirectory("tests")
 endif (BUILD_TESTS)
 
-install(TARGETS pkgupd
-    DESTINATION bin)
+# install(TARGETS pkgupd
+#     DESTINATION bin)

@@ -14,8 +14,8 @@ Group::Group(YAML::Node const &data, std::string const &file) {
 bool Group::exists() const { return getgrnam(m_Name.c_str()) != nullptr; }
 
 bool Group::create() const {
-  return Executor().execute("groupadd -g " + std::to_string(m_ID) + " " +
-                            m_Name) == 0;
+  return Executor::execute("groupadd -g " + std::to_string(m_ID) + " " +
+                           m_Name) == 0;
 }
 
 void Group::dump(std::ostream &os, std::string prefix) const {

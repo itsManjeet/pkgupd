@@ -9,22 +9,31 @@
 
 namespace rlxos::libpkgupd {
 class Resolver : public Object {
- private:
-  Repository &m_Repository;
-  SystemDatabase &m_SystemDatabase;
-  std::vector<std::string> m_PackagesList, m_Visited;
+ public:
+  using GetPackageFunctionType =
+      std::function<std::shared_ptr<PackageInfo>(char const *id)>;
+  using SkipPackageFunctionType = std::function<bool(PackageInfo *pkg)>;
 
-  bool _to_skip(std::string const &pkgid);
+ private:
+  GetPackageFunctionType mGetPackageFunction;
+  SkipPackageFunctionType mSkipPackageFunction;
+
+  std::vector<std::string> mVisited;
+  std::vector<std::shared_ptr<PackageInfo>> mPackageList;
+
+  bool toSkip(PackageInfo *info);
 
  public:
-  Resolver(SystemDatabase &systemDatabase, Repository &repository)
-      : m_Repository(repository), m_SystemDatabase(systemDatabase) {}
+  Resolver(GetPackageFunctionType get_fun, SkipPackageFunctionType skip_fun)
+      : mGetPackageFunction{get_fun}, mSkipPackageFunction{skip_fun} {}
 
-  bool resolve(std::string const &pkgid, bool all = false);
+  bool resolve(std::shared_ptr<PackageInfo> info);
 
   void clear();
 
-  std::vector<std::string> const &list() const { return m_PackagesList; }
+  std::vector<std::shared_ptr<PackageInfo>> const &list() const {
+    return mPackageList;
+  }
 };
 }  // namespace rlxos::libpkgupd
 

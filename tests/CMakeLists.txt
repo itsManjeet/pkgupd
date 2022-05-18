@@ -7,7 +7,7 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 add_definitions("-DDATA_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}/data\"")
-
+add_definitions("-DCACHE_DIR=\"${CMAKE_CURRENT_BINARY_DIR}/data\"")
 file(GLOB_RECURSE PkgupdTest_Src "*.cc" "*.hh")
 add_executable(pkgupd-test ${PkgupdTest_Src})
 target_link_libraries(pkgupd-test gtest_main libpkgupd)

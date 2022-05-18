@@ -205,16 +205,14 @@ std::string Triggerer::_mesg(type t) {
 }
 
 std::vector<Triggerer::type> Triggerer::_get(
-    std::vector<std::vector<std::string>> const &fileslist) {
+    std::vector<std::string> const &fileslist) {
   std::vector<Triggerer::type> requiredTriggers;
 
   auto checkTrigger = [&](Triggerer::type type) -> bool {
     for (auto const &i : fileslist) {
-      for (auto const &j : i) {
-        auto trigger = this->_get(j);
-        if (trigger == type) {
-          return true;
-        }
+      auto trigger = this->_get(i);
+      if (trigger == type) {
+        return true;
       }
     }
 
@@ -233,38 +231,28 @@ std::vector<Triggerer::type> Triggerer::_get(
   return requiredTriggers;
 }
 
-bool Triggerer::trigger(std::vector<Package> const &pkgs) {
+bool Triggerer::trigger(InstalledPackageInfo *info) {
   bool status = true;
-  for (auto const &i : pkgs) {
-    for (auto const &grp : i.groups()) {
-      if (!grp.exists()) {
-        PROCESS("creating group " + grp.name());
-        if (!grp.create()) {
-          ERROR("failed to create " + grp.name() + " group");
-          status = false;
-        }
+  for (auto const &grp : info->groups()) {
+    if (!grp.exists()) {
+      PROCESS("creating group " + grp.name());
+      if (!grp.create()) {
+        ERROR("failed to create " + grp.name() + " group");
+        status = false;
       }
     }
-    for (auto const &usr : i.users()) {
-      if (!usr.exists()) {
-        PROCESS("creating user " + usr.name());
-        if (!usr.create()) {
-          ERROR("failed to create " + usr.name() + " user");
-          status = false;
-        }
+  }
+  for (auto const &usr : info->users()) {
+    if (!usr.exists()) {
+      PROCESS("creating user " + usr.name());
+      if (!usr.create()) {
+        ERROR("failed to create " + usr.name() + " user");
+        status = false;
       }
     }
   }
 
-  return status;
-}
-
-bool Triggerer::trigger(
-    std::vector<std::vector<std::string>> const &fileslist) {
-  if (fileslist.size() == 0) return true;
-
-  bool status = true;
-  auto requiredTriggers = _get(fileslist);
+  auto requiredTriggers = _get(info->files());
   for (auto const &i : requiredTriggers) {
     PROCESS(_mesg(i))
 
@@ -273,6 +261,7 @@ bool Triggerer::trigger(
       status = false;
     }
   }
+
   return status;
 }
 

@@ -3,29 +3,37 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "database.hh"
-
+#include "configuration.hh"
+#include "package-info.hh"
 namespace rlxos::libpkgupd {
 
-class SystemDatabase : public Database {
+class InstalledPackageInfo : public PackageInfo {
+ private:
+  std::vector<std::string> mFiles;
+
  public:
-  SystemDatabase(std::string const &d) : Database(d) {
-    DEBUG("System Database: " << p_DataDir);
-  }
+  InstalledPackageInfo(PackageInfo *pkginfo,
+                       std::vector<std::string> const &files)
+      : PackageInfo{*pkginfo}, mFiles{files} {}
 
-  std::optional<Package> operator[](std::string const &pkgid);
+  InstalledPackageInfo(YAML::Node const &node, char const *file);
 
-  std::vector<Package> all();
+  std::vector<std::string> const &files() const { return mFiles; }
+};
 
-  bool isInstalled(Package const &pkginfo);
+class SystemDatabase : public Object {
+ private:
+  Configuration *mConfig;
 
-  bool isOutDated(Package const &pkginfo);
+ public:
+  SystemDatabase(Configuration *config) : mConfig{config} {}
 
-  bool registerIntoSystem(Package const &pkginfo,
-           std::vector<std::string> const &files, std::string root,
-           bool update = false);
+  std::shared_ptr<InstalledPackageInfo> get(char const *id);
 
-  bool unregisterFromSystem(Package const &pkginfo);
+  bool add(PackageInfo *pkginfo, std::vector<std::string> const &files,
+           std::string root, bool update = false);
+
+  bool remove(InstalledPackageInfo *pkginfo);
 };
 }  // namespace rlxos::libpkgupd
 

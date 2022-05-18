@@ -1,29 +1,23 @@
 #ifndef _PKGUPD_REPOSITORY_DATABASE_HH_
 #define _PKGUPD_REPOSITORY_DATABASE_HH_
 
-#include "database.hh"
-#include "recipe.hh"
+#include <memory>
 
+#include "configuration.hh"
+#include "package-info.hh"
 namespace rlxos::libpkgupd {
-class Repository : public Database {
+class Repository : public Object {
  private:
-  std::vector<std::string> mRepos;
+  Configuration *mConfig;
 
  public:
-  Repository(std::string const &dataDir, std::vector<std::string> const& repos) : Database(dataDir), mRepos(repos) {
-    DEBUG("Repository Database: " << dataDir);
+  Repository(Configuration *config) : mConfig{config} {}
+
+  void repos(std::vector<std::string> &repos) const {
+    mConfig->get("repos", repos);
   }
 
-  std::vector<std::string> repos() const {
-    return mRepos;
-  }
-
-  std::vector<Recipe> recipes(std::string const& repo);
-
-  std::vector<Package> all();
-
-  std::optional<Recipe> recipe(std::string const &pkgid);
-  std::optional<Package> operator[](std::string const &pkgid);
+  std::shared_ptr<PackageInfo> get(char const *pkgid);
 };
 }  // namespace rlxos::libpkgupd
 

@@ -79,7 +79,7 @@ static inline std::string humanize(size_t bytes) {
   _CHECK_LIST(type, variableID, variable)
 
 #define READ_OBJECT_LIST(type, variableID, variable) \
-  if (data[variableID])                             \
+  if (data[variableID])                              \
     for (auto const &i : data[variableID]) variable.push_back(type(i, file));
 
 #define READ_LIST_FROM(type, variable, from, into) \
@@ -93,15 +93,20 @@ static inline std::string humanize(size_t bytes) {
 #define DEFAULT_DATA_DIR "/var/lib/pkgupd/data"
 #define DEFAULT_PKGS_DIR "/var/cache/pkgupd/pkgs"
 #define DEFAULT_SRC_DIR "/var/cache/pkgupd/src"
-#define DEFAULT_REPO_DIR "/var/cache/pkgupd/recipes"
 #define DEFAULT_ROOT_DIR "/"
 #define DEFAULT_URL "https://rlxos.cloudtb.online/pkgs"
 #define DEFAULT_SECONDARY_URL "https://apps.rlxos.dev/pkgs"
-
+#define DEFAULT_REPO_DIR "/var/cache/pkgupd/repo"
 #define DEFAULT_ARCHIVE_TOOL "tar"
 #define BUG_URL "https://rlxos.dev/bugs"
 
 #define DEFAULT_EXTENSION "rlx"
 
 #define MAX_STRING_SIZE 512
+
+#define DEFAULT_CACHE_DIR "/var/cache/pkgupd"
+
+#define PKGUPD_MODULE(id)                                          \
+  extern "C" int PKGUPD_##id(std::vector<std::string> const &args, \
+                             Configuration *config)
 #endif

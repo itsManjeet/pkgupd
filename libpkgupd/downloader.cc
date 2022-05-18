@@ -7,6 +7,7 @@
 #include <iostream>
 #include <system_error>
 
+using std::string;
 namespace rlxos::libpkgupd {
 
 int progress_func(void *ptr, double TotalToDownload, double NowDownloaded,
@@ -43,7 +44,7 @@ int progress_func(void *ptr, double TotalToDownload, double NowDownloaded,
   return 0;
 }
 
-bool Downloader::download(std::string const &url, std::string const &outfile) {
+bool Downloader::download(char const *url, char const *outfile) {
   CURL *curl;
   CURLcode res;
   FILE *fptr;
@@ -66,13 +67,13 @@ bool Downloader::download(std::string const &url, std::string const &outfile) {
     }
   }
 
-  fptr = fopen((outfile + ".part").c_str(), "wb");
+  fptr = fopen((string(outfile) + ".part").c_str(), "wb");
   if (!fptr) {
-    p_Error = "Failed to open " + outfile + " for write";
+    p_Error = "Failed to open " + string(outfile) + " for write";
     return false;
   }
 
-  curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(curl, CURLOPT_URL, url);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, fwrite);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, fptr);
   curl_easy_setopt(curl, CURLOPT_VERBOSE,
@@ -96,7 +97,7 @@ bool Downloader::download(std::string const &url, std::string const &outfile) {
   if (res == CURLE_OK) {
     std::error_code err;
 
-    std::filesystem::rename(outfile + ".part", outfile, err);
+    std::filesystem::rename(string(outfile) + ".part", outfile, err);
     if (err) {
       p_Error = err.message();
       return false;
@@ -106,7 +107,7 @@ bool Downloader::download(std::string const &url, std::string const &outfile) {
   return res == CURLE_OK;
 }
 
-bool Downloader::valid(std::string const &url) {
+bool Downloader::valid(char const *url) {
   CURL *curl;
   CURLcode resp;
 
@@ -116,7 +117,7 @@ bool Downloader::valid(std::string const &url) {
     return false;
   }
 
-  curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(curl, CURLOPT_URL, url);
   curl_easy_setopt(curl, CURLOPT_NOBODY, 1);
   curl_easy_setopt(curl, CURLOPT_VERBOSE,
                    (getenv("CURL_DEBUG") == nullptr ? 0L : 1L));
@@ -133,29 +134,34 @@ bool Downloader::valid(std::string const &url) {
   curl_easy_cleanup(curl);
   if ((resp == CURLE_OK) && http_code == 200) return true;
 
-  p_Error = "invalid url " + url;
+  p_Error = "invalid url " + string(url);
   return false;
 }
 
-bool Downloader::get(std::string const &file, std::string const& repo, std::string const &outdir) {
-  if (m_Mirrors.size() == 0) {
+bool Downloader::get(char const *file, char const *outdir) {
+  std::vector<std::string> mirrors;
+
+  mConfig->get("mirrors", mirrors);
+  if (mirrors.size() == 0) {
     p_Error = "No mirror specified";
     return false;
   }
 
-  for (auto const &mirror : m_Mirrors) {
-    DEBUG("checking  mirror: " << mirror << " " << m_Version << " " << file);
+  std::string version = mConfig->get<std::string>("version", "2200");
 
-    std::string fileurl = mirror + "/" + m_Version + "/pkgs/" + repo + "/" + file;
+  for (auto const &mirror : mirrors) {
+    DEBUG("checking  mirror: " << mirror << " " << version << " " << file);
+
+    std::string fileurl = mirror + "/" + version + "/pkgs/" + file;
 
     DEBUG("url: " << fileurl)
     if (!getenv("NO_CURL_CHECK"))
-      if (!valid(fileurl)) continue;
+      if (!valid(fileurl.c_str())) continue;
 
-    return download(fileurl, outdir);
+    return download(fileurl.c_str(), outdir);
   }
 
-  p_Error = file + " is missing on server";
+  p_Error = string(file) + " is missing on server";
 
   return false;
 }

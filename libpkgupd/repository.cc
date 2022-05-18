@@ -1,68 +1,31 @@
 #include "repository.hh"
 
-#include "recipe.hh"
+#include <filesystem>
 
+#include "defines.hh"
+namespace fs = std::filesystem;
 namespace rlxos::libpkgupd {
-std::optional<Package> Repository::operator[](std::string const &packageName) {
-  for (auto const &i : all()) {
-    if (i.id() == packageName) {
-      return i;
+std::shared_ptr<PackageInfo> Repository::get(char const *packageName) {
+  std::vector<std::string> repos_list;
+  repos(repos_list);
+
+  auto repo_dir = mConfig->get<std::string>("repo_dir", DEFAULT_REPO_DIR);
+  for (auto const &repo : repos_list) {
+    auto repo_path = fs::path(repo_dir) / repo;
+    if (!fs::exists(repo_path)) {
+      throw std::runtime_error(repo_path.string() + " for " + repo +
+                               " not exists");
     }
-  }
 
-  p_Error = "no recipe file found for " + packageName;
-  return {};
-}
-
-std::vector<Recipe> Repository::recipes(std::string const &repo) {
-  std::string repoPath = p_DataDir + "/" + repo;
-  if (!std::filesystem::exists(repoPath)) {
-    p_Error = repoPath + " repository not exists";
-    return {};
-  }
-
-  std::vector<Recipe> recipes;
-  for (auto const &i : std::filesystem::directory_iterator(repoPath)) {
-    std::string recipePath = repoPath + "/" + i.path().filename().string();
-    try {
-      auto node = YAML::LoadFile(recipePath);
-      auto recipe_data = Recipe(node, recipePath, repo);
-      recipes.push_back(recipe_data);
-
-    } catch (std::exception const &exc) {
-      ERROR("failed to load " << recipePath);
-    }
-  }
-
-  return recipes;
-}
-
-std::optional<Recipe> Repository::recipe(std::string const &pkgid) {
-  for (auto const &repo : mRepos) {
-    for (auto const &rec : recipes(repo)) {
-      if (rec.id() == pkgid) {
-        return rec;
-      }
-
-      for (auto const &pkg : rec.packages()) {
-        if (pkg.id() == pkgid) {
-          return rec;
-        }
+    YAML::Node node = YAML::LoadFile(repo_path);
+    for (auto const &i : node["pkgs"]) {
+      if (i["id"].as<std::string>() == packageName) {
+        return std::make_shared<PackageInfo>(i, "");
       }
     }
   }
-  p_Error = "no recipe file found for " + pkgid;
-  return {};
-}
-
-std::vector<Package> Repository::all() {
-  std::vector<Package> packages;
-  for (auto const &repo : mRepos) {
-    for (auto const &rec : recipes(repo)) {
-      auto pkgs = rec.packages();
-      packages.insert(packages.end(), pkgs.begin(), pkgs.end());
-    }
-  }
-  return packages;
+  
+  p_Error = "no recipe file found for " + std::string(packageName);
+  return nullptr;
 }
 }  // namespace rlxos::libpkgupd

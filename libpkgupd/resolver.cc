@@ -1,51 +1,44 @@
 #include "resolver.hh"
 namespace rlxos::libpkgupd {
 void Resolver::clear() {
-  m_PackagesList.clear();
-  m_Visited.clear();
+  mPackageList.clear();
+  mVisited.clear();
 }
 
-bool Resolver::_to_skip(std::string const &pkgid) {
-  if ((std::find(m_PackagesList.begin(), m_PackagesList.end(), pkgid) !=
-       m_PackagesList.end()))
+bool Resolver::toSkip(PackageInfo *info) {
+  if ((std::find(mPackageList.begin(), mPackageList.end(), info) !=
+       mPackageList.end()))
     return true;
 
-  if (m_SystemDatabase[pkgid]) return true;
+  if (mSkipPackageFunction(info)) return true;
 
-  if ((std::find(m_Visited.begin(), m_Visited.end(), pkgid) != m_Visited.end()))
+  if ((std::find(mVisited.begin(), mVisited.end(), info->id()) !=
+       mVisited.end()))
     return true;
 
-  m_Visited.push_back(pkgid);
+  mVisited.push_back(info->id());
   return false;
 }
-bool Resolver::resolve(std::string const &pkgid, bool all) {
-  if (_to_skip(pkgid)) return true;
 
-  DEBUG("checking " << pkgid);
-  auto recipe = m_Repository.recipe(pkgid);
+bool Resolver::resolve(std::shared_ptr<PackageInfo> info) {
+  if (toSkip(info.get())) return true;
 
-  if (!recipe) {
-    p_Error = "missing required dependency '" + pkgid + "'";
-    return false;
-  }
-
-  auto depends = recipe->depends();
-  if (all) {
-    auto build_depends = recipe->buildTime();
-    depends.insert(depends.begin(), build_depends.begin(), build_depends.end());
-  }
-
+  auto depends = info->depends();
   for (auto const &i : depends) {
-    DEBUG("depends " << i)
-    if (!resolve(i, all)) {
-      p_Error += "\n Trace Required by " + pkgid;
+    auto dep_info = mGetPackageFunction(i.c_str());
+    if (dep_info == nullptr) {
+      p_Error = "Failed to get required package " + i;
+      return false;
+    }
+    if (!resolve(dep_info)) {
+      p_Error += "\n Trace Required by " + info->id();
       return false;
     }
   }
 
-  if ((std::find(m_PackagesList.begin(), m_PackagesList.end(), pkgid) ==
-       m_PackagesList.end()))
-    m_PackagesList.push_back(pkgid);
+  if ((std::find(mPackageList.begin(), mPackageList.end(), info) ==
+       mPackageList.end()))
+    mPackageList.push_back(info);
 
   return true;
 }
