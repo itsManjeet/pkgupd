@@ -27,6 +27,16 @@ class Resolver : public Object {
   Resolver(GetPackageFunctionType get_fun, SkipPackageFunctionType skip_fun)
       : mGetPackageFunction{get_fun}, mSkipPackageFunction{skip_fun} {}
 
+  Resolver(SystemDatabase *system_database, Repository *repository) {
+    mGetPackageFunction = [&](char const *id) -> std::shared_ptr<PackageInfo> {
+      return repository->get(id);
+    };
+
+    mSkipPackageFunction = [&](PackageInfo *pkg) -> bool {
+      return system_database->get(pkg->id().c_str()) != nullptr;
+    };
+  }
+
   bool resolve(std::shared_ptr<PackageInfo> info);
 
   void clear();

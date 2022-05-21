@@ -5,6 +5,8 @@ using namespace rlxos::libpkgupd;
 #include <iostream>
 using namespace std;
 
+PKGUPD_MODULE(install);
+
 PKGUPD_MODULE_HELP(build) {
   os << "build binary package from source file" << endl;
 }
@@ -26,6 +28,15 @@ PKGUPD_MODULE(build) {
     cerr << "Error! failed to read recipe file '" << recipe_file << ", "
          << e.what() << endl;
     return 1;
+  }
+
+  if (config->get("build.depends", true)) {
+    std::vector<std::string> packages = recipe->depends();
+    packages.insert(packages.end(), recipe->buildTime().begin(),
+                    recipe->buildTime().end());
+    if (PKGUPD_install(packages, config) != 0) {
+      return 1;
+    }
   }
 
   std::shared_ptr<Builder> builder = std::make_shared<Builder>(config);
