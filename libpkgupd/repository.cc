@@ -6,7 +6,7 @@
 namespace fs = std::filesystem;
 namespace rlxos::libpkgupd {
 Repository::Repository(Configuration *config) : mConfig{config} {
-  mConfig->get("repos", repos_list);
+  mConfig->get(REPOS, repos_list);
   repo_dir = mConfig->get<std::string>(DIR_REPO, DEFAULT_REPO_DIR);
 }
 
@@ -47,7 +47,10 @@ std::shared_ptr<PackageInfo> Repository::get(char const *packageName) {
     }
   }
 
-  p_Error = "no recipe file found for " + std::string(packageName);
+  p_Error = "no found in ";
+  for (auto const &m : repos_list) {
+    p_Error += m + " ";
+  }
   return nullptr;
 }
 }  // namespace rlxos::libpkgupd

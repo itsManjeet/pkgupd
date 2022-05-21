@@ -43,13 +43,17 @@ bool SystemDatabase::add(PackageInfo *pkginfo,
   auto data_file = std::filesystem::path(data_dir) / pkginfo->id();
 
   std::ofstream file(data_file);
+  if (!file.is_open()) {
+    p_Error = "failed to open data file to write at " + data_file.string();
+    return false;
+  }
 
   pkginfo->dump(file);
 
   if (files.size()) {
     file << "files:\n";
     for (auto const &f : files) {
-      file << f << '\n';
+      file << " - " << f << '\n';
     }
   }
 

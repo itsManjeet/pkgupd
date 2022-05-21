@@ -21,6 +21,11 @@ std::shared_ptr<InstalledPackageInfo> PackageInstaller::install(
     return nullptr;
   }
 
+  if (!archive_manager->list(path, extracted_files)) {
+    p_Error = archive_manager->error();
+    return nullptr;
+  }
+
   root_dir = mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
 
   // TODO: check and clean deprecated files
@@ -36,6 +41,7 @@ std::shared_ptr<InstalledPackageInfo> PackageInstaller::install(
   }
 
   installed_package_info = sys_db->get(package_info->id().c_str());
+  p_Error = sys_db->error();
   // TODO: check equality of installed package info;
   return installed_package_info;
 }

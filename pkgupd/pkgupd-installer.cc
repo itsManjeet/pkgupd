@@ -58,6 +58,16 @@ PKGUPD_MODULE(install) {
       }
     }
     pkgs = resolver->list();
+
+    cout << "    found " << pkgs.size() << " dependencies" << endl;
+    if (!config->get("mode.all-yes", false)) {
+      cout << "Press [Y] if you want to contine: ";
+      int c = cin.get();
+      if (c != 'Y' && c != 'y') {
+        cerr << "user cancelled the operation" << endl;
+        return 1;
+      }
+    }
   }
 
   auto pkgs_dir =
@@ -76,9 +86,9 @@ PKGUPD_MODULE(install) {
     auto pkgfile = pkgs_dir / (PACKAGE_FILE(p));
 
     if (filesystem::exists(pkgfile)) {
-      cout << ":: package file found in cache ::" << endl;
+      cout << "    package file found in cache" << endl;
     } else {
-      cout << ":: retrieving " << p->repository() << "::" << PACKAGE_FILE(p)
+      cout << "    retrieving " << p->repository() << "/" << PACKAGE_FILE(p)
            << " " << endl;
       if (!downloader->get((p->repository() + "/" + PACKAGE_FILE(p)).c_str(),
                            pkgfile.c_str())) {
@@ -90,6 +100,7 @@ PKGUPD_MODULE(install) {
 
     // TODO: add validator here
 
+    cout << "    injecting package " << pkgfile << endl;
     auto installed_package_info = installer->install(
         pkgfile.c_str(), system_database.get(), config->get("force", false));
     if (installed_package_info == nullptr) {
@@ -97,7 +108,7 @@ PKGUPD_MODULE(install) {
       return -1;
     }
 
-    cout << ":: executing triggers ::" << endl;
+    cout << "    executing triggers" << endl;
     if (!triggerer->trigger(installed_package_info.get())) {
       cerr << "Error! failed to execute triggers" << endl;
       return -1;

@@ -10,7 +10,8 @@ using namespace rlxos::libpkgupd;
   X(meta)                   \
   X(remove)                 \
   X(build)                  \
-  X(trigger)
+  X(trigger)                \
+  X(sync)
 
 #include <functional>
 #include <iostream>

@@ -12,7 +12,7 @@ PKGUPD_MODULE_HELP(meta) {
 
 PKGUPD_MODULE(meta) {
   auto pkgs_dir = std::filesystem::path(
-      config->get<std::string>(DIR_PKGS, DEFAULT_DATA_DIR));
+      config->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR));
   std::vector<std::string> repos;
   config->get(REPOS, repos);
 
