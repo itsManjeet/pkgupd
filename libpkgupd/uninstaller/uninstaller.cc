@@ -6,7 +6,7 @@ bool Uninstaller::uninstall(InstalledPackageInfo* pkginfo,
   std::string root_dir;
   std::vector<std::string> files;
 
-  root_dir = mConfig->get<std::string>("root-dir", DEFAULT_ROOT_DIR);
+  root_dir = mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
   files = pkginfo->files();
 
   for (auto file = files.rbegin(); file != files.rend(); ++file) {

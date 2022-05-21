@@ -4,10 +4,10 @@
 #include "../recipe.hh"
 
 namespace rlxos::libpkgupd {
-bool Cargo::compile(Recipe const& recipe, std::string dir, std::string destdir,
-                    std::vector<std::string>& environ) {
+bool Cargo::compile(Recipe* recipe, Configuration* config, std::string dir,
+               std::string destdir, std::vector<std::string>& environ) {
   // Do build
-  int status = Executor().execute("cargo build --release " + recipe.configure(),
+  int status = Executor().execute("cargo build --release " + recipe->configure(),
                                   dir, environ);
   if (status != 0) {
     p_Error = "failed to build with cargo";
@@ -15,7 +15,7 @@ bool Cargo::compile(Recipe const& recipe, std::string dir, std::string destdir,
   }
 
   // Do check
-  status = Executor().execute("cargo test --release " + recipe.configure(), dir,
+  status = Executor().execute("cargo test --release " + recipe->configure(), dir,
                               environ);
   if (status != 0) {
     p_Error = "failed to do check with cargo";
@@ -23,13 +23,13 @@ bool Cargo::compile(Recipe const& recipe, std::string dir, std::string destdir,
   }
 
   // do Install
-  auto installArgs = recipe.install();
+  auto installArgs = recipe->install();
   if (installArgs.length() == 0) {
     installArgs = "--path .";
   }
 
   status = Executor().execute("cargo install --root=" + destdir + " --locked " +
-                                  recipe.configure() + " " + installArgs,
+                                  recipe->configure() + " " + installArgs,
                               dir, environ);
   if (status != 0) {
     p_Error = "failed to do install with cargo";

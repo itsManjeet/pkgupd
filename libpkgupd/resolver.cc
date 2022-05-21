@@ -6,10 +6,11 @@ void Resolver::clear() {
 }
 
 bool Resolver::toSkip(PackageInfo *info) {
-  if ((std::find(mPackageList.begin(), mPackageList.end(), info) !=
-       mPackageList.end()))
-    return true;
-
+  auto iter = std::find_if(mPackageList.begin(), mPackageList.end(),
+                           [&](std::shared_ptr<PackageInfo> const &p) -> bool {
+                             return (p->id() == info->id());
+                           });
+  if (iter != mPackageList.end()) return true;
   if (mSkipPackageFunction(info)) return true;
 
   if ((std::find(mVisited.begin(), mVisited.end(), info->id()) !=

@@ -7,7 +7,7 @@
 
 #include "builder.hh"
 #include "defines.hh"
-#include "package.hh"
+#include "package-info.hh"
 
 namespace rlxos::libpkgupd {
 
@@ -86,17 +86,10 @@ class Recipe {
 
   void dump(std::ostream& os, bool as_meta = false);
 
-  bool contains(std::string const& pkgid) {
-    for (auto const& i : packages()) {
-      if (i.id() == pkgid) {
-        return true;
-      }
-    }
-    return false;
-  }
+  bool contains(std::string const& pkgid) { return (*this)[pkgid] != nullptr; }
 
-  std::optional<Package> operator[](std::string const& name) const;
-  std::vector<Package> packages() const;
+  std::shared_ptr<PackageInfo> operator[](std::string const& name) const;
+  std::vector<std::shared_ptr<PackageInfo>> packages() const;
 };
 }  // namespace rlxos::libpkgupd
 

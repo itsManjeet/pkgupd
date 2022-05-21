@@ -21,7 +21,7 @@ std::shared_ptr<InstalledPackageInfo> PackageInstaller::install(
     return nullptr;
   }
 
-  root_dir = mConfig->get<std::string>("root-dir", DEFAULT_ROOT_DIR);
+  root_dir = mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
 
   // TODO: check and clean deprecated files
 

@@ -6,21 +6,19 @@
 #include <fstream>
 #include <vector>
 
+#include "archive-manager/archive-manager.hh"
 #include "bundler.hh"
 #include "colors.hh"
 #include "compilers/autoconf.hh"
 #include "compilers/cargo.hh"
 #include "compilers/cmake.hh"
-#include "compilers/gem.hh"
 #include "compilers/go.hh"
 #include "compilers/makefile.hh"
 #include "compilers/meson.hh"
 #include "compilers/pysetup.hh"
-#include "compilers/qmake.hh"
 #include "compilers/script.hh"
 #include "downloader.hh"
 #include "exec.hh"
-#include "packager.hh"
 #include "recipe.hh"
 #include "stripper.hh"
 
@@ -28,6 +26,12 @@ namespace fs = std::filesystem;
 using fs::path;
 using std::string;
 namespace rlxos::libpkgupd {
+
+static std::vector<std::string> HOT_FILES_LIST = {
+#define X(ID, NAME, FILE) FILE,
+    BUILD_TYPE_LIST
+#undef X
+};
 
 bool Builder::prepare(std::vector<std::string> const &sources,
                       std::string const &dir) {
@@ -41,11 +45,11 @@ bool Builder::prepare(std::vector<std::string> const &sources,
       url = source.substr(index + 2, source.length() - (index + 2));
     }
 
-    auto sourcefile_Path = path(m_SourceDir) / sourcefile;
+    auto sourcefile_Path = path(mSourceDir) / sourcefile;
 
-    auto downloader = Downloader({}, "");
+    auto downloader = Downloader(mConfig);
     if (!fs::exists(sourcefile_Path)) {
-      if (!downloader.download(url, sourcefile_Path)) {
+      if (!downloader.download(url.c_str(), sourcefile_Path.c_str())) {
         p_Error =
             "failed to download '" + sourcefile + "' " + downloader.error();
         return false;
@@ -103,9 +107,9 @@ bool Builder::prepare(std::vector<std::string> const &sources,
   return true;
 }
 
-bool Builder::build(Recipe const &recipe, bool local_build) {
-  auto srcdir = path(m_BuildDir) / "src";
-  auto pkgdir = path(m_BuildDir) / "pkg" / recipe.id();
+bool Builder::build(Recipe *recipe) {
+  auto srcdir = path(mBuildDir) / "src";
+  auto pkgdir = path(mBuildDir) / "pkg" / recipe->id();
 
   for (auto dir :
        std::vector<std::filesystem::path>{srcdir, (pkgdir).parent_path()}) {
@@ -118,30 +122,31 @@ bool Builder::build(Recipe const &recipe, bool local_build) {
     }
   }
 
-  if (!local_build) {
-    if (!prepare(recipe.sources(), srcdir)) {
+  if (!mConfig->get("build.skip-prepare", false)) {
+    if (!prepare(recipe->sources(), srcdir)) {
       return false;
     }
   }
 
-  auto environ = recipe.environ();
-  environ.push_back("PKGUPD_SRCDIR=" + m_SourceDir);
-  environ.push_back("PKGUPD_PKGDIR=" + m_PackageDir);
+  auto environ = recipe->environ();
+  environ.push_back("PKGUPD_SRCDIR=" + mSourceDir);
+  environ.push_back("PKGUPD_PKGDIR=" + mPackageDir);
   environ.push_back("pkgupd_srcdir=" + srcdir.string());
   environ.push_back("pkgupd_pkgdir=" + pkgdir.string());
   environ.push_back("DESTDIR=" + pkgdir.string());
+  mConfig->get("environ", environ);
 
   std::filesystem::path wrkdir;
-  if (local_build) {
-    wrkdir = std::filesystem::current_path();
-  } else {
-    wrkdir = srcdir / recipe.buildDir();
-    if (recipe.buildDir().length() == 0 && recipe.sources().size()) {
+  std::string build_work_type =
+      mConfig->get<std::string>("build.work.type", "default");
+  if (build_work_type == "default") {
+    wrkdir = srcdir / recipe->buildDir();
+    if (recipe->buildDir().length() == 0 && recipe->sources().size()) {
       auto [status, output] = Executor().output(
           "tar -taf " +
-              std::filesystem::path(recipe.sources()[0]).filename().string() +
+              std::filesystem::path(recipe->sources()[0]).filename().string() +
               " | head -n1",
-          m_SourceDir);
+          mSourceDir);
       if (status != 0 || output.length() == 0) {
       } else {
         if (output[output.length() - 1] == '\n') {
@@ -150,12 +155,13 @@ bool Builder::build(Recipe const &recipe, bool local_build) {
         wrkdir = srcdir / output;
       }
     }
+  } else if (build_work_type == "local") {
+    wrkdir = std::filesystem::current_path();
   }
-
-  if (recipe.prescript().size()) {
+  if (recipe->prescript().size()) {
     PROCESS("executing prescript")
     if (int status =
-            Executor().execute(recipe.prescript(), wrkdir.string(), environ);
+            Executor().execute(recipe->prescript(), wrkdir.string(), environ);
         status != 0) {
       p_Error = "prescript failed with exit code: " + std::to_string(status);
       return false;
@@ -168,10 +174,10 @@ bool Builder::build(Recipe const &recipe, bool local_build) {
     return false;
   }
 
-  if (recipe.postscript().size()) {
+  if (recipe->postscript().size()) {
     PROCESS("executing postscript")
     if (int status =
-            Executor().execute(recipe.postscript(), wrkdir.string(), environ);
+            Executor().execute(recipe->postscript(), wrkdir.string(), environ);
         status != 0) {
       p_Error = "postscript failed with exit code: " + std::to_string(status);
       return false;
@@ -184,8 +190,8 @@ bool Builder::build(Recipe const &recipe, bool local_build) {
     }
   }
 
-  if (recipe.dostrip()) {
-    Stripper stripper(recipe.skipStrip());
+  if (recipe->dostrip()) {
+    Stripper stripper(recipe->skipStrip());
     PROCESS("stripping package");
     if (!stripper.strip(wrkdir)) {
       ERROR(stripper.error());
@@ -193,23 +199,24 @@ bool Builder::build(Recipe const &recipe, bool local_build) {
   }
 
   std::ofstream file(pkgdir / "info");
-  recipe[recipe.id()]->dump(file);
+  (*recipe)[recipe->id()]->dump(file);
   file.close();
 
-  if (recipe.node()["bundle"] && recipe.node()["bundle"].as<bool>()) {
+  if (recipe->node()["bundle"] && recipe->node()["bundle"].as<bool>()) {
     Bundler bunder = Bundler(pkgdir, "/");
+    // TODO: add list of libraries to include and exclude
     if (!bunder.resolveLibraries({})) {
       p_Error = "Failed to bundle libraries, " + bunder.error();
       return false;
     }
   }
 
-  std::vector<std::pair<Package, std::string>> packagesdir;
-  packagesdir.push_back({*recipe[recipe.id()], pkgdir});
+  std::vector<std::pair<std::shared_ptr<PackageInfo>, std::string>> packagesdir;
+  packagesdir.push_back({(*recipe)[recipe->id()], pkgdir});
 
-  for (auto const &split : recipe.splits()) {
+  for (auto const &split : recipe->splits()) {
     std::error_code err;
-    auto splitdir_Path = path(m_BuildDir) / "pkg" / split.into;
+    auto splitdir_Path = path(mBuildDir) / "pkg" / split.into;
     fs::create_directories(splitdir_Path, err);
     if (err) {
       p_Error = "failed to create split dir " + err.message();
@@ -242,14 +249,11 @@ bool Builder::build(Recipe const &recipe, bool local_build) {
 
     std::ofstream file(splitdir_Path / "info");
     auto id = split.into;
-    if (id == "lib") {
-      id += recipe.id();
-    }
 
-    recipe[id]->dump(file);
+    (*recipe)[id]->dump(file);
     file.close();
 
-    packagesdir.push_back({*recipe[id], splitdir_Path});
+    packagesdir.push_back({(*recipe)[id], splitdir_Path});
   }
 
   if (!pack(packagesdir)) {
@@ -261,49 +265,35 @@ bool Builder::build(Recipe const &recipe, bool local_build) {
 
 std::shared_ptr<Compiler> Compiler::create(BuildType buildType) {
   switch (buildType) {
-    case BuildType::CMAKE:
-      return std::make_shared<Cmake>();
-    case BuildType::MESON:
-      return std::make_shared<Meson>();
-    case BuildType::AUTOCONF:
-      return std::make_shared<AutoConf>();
-    case BuildType::SCRIPT:
-      return std::make_shared<Script>();
-    case BuildType::PYSETUP:
-      return std::make_shared<PySetup>();
-    case BuildType::GO:
-      return std::make_shared<Go>();
-    case BuildType::CARGO:
-      return std::make_shared<Cargo>();
-    case BuildType::GEM:
-      return std::make_shared<Gem>();
-    case BuildType::QMAKE:
-      return std::make_shared<QMake>();
-    case BuildType::MAKEFILE:
-      return std::make_shared<Makefile>();
+#define X(id, name, file) \
+  case BuildType::id:     \
+    return std::make_shared<id>();
+    BUILD_TYPE_LIST
+#undef X
   }
-  throw std::runtime_error("unsupported " + buildTypeToString(buildType));
+  return nullptr;
 }
 
-bool Builder::compile(Recipe const &recipe, std::string dir,
-                      std::string destdir, std::vector<std::string> &environ) {
+bool Builder::compile(Recipe *recipe, std::string dir, std::string destdir,
+                      std::vector<std::string> &environ) {
   std::shared_ptr<Compiler> compiler;
-
-  if (recipe.buildType() != BuildType::INVALID) {
-    compiler = Compiler::create(recipe.buildType());
-  } else if (recipe.script().size() != 0) {
-    compiler = Compiler::create(BuildType::SCRIPT);
+  BuildType type;
+  if (recipe->buildType() != BuildType::N_BUILD_TYPE) {
+    type = recipe->buildType();
+  } else if (recipe->script().size() != 0) {
+    type = BuildType::Script;
   } else {
-    try {
-      auto buildType = detectBuildType(dir);
-      compiler = Compiler::create(buildType);
-    } catch (std::runtime_error const &err) {
-      p_Error = err.what();
-      return false;
-    }
+    type = DETECT_BUILD_TYPE(dir);
+  }
+  compiler = Compiler::create(type);
+  if (compiler == nullptr) {
+    p_Error = "unsupported compiler for type used '" +
+              std::string(BUILD_TYPE_STR[int(type)]) + "'";
+    return false;
   }
 
-  if (!compiler->compile(recipe, dir, destdir, environ)) {
+  if (!compiler->compile(recipe, mConfig, dir.c_str(), destdir.c_str(),
+                         environ)) {
     p_Error = compiler->error();
     return false;
   }
@@ -311,14 +301,22 @@ bool Builder::compile(Recipe const &recipe, std::string dir,
   return true;
 }
 
-bool Builder::pack(std::vector<std::pair<Package, std::string>> const &dirs) {
+bool Builder::pack(
+    std::vector<std::pair<std::shared_ptr<PackageInfo>, std::string>> const
+        &dirs) {
   for (auto const &i : dirs) {
     auto packagefile_Path =
-        m_PackageDir + "/" + i.first.repository() + "/" + i.first.file();
+        mPackageDir + "/" + i.first->repository() + "/" + PACKAGE_FILE(i.first);
 
-    auto packager = Packager::create(i.first.type(), packagefile_Path);
-    if (!packager->compress(i.second, i.first)) {
-      p_Error = "failed to compress " + packager->error();
+    auto archive_manager = ArchiveManager::create(i.first->type());
+    if (archive_manager == nullptr) {
+      p_Error = "no suitable archive manager found for type '" +
+                std::string(PACKAGE_TYPE_STR[int(i.first->type())]) + "'";
+      return false;
+    }
+    if (!archive_manager->compress(packagefile_Path.c_str(),
+                                   i.second.c_str())) {
+      p_Error = "compression failed " + archive_manager->error();
       return false;
     }
   }

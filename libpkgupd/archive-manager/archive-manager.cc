@@ -17,4 +17,17 @@ std::shared_ptr<ArchiveManager> ArchiveManager::create(
 
   return nullptr;
 }
+
+std::shared_ptr<ArchiveManager> ArchiveManager::create(PackageType type) {
+  switch (type) {
+    case PackageType::PACKAGE:
+    case PackageType::RLXOS:
+    case PackageType::FONT:
+    case PackageType::ICON:
+    case PackageType::THEME:
+      return std::make_shared<TarBall>();
+  }
+
+  return nullptr;
+}
 }  // namespace rlxos::libpkgupd

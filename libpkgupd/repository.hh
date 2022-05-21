@@ -9,13 +9,15 @@ namespace rlxos::libpkgupd {
 class Repository : public Object {
  private:
   Configuration *mConfig;
+  std::vector<std::string> repos_list;
+  std::string repo_dir;
 
  public:
-  Repository(Configuration *config) : mConfig{config} {}
+  Repository(Configuration *config);
 
-  void repos(std::vector<std::string> &repos) const {
-    mConfig->get("repos", repos);
-  }
+  std::vector<std::string> const &repos() const { return repos_list; }
+
+  bool list_all(std::vector<std::string> &ids);
 
   std::shared_ptr<PackageInfo> get(char const *pkgid);
 };

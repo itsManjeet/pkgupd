@@ -6,15 +6,26 @@
 #include <ctime>
 #include <fstream>
 
+#include "defines.hh"
+
 namespace rlxos::libpkgupd {
 
 InstalledPackageInfo::InstalledPackageInfo(YAML::Node const &data,
                                            char const *file)
     : PackageInfo(data, file) {
   READ_LIST(std::string, "files", mFiles);
+  READ_VALUE(std::string, "installed_on", mInstalledon);
+}
+
+bool SystemDatabase::list_all(std::vector<std::string> &ids) {
+  if (std::filesystem::exists(data_dir)) {
+    for (auto const &i : std::filesystem::directory_iterator(data_dir)) {
+      ids.push_back(i.path().filename().string());
+    }
+  }
+  return true;
 }
 std::shared_ptr<InstalledPackageInfo> SystemDatabase::get(char const *pkgid) {
-  auto data_dir = mConfig->get<std::string>("data-dir", DEFAULT_DATA_DIR);
   auto datafile = std::filesystem::path(data_dir) / pkgid;
   if (!std::filesystem::exists(datafile)) {
     p_Error = "no package found with name '" + std::string(pkgid) +
@@ -29,7 +40,6 @@ std::shared_ptr<InstalledPackageInfo> SystemDatabase::get(char const *pkgid) {
 bool SystemDatabase::add(PackageInfo *pkginfo,
                          std::vector<std::string> const &files,
                          std::string root, bool update) {
-  auto data_dir = mConfig->get<std::string>("data-dir", DEFAULT_DATA_DIR);
   auto data_file = std::filesystem::path(data_dir) / pkginfo->id();
 
   std::ofstream file(data_file);
@@ -55,7 +65,6 @@ bool SystemDatabase::add(PackageInfo *pkginfo,
 }
 
 bool SystemDatabase::remove(InstalledPackageInfo *pkginfo) {
-  auto data_dir = mConfig->get<std::string>("data-dir", DEFAULT_DATA_DIR);
   auto data_file = std::filesystem::path(data_dir) / pkginfo->id();
   std::error_code code;
   if (!std::filesystem::exists(data_file)) {

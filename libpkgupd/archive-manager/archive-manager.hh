@@ -58,6 +58,7 @@ class ArchiveManager : public Object {
   virtual bool compress(char const *, char const *) = 0;
 
   static std::shared_ptr<ArchiveManager> create(ArchiveManagerType type);
+  static std::shared_ptr<ArchiveManager> create(PackageType type);
 };
 }  // namespace rlxos::libpkgupd
 

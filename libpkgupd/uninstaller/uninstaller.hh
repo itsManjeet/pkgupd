@@ -5,7 +5,7 @@
 #include "../system-database.hh"
 
 namespace rlxos::libpkgupd {
-class Uninstaller {
+class Uninstaller : public Object {
  protected:
   Configuration* mConfig;
 

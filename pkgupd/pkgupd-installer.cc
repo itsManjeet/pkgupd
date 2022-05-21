@@ -10,7 +10,11 @@ using namespace std;
 
 using namespace rlxos::libpkgupd;
 
-PKGUPD_MODULE(installer) {
+PKGUPD_MODULE_HELP(install) {
+  os << "install specified package from the repository" << endl;
+}
+
+PKGUPD_MODULE(install) {
   std::shared_ptr<Installer> installer;
   std::shared_ptr<SystemDatabase> system_database;
   std::shared_ptr<Repository> repository;
@@ -20,6 +24,7 @@ PKGUPD_MODULE(installer) {
 
   system_database = std::make_shared<SystemDatabase>(config);
   repository = std::make_shared<Repository>(config);
+
   downloader = std::make_shared<Downloader>(config);
   triggerer = std::make_shared<Triggerer>();
 
@@ -35,7 +40,8 @@ PKGUPD_MODULE(installer) {
   for (auto const& pkg_id : args) {
     auto pkg = repository->get(pkg_id.c_str());
     if (pkg == nullptr) {
-      cerr << "Error! '" << pkg->id() << "' is missing in repository" << endl;
+      cerr << "Error! '" << pkg_id << "' is missing in repository, "
+           << repository->error() << endl;
       return -1;
     }
     pkgs.push_back(pkg);
@@ -54,8 +60,8 @@ PKGUPD_MODULE(installer) {
     pkgs = resolver->list();
   }
 
-  auto cache_dir =
-      filesystem::path(config->get("cache-dir", DEFAULT_CACHE_DIR));
+  auto pkgs_dir =
+      filesystem::path(config->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR));
 
   for (auto p : pkgs) {
     cout << ":: installing " << p->id() << " " << p->version() << endl;
@@ -67,7 +73,7 @@ PKGUPD_MODULE(installer) {
       return -1;
     }
 
-    auto pkgfile = cache_dir / "pkgs";
+    auto pkgfile = pkgs_dir / (PACKAGE_FILE(p));
 
     if (filesystem::exists(pkgfile)) {
       cout << ":: package file found in cache ::" << endl;
@@ -94,6 +100,9 @@ PKGUPD_MODULE(installer) {
     cout << ":: executing triggers ::" << endl;
     if (!triggerer->trigger(installed_package_info.get())) {
       cerr << "Error! failed to execute triggers" << endl;
+      return -1;
     }
   }
+
+  return 0;
 }

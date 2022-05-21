@@ -1,6 +1,7 @@
 #ifndef LIBPKGUPD_BUNDLER_HH
 #define LIBPKGUPD_BUNDLER_HH
 
+#include "configuration.hh"
 #include "recipe.hh"
 
 namespace rlxos::libpkgupd {

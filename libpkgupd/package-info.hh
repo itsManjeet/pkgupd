@@ -51,7 +51,7 @@ static char const*
 
 #define PACKAGE_TYPE_FROM_STR(str)                                        \
   ({                                                                      \
-    PackageType pkgtype;                                                  \
+    PackageType pkgtype = PackageType::N_PACKAGE_TYPE;                    \
     for (int i = 0; PACKAGE_TYPE_INT(PackageType::N_PACKAGE_TYPE); i++) { \
       if (!strcmp(PACKAGE_TYPE_ID[i], str)) {                             \
         pkgtype = PackageType(i);                                         \
@@ -88,6 +88,20 @@ class PackageInfo {
 
  public:
   PackageInfo(YAML::Node const& data, std::string const& file);
+  PackageInfo(std::string id, std::string version, std::string about,
+              std::vector<std::string> depends, PackageType packageType,
+              std::vector<User> users, std::vector<Group> groups,
+              std::string script, std::string repo, YAML::Node node)
+      : m_ID{id},
+        m_Version{version},
+        m_About{about},
+        m_Depends{depends},
+        m_PackageType{packageType},
+        m_Users{users},
+        m_Groups{groups},
+        m_Script{script},
+        m_Repository{repo},
+        m_Node{node} {}
 
   std::string const& id() const { return m_ID; }
   std::string const& version() const { return m_Version; }

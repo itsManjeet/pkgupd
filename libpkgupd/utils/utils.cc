@@ -7,6 +7,7 @@ std::string rlxos::libpkgupd::utils::random(size_t size) {
       "0123456789"
       "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
       "abcdefghijklmnopqrstuvwxyz";
+  srand((unsigned)time(0));
   std::string tmp_s;
   tmp_s.reserve(size);
 

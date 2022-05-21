@@ -66,8 +66,9 @@ static inline std::string humanize(size_t bytes) {
   if (data[variableID])                         \
     for (auto const &i : data[variableID]) variable.push_back(i.as<type>());
 
-#define _THROW_ERROR(variableID) \
-  else throw std::runtime_error(variableID " is missing in " + file);
+#define _THROW_ERROR(variableID)                               \
+  else throw std::runtime_error(variableID " is missing in " + \
+                                std::string(file));
 
 #define _USE_FALLBACK(variableID, variable, fallback) else variable = fallback;
 
@@ -90,23 +91,49 @@ static inline std::string humanize(size_t bytes) {
   _CHECK_VALUE(type, variableID, variable)                   \
   _USE_FALLBACK(variableID, variable, fallback)
 
-#define DEFAULT_DATA_DIR "/var/lib/pkgupd/data"
-#define DEFAULT_PKGS_DIR "/var/cache/pkgupd/pkgs"
-#define DEFAULT_SRC_DIR "/var/cache/pkgupd/src"
+#define DIR_ROOT "dir.root"
+#define DIR_CACHE "dir.cache"
+#define DIR_DATA "dir.data"
+#define DIR_PKGS "dir.pkgs"
+#define DIR_SRC "dir.src"
+#define DIR_REPO "dir.repo"
+#define REPOS "repos"
+#define SKIP_TRIGGERS "triggers.skip"
+
 #define DEFAULT_ROOT_DIR "/"
-#define DEFAULT_URL "https://rlxos.cloudtb.online/pkgs"
-#define DEFAULT_SECONDARY_URL "https://apps.rlxos.dev/pkgs"
-#define DEFAULT_REPO_DIR "/var/cache/pkgupd/repo"
-#define DEFAULT_ARCHIVE_TOOL "tar"
-#define BUG_URL "https://rlxos.dev/bugs"
-
-#define DEFAULT_EXTENSION "rlx"
-
-#define MAX_STRING_SIZE 512
-
 #define DEFAULT_CACHE_DIR "/var/cache/pkgupd"
+#define DEFAULT_PKGS_DIR DEFAULT_CACHE_DIR "/pkgs"
+#define DEFAULT_SRC_DIR DEFAULT_CACHE_DIR "/src"
+#define DEFAULT_REPO_DIR DEFAULT_CACHE_DIR "/repo"
+#define DEFAULT_DATA_DIR "/var/lib/pkgupd/data"
+
+#define BUILD_CONFIG_PREFIX "build.config.prefix"
+#define BUILD_CONFIG_SYSCONFDIR "build.config.sysconfdir"
+#define BUILD_CONFIG_LIBDIR "build.config.libdir"
+#define BUILD_CONFIG_LIBEXECDIR "build.config.libexecdir"
+#define BUILD_CONFIG_BINDIR "build.config.bindir"
+#define BUILD_CONFIG_SBINDIR "build.config.sbindir"
+#define BUILD_CONFIG_DATADIR "build.config.datadir"
+#define BUILD_CONFIG_LOCALSTATEDIR "build.config.localstatedir"
+
+#define DEFAULT_PREFIX "/usr"
+#define DEFAULT_SYSCONFDIR "/etc"
+#define DEFAULT_LIBDIR DEFAULT_PREFIX "/lib"
+#define DEFAULT_LIBEXECDIR DEFAULT_PREFIX "/lib"
+#define DEFAULT_BINDIR DEFAULT_PREFIX "/bin"
+#define DEFAULT_SBINDIR DEFAULT_PREFIX "/bin"
+#define DEFAULT_DATADIR DEFAULT_PREFIX "/share"
+#define DEFAULT_LOCALSTATEDIR "/var"
 
 #define PKGUPD_MODULE(id)                                          \
   extern "C" int PKGUPD_##id(std::vector<std::string> const &args, \
-                             Configuration *config)
+                             rlxos::libpkgupd::Configuration *config)
+
+#define PKGUPD_MODULE_HELP(id) \
+  extern "C" void PKGUPD_help_##id(std::ostream &os)
+#define CHECK_ARGS(s)                                     \
+  if (args.size() != s) {                                 \
+    cerr << "need exactly " << s << " arguments" << endl; \
+    return 1;                                             \
+  }
 #endif
