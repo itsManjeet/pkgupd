@@ -204,8 +204,13 @@ bool Builder::build(Recipe *recipe) {
 
   if (recipe->node()["bundle"] && recipe->node()["bundle"].as<bool>()) {
     Bundler bunder = Bundler(pkgdir, "/");
+    std::vector<std::string> exclude;
+    for (auto const &lib : recipe->node()["exclude-libraries"]) {
+      exclude.push_back(lib.as<std::string>());
+    }
+    mConfig->get("bindler.exclude", exclude);
     // TODO: add list of libraries to include and exclude
-    if (!bunder.resolveLibraries({})) {
+    if (!bunder.resolveLibraries(exclude)) {
       p_Error = "Failed to bundle libraries, " + bunder.error();
       return false;
     }

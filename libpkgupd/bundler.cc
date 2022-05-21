@@ -26,6 +26,12 @@ bool Bundler::resolveLibraries(std::vector<std::string> const& except) {
     if (std::find(except.begin(), except.end(), libname) == except.end()) {
       DEBUG("adding " << i);
       std::error_code err;
+      if (i == m_WorkDir + "/usr/lib/" + libname) {
+        continue;
+      }
+      if (std::filesystem::exists(m_WorkDir + "/usr/lib/" + libname)) {
+        continue;
+      }
       std::filesystem::copy_file(i, m_WorkDir + "/usr/lib/" + libname, err);
       if (err) {
         p_Error = "failed to install " + i + ", " + err.message();
