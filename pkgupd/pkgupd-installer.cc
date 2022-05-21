@@ -38,6 +38,10 @@ PKGUPD_MODULE(install) {
 
   std::vector<std::shared_ptr<PackageInfo>> pkgs;
   for (auto const& pkg_id : args) {
+    auto installed_pkg = system_database->get(pkg_id.c_str());
+    if (installed_pkg != nullptr && !config->get("force", false)) {
+      continue;
+    }
     auto pkg = repository->get(pkg_id.c_str());
     if (pkg == nullptr) {
       cerr << "Error! '" << pkg_id << "' is missing in repository, "
@@ -45,6 +49,11 @@ PKGUPD_MODULE(install) {
       return -1;
     }
     pkgs.push_back(pkg);
+  }
+
+  if (pkgs.size() == 0) {
+    std::cout << "Specified package(s) is/are already installed" << std::endl;
+    return 0;
   }
 
   std::vector<std::shared_ptr<PackageInfo>> resolved_packages;
@@ -57,7 +66,10 @@ PKGUPD_MODULE(install) {
         return -1;
       }
     }
-    pkgs = resolver->list();
+    if (resolver->list().size() == 0 && config->get("force", false)) {
+    } else {
+      pkgs = resolver->list();
+    }
 
     cout << "    found " << pkgs.size() << " dependencies" << endl;
     if (!config->get("mode.all-yes", false)) {
