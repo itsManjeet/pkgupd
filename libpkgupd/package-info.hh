@@ -19,7 +19,8 @@ namespace rlxos::libpkgupd {
   X(THEME, "theme")       \
   X(ICON, "icon")         \
   X(FONT, "font")         \
-  X(RLXOS, "rlx")
+  X(RLXOS, "rlx")         \
+  X(IMAGE, "img")
 
 /**
  * @brief Package type helps to determine the type of packaging and

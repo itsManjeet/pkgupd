@@ -42,6 +42,7 @@ class Executor {
       std::vector<std::string> const &environ = {}) {
     auto cmd = _get_cmd(command, dir, environ);
 
+    DEBUG("cmd: " << cmd);
     std::array<char, 128> buffer;
     std::string result;
     FILE *pipe = popen(cmd.c_str(), "r");
@@ -51,6 +52,7 @@ class Executor {
     while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
       result += buffer.data();
     }
+    result = result.substr(0, result.size() - 1);
 
     int status = WEXITSTATUS(pclose(pipe));
 

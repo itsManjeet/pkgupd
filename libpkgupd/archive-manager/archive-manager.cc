@@ -1,5 +1,7 @@
 #include "archive-manager.hh"
 
+#include "appimage/appimage.hh"
+#include "squash/squash.hh"
 #include "tarball/tarball.hh"
 
 namespace rlxos::libpkgupd {
@@ -26,6 +28,10 @@ std::shared_ptr<ArchiveManager> ArchiveManager::create(PackageType type) {
     case PackageType::ICON:
     case PackageType::THEME:
       return std::make_shared<TarBall>();
+    case PackageType::APPIMAGE:
+      return std::make_shared<AppImage>();
+    case PackageType::IMAGE:
+      return std::make_shared<Squash>();
   }
 
   return nullptr;

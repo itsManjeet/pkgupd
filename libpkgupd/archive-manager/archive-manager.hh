@@ -10,7 +10,10 @@
 
 namespace rlxos::libpkgupd {
 
-#define ARCHIVE_TYPE_LIST X(TARBALL, TarBall)
+#define ARCHIVE_TYPE_LIST \
+  X(TARBALL, TarBall)     \
+  X(SQUASH, Squash)       \
+  X(APPIMAGE, AppImage)
 
 /**
  * @brief ArchiveManagerType holds the supported archive manager types

@@ -70,5 +70,5 @@ std::string Bundler::mime(std::string path) {
     throw std::runtime_error("failed to get mime type for " + path + ", " +
                              output);
   }
-  return output.substr(0, output.size() - 1);
+  return output;
 }

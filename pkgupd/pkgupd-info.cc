@@ -1,3 +1,4 @@
+#include "../libpkgupd/archive-manager/archive-manager.hh"
 #include "../libpkgupd/repository.hh"
 #include "../libpkgupd/system-database.hh"
 using namespace rlxos::libpkgupd;
@@ -16,7 +17,28 @@ PKGUPD_MODULE(info) {
   auto package_id = args[0];
   shared_ptr<PackageInfo> package;
 
-  package = system_database->get(package_id.c_str());
+  if (filesystem::exists(package_id) &&
+      filesystem::path(package_id).has_extension()) {
+    auto ext = filesystem::path(package_id).extension().string().substr(1);
+    auto archive_manager =
+        ArchiveManager::create(PACKAGE_TYPE_FROM_STR(ext.c_str()));
+    if (archive_manager == nullptr) {
+      cerr << "Invalid package format, no supported archive manager for '" +
+                  ext + "'";
+      return 1;
+    }
+    package = archive_manager->info(package_id.c_str());
+
+    if (package == nullptr) {
+      cerr << "Error! failed to read information file from '" + package_id +
+                  "', "
+           << archive_manager->error() << endl;
+      return 2;
+    }
+  } else {
+    package = system_database->get(package_id.c_str());
+  }
+
   if (package == nullptr) {
     package = repository->get(package_id.c_str());
   }

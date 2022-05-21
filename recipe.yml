@@ -18,21 +18,23 @@ pre-script: |
 
 post-script: |
   install -v -D -m 0644 assets/pkgupd.png ${pkgupd_pkgdir}/pkgupd.png
-AppRun: |
-  #!/bin/sh
-  SELF=$(readlink -f "$0")
-  HERE=${SELF%/*}
-  export LD_LIBRARY_PATH=${HERE}/usr/lib:${LD_LIBRARY_PATH}
-  exec ${HERE}/usr/bin/pkgupd $@
-
-
-DesktopFile: |
-  [Desktop Entry]
-  Name=pkgupd
-  Type=Application
-  Version=1.0
-  Comment=A Universal Package Manager URI Handler
-  Exec=pkgupd %u
-  Icon=pkgupd
-  MimeType=x-scheme-handler/pkgupd;
-  Categories=System;
+files:
+  - path: AppRun
+    perm: 0755
+    content: |
+      #!/bin/sh
+      SELF=$(readlink -f "$0")
+      HERE=${SELF%/*}
+      export LD_LIBRARY_PATH=${HERE}/usr/lib:${LD_LIBRARY_PATH}
+      exec ${HERE}/usr/bin/pkgupd $@
+  - path: pkgupd.desktop
+    content: |
+      [Desktop Entry]
+      Name=pkgupd
+      Type=Application
+      Version=1.0
+      Comment=A Universal Package Manager URI Handler
+      Exec=pkgupd %u
+      Icon=pkgupd
+      MimeType=x-scheme-handler/pkgupd;
+      Categories=System;

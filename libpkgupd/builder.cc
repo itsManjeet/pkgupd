@@ -202,6 +202,16 @@ bool Builder::build(Recipe *recipe) {
   (*recipe)[recipe->id()]->dump(file);
   file.close();
 
+  for (auto const &file : recipe->node()["files"]) {
+    std::ofstream f(pkgdir / file["path"].as<string>());
+    f << file["content"].as<string>();
+    f.close();
+    if (file["perm"]) {
+      chmod((pkgdir / file["path"].as<string>()).c_str(),
+            file["perm"].as<int>());
+    }
+  }
+
   if (recipe->node()["bundle"] && recipe->node()["bundle"].as<bool>()) {
     Bundler bunder = Bundler(pkgdir, "/");
     std::vector<std::string> exclude;
