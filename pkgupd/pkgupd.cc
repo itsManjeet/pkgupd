@@ -126,5 +126,11 @@ int main(int argc, char** argv) {
     cout << "Configuration: " << node << endl;
   }
   Configuration config(node);
-  return iter->second(args, &config);
+  try {
+    return iter->second(args, &config);
+  } catch (std::exception const& err) {
+    cerr << "Error! failed to perfrom task, unhandled exception " << err.what()
+         << endl;
+    return 1;
+  }
 }
