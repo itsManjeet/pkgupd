@@ -50,16 +50,16 @@ static char const*
 #undef X
 };
 
-#define PACKAGE_TYPE_FROM_STR(str)                                        \
-  ({                                                                      \
-    PackageType pkgtype = PackageType::N_PACKAGE_TYPE;                    \
-    for (int i = 0; PACKAGE_TYPE_INT(PackageType::N_PACKAGE_TYPE); i++) { \
-      if (!strcmp(PACKAGE_TYPE_ID[i], str)) {                             \
-        pkgtype = PackageType(i);                                         \
-        break;                                                            \
-      }                                                                   \
-    }                                                                     \
-    pkgtype;                                                              \
+#define PACKAGE_TYPE_FROM_STR(str)                                            \
+  ({                                                                          \
+    PackageType pkgtype = PackageType::N_PACKAGE_TYPE;                        \
+    for (int i = 0; i < PACKAGE_TYPE_INT(PackageType::N_PACKAGE_TYPE); i++) { \
+      if (!strcmp(PACKAGE_TYPE_ID[i], str)) {                                 \
+        pkgtype = PackageType(i);                                             \
+        break;                                                                \
+      }                                                                       \
+    }                                                                         \
+    pkgtype;                                                                  \
   })
 
 #define PACKAGE_FILE(pkg)                  \

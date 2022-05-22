@@ -41,7 +41,7 @@ PKGUPD_MODULE(meta) {
       auto package_type = PACKAGE_TYPE_FROM_STR(ext.c_str());
       if (package_type == PackageType::N_PACKAGE_TYPE) {
         cerr << "unsupported package '" << pkg.path() << endl;
-        return 1;
+        continue;
       }
 
       auto archive_manager = ArchiveManager::create(package_type);
