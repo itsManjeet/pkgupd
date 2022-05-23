@@ -1,6 +1,7 @@
 #include "../libpkgupd/archive-manager/archive-manager.hh"
 #include "../libpkgupd/archive-manager/tarball/tarball.hh"
 #include "../libpkgupd/configuration.hh"
+#include "../libpkgupd/utils/utils.hh"
 using namespace rlxos::libpkgupd;
 
 #include <fstream>
@@ -30,6 +31,7 @@ PKGUPD_MODULE(meta) {
     }
     std::ofstream file(repo_path / "meta");
     file << "pkgs:" << std::endl;
+    std::map<std::string, std::shared_ptr<PackageInfo>> pkgs;
     for (auto const& pkg : filesystem::directory_iterator(repo_path)) {
       if (pkg.path().filename().string() == "meta") continue;
 
@@ -57,8 +59,19 @@ PKGUPD_MODULE(meta) {
              << "', " << archive_manager->error() << endl;
         return 1;
       }
-
-      package_info->dump(file, true);
+      auto iter = pkgs.find(package_info->id());
+      if (iter == pkgs.end()) {
+        pkgs[package_info->id()] = package_info;
+      } else {
+        auto u = utils::get_version(package_info->version());
+        auto v = utils::get_version(pkgs[package_info->id()]->version());
+        if (u > v) {
+          pkgs[package_info->id()] = package_info;
+        }
+      }
+    }
+    for (auto const& i : pkgs) {
+      i.second->dump(file, true);
     }
     file.close();
   }
