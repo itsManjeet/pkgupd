@@ -25,3 +25,9 @@ target_link_libraries(pkgupd libpkgupd)
 
 install(TARGETS pkgupd
     DESTINATION bin)
+
+set(BUILD_TEST "build test" ON)
+if (BUILD_TEST)
+enable_testing()
+add_subdirectory(tests)
+endif()
