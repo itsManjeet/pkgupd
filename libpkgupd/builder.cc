@@ -193,7 +193,7 @@ bool Builder::build(Recipe *recipe) {
   if (recipe->dostrip()) {
     Stripper stripper(recipe->skipStrip());
     PROCESS("stripping package");
-    if (!stripper.strip(wrkdir)) {
+    if (!stripper.strip(pkgdir)) {
       ERROR(stripper.error());
     }
   }
@@ -320,14 +320,25 @@ bool Builder::pack(
     std::vector<std::pair<std::shared_ptr<PackageInfo>, std::string>> const
         &dirs) {
   for (auto const &i : dirs) {
-    auto packagefile_Path =
-        mPackageDir + "/" + i.first->repository() + "/" + PACKAGE_FILE(i.first);
+    auto packagefile_Path = std::filesystem::proximate(mPackageDir) /
+                            i.first->repository() / (PACKAGE_FILE(i.first));
 
     auto archive_manager = ArchiveManager::create(i.first->type());
     if (archive_manager == nullptr) {
       p_Error = "no suitable archive manager found for type '" +
                 std::string(PACKAGE_TYPE_STR[int(i.first->type())]) + "'";
       return false;
+    }
+
+    if (!std::filesystem::exists(packagefile_Path.parent_path())) {
+      std::error_code error;
+      std::filesystem::create_directories(packagefile_Path.parent_path());
+      if (error) {
+        p_Error = "failed to create require directory '" +
+                  packagefile_Path.parent_path().string() + "', " +
+                  error.message();
+        return false;
+      }
     }
     if (!archive_manager->compress(packagefile_Path.c_str(),
                                    i.second.c_str())) {
