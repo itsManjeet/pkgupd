@@ -95,7 +95,15 @@ PKGUPD_MODULE(install) {
       return -1;
     }
 
-    auto pkgfile = pkgs_dir / (PACKAGE_FILE(p));
+    auto pkgfile = pkgs_dir / p->repository() / (PACKAGE_FILE(p));
+    if (!std::filesystem::exists(pkgfile.parent_path())) {
+      std::error_code error;
+      std::filesystem::create_directories(pkgfile.parent_path(), error);
+      if (error) {
+        cerr << "Error! failed to create required package directories" << endl;
+        return -1;
+      }
+    }
 
     if (filesystem::exists(pkgfile)) {
       cout << "    package file found in cache" << endl;
