@@ -120,10 +120,12 @@ PKGUPD_MODULE(install) {
       return -1;
     }
 
-    cout << "    executing triggers" << endl;
-    if (!triggerer->trigger(installed_package_info.get())) {
-      cerr << "Error! failed to execute triggers" << endl;
-      return -1;
+    if (config->get("installer.triggers", true)) {
+      cout << "    executing triggers" << endl;
+      if (!triggerer->trigger(installed_package_info.get())) {
+        cerr << "Error! failed to execute triggers" << endl;
+        return -1;
+      }
     }
   }
 
