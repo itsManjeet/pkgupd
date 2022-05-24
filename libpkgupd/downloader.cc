@@ -26,18 +26,18 @@ int progress_func(void *ptr, double TotalToDownload, double NowDownloaded,
 
   // create the "meter"
   int ii = 0;
-  printf("%3.0f%% \033[1m[\033[0m", fractiondownloaded * 100);
+  printf("%3.0f%% ", fractiondownloaded * 100);
   // part  that's full already
   for (; ii < dotz; ii++) {
-    printf("\033[32;1m■\033[0m");
+    printf("\033[32;1m▰\033[0m");
   }
   // remaining part (spaces)
   for (; ii < totaldotz; ii++) {
-    printf("\033[1m \033[0m");
+    printf("\033[1m▱\033[0m");
   }
   // and back to line begin - do not forget the fflush to avoid output buffering
   // problems!
-  printf("\033[1m] [%.10s]\033[0m\r",
+  printf("\033[1m [%.10s]\033[0m\r",
          humanize(static_cast<size_t>(TotalToDownload)).c_str());
   fflush(stdout);
   // if you don't return 0, the transfer will be aborted - see the documentation
@@ -86,7 +86,6 @@ bool Downloader::download(char const *url, char const *outfile) {
   curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1000);
   curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 10);
 
-  PROCESS("downloading " << std::filesystem::path(outfile).filename());
   res = curl_easy_perform(curl);
 
   std::cout << std::endl;
@@ -152,7 +151,7 @@ bool Downloader::get(char const *file, char const *outdir) {
   for (auto const &mirror : mirrors) {
     std::string fileurl = mirror + "/" + version + "/pkgs/" + file;
 
-    std::cout << ":: GET " << fileurl << std::endl;
+    DEBUG("GET " << fileurl)
     if (!getenv("NO_CURL_CHECK"))
       if (!valid(fileurl.c_str())) continue;
 

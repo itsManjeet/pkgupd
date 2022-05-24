@@ -28,13 +28,8 @@ PKGUPD_MODULE(install) {
   downloader = std::make_shared<Downloader>(config);
   triggerer = std::make_shared<Triggerer>();
 
-  resolver = std::make_shared<Resolver>(
-      [&](char const* id) -> std::shared_ptr<PackageInfo> {
-        return repository->get(id);
-      },
-      [&](PackageInfo* info) -> bool {
-        return system_database->get(info->id().c_str()) != nullptr;
-      });
+  resolver =
+      std::make_shared<Resolver>(system_database.get(), repository.get());
 
   std::vector<std::shared_ptr<PackageInfo>> pkgs;
   for (auto const& pkg_id : args) {
@@ -44,22 +39,23 @@ PKGUPD_MODULE(install) {
     }
     auto pkg = repository->get(pkg_id.c_str());
     if (pkg == nullptr) {
-      cerr << "Error! '" << pkg_id << "' is missing in repository, "
-           << repository->error() << endl;
+      ERROR("no package " << RED(pkg_id)
+                          << " found in repository database.\n  Because "
+                          << repository->error() << ", try syncing again");
       return -1;
     }
     pkgs.push_back(pkg);
   }
 
   if (pkgs.size() == 0) {
-    std::cout << "Specified package(s) is/are already installed" << std::endl;
+    MESSAGE(BLUE("::"), "package(s) is/are already installed");
     return 0;
   }
 
   std::vector<std::shared_ptr<PackageInfo>> resolved_packages;
 
   if (config->get("no-depends", false) == false) {
-    cout << ":: generating dependency tree ::" << endl;
+    PROCESS("generating dependency graph");
     for (auto p : pkgs) {
       if (!resolver->resolve(p)) {
         cerr << resolver->error() << endl;
@@ -71,12 +67,12 @@ PKGUPD_MODULE(install) {
       pkgs = resolver->list();
     }
 
-    cout << "    found " << pkgs.size() << " dependencies" << endl;
+    MESSAGE(BLUE("::"), "found " << pkgs.size() << " dependencies");
     if (!config->get("mode.all-yes", false)) {
-      cout << "Press [Y] if you want to contine: ";
+      cout << BOLD("Press [Y] if you want to contine: ");
       int c = cin.get();
       if (c != 'Y' && c != 'y') {
-        cerr << "user cancelled the operation" << endl;
+        ERROR("user cancelled the operation")
         return 1;
       }
     }
@@ -86,44 +82,38 @@ PKGUPD_MODULE(install) {
       filesystem::path(config->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR));
 
   for (auto p : pkgs) {
-    cout << ":: installing " << p->id() << " " << p->version() << endl;
+    PROCESS("installing " << p->id() << "-" << p->version());
     installer = Installer::create(p->type(), config);
     if (installer == nullptr) {
-      cerr << "Error! no valid installer avaliable for '" + p->id()
-           << "' of type '" << PACKAGE_TYPE_STR[PACKAGE_TYPE_INT(p->type())]
-           << "'" << endl;
+      ERROR("Error! no valid installer avaliable for '" + p->id()
+            << "' of type '" << PACKAGE_TYPE_STR[PACKAGE_TYPE_INT(p->type())]
+            << "'");
       return -1;
     }
 
     auto pkgfile = pkgs_dir / (PACKAGE_FILE(p));
 
     if (filesystem::exists(pkgfile)) {
-      cout << "    package file found in cache" << endl;
     } else {
-      cout << "    retrieving " << p->repository() << "/" << PACKAGE_FILE(p)
-           << " " << endl;
       if (!downloader->get((p->repository() + "/" + PACKAGE_FILE(p)).c_str(),
                            pkgfile.c_str())) {
-        cerr << "Error! failed to retrieve package file " << downloader->error()
-             << endl;
+        ERROR("Error! failed to retrieve package file " << downloader->error());
         return -1;
       }
     }
 
     // TODO: add validator here
 
-    cout << "    injecting package " << pkgfile << endl;
     auto installed_package_info = installer->install(
         pkgfile.c_str(), system_database.get(), config->get("force", false));
     if (installed_package_info == nullptr) {
-      cerr << "Error! installation failed: " << installer->error() << endl;
+      ERROR("Error! installation failed: " << installer->error())
       return -1;
     }
 
     if (config->get("installer.triggers", true)) {
-      cout << "    executing triggers" << endl;
       if (!triggerer->trigger(installed_package_info.get())) {
-        cerr << "Error! failed to execute triggers" << endl;
+        ERROR("Error! failed to execute triggers");
         return -1;
       }
     }

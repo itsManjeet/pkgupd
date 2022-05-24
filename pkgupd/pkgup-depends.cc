@@ -29,12 +29,12 @@ PKGUPD_MODULE(depends) {
   for (auto const& i : args) {
     auto pkginfo = repository.get(i.c_str());
     if (pkginfo == nullptr) {
-      cerr << "Error! missing required package " << pkginfo << std::endl;
+      ERROR("Error! missing required package " << pkginfo);
       return 1;
     }
 
     if (!resolver.resolve(pkginfo)) {
-      cerr << resolver.error() << endl;
+      ERROR(resolver.error());
       return 1;
     }
   }

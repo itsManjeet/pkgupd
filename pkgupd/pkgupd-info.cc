@@ -23,16 +23,15 @@ PKGUPD_MODULE(info) {
     auto archive_manager =
         ArchiveManager::create(PACKAGE_TYPE_FROM_STR(ext.c_str()));
     if (archive_manager == nullptr) {
-      cerr << "Invalid package format, no supported archive manager for '" +
-                  ext + "'";
+      ERROR("Invalid package format, no supported archive manager for '" + ext +
+            "'");
       return 1;
     }
     package = archive_manager->info(package_id.c_str());
 
     if (package == nullptr) {
-      cerr << "Error! failed to read information file from '" + package_id +
-                  "', "
-           << archive_manager->error() << endl;
+      ERROR("failed to read information file from '" + package_id + "', "
+            << archive_manager->error());
       return 2;
     }
   } else {
@@ -44,27 +43,28 @@ PKGUPD_MODULE(info) {
   }
 
   if (package == nullptr) {
-    cerr << "Error! no package found with id '" + package_id + "'" << endl;
+    ERROR("Error! no package found with id '" + package_id + "'");
     return 2;
   }
 
   string info_value = config->get<string>("info.value", "");
   if (info_value.length() == 0) {
-    cout << "id         : " << package->id() << '\n'
-         << "version    : " << package->version() << '\n'
-         << "about      : " << package->about() << '\n'
-         << "repository : " << package->repository() << '\n'
-         << "type       : "
-         << PACKAGE_TYPE_ID[PACKAGE_TYPE_INT(package->type())] << endl;
+    cout << BLUE("Name") << "         :   " << GREEN(package->id()) << '\n'
+         << BLUE("Version") << "      :   " << BOLD(package->version()) << '\n'
+         << BLUE("About") << "        :   " << BOLD(package->about()) << '\n'
+         << BLUE("Repository") << "   :   " << BOLD(package->repository()) << '\n'
+         << BLUE("Type") << "         :   "
+         << GREEN(PACKAGE_TYPE_ID[PACKAGE_TYPE_INT(package->type())]) << endl;
 
 #define INSTALLED(in) std::static_pointer_cast<InstalledPackageInfo>(in)
 
     auto installed_info =
         std::static_pointer_cast<InstalledPackageInfo>(package);
     if (installed_info != nullptr) {
-      cout << "installed  : " << installed_info->installed_on() << '\n'
-           << "files      : " << to_string(installed_info->files().size())
-           << endl;
+      cout << BLUE("Installed") << "    :   "
+           << GREEN(installed_info->installed_on()) << '\n'
+           << BLUE("Files") << "        :   "
+           << BOLD(to_string(installed_info->files().size())) << endl;
     }
   } else {
     if (info_value == "id") {

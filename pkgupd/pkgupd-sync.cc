@@ -14,18 +14,22 @@ PKGUPD_MODULE(sync) {
     error_code err;
     filesystem::create_directories(repo_dir, err);
     if (err) {
-      cout << "failed to create repository dir " << err.message() << endl;
+      ERROR("failed to create repository dir " << err.message());
       return 1;
     }
   }
   std::vector<std::string> repos;
   config->get(REPOS, repos);
+  if (repos.size() == 0) {
+    ERROR("no repository specified, in configuration file");
+    return 1;
+  }
   bool status = true;
   for (auto const& repo : repos) {
-    cout << "syncing " << repo << endl;
+    PROCESS("syncing " << repo);
     if (!downloader->get((repo + "/meta").c_str(), (repo_dir / repo).c_str())) {
       status = false;
-      cerr << "failed:" << downloader->error() << endl;
+      ERROR(downloader->error());
     }
   }
   return status ? 0 : 1;
