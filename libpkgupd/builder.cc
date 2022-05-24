@@ -156,7 +156,9 @@ bool Builder::build(Recipe *recipe) {
       }
     }
   } else if (build_work_type == "local") {
-    wrkdir = std::filesystem::current_path();
+    wrkdir = std::filesystem::path(
+                 mConfig->get<std::string>("build.recipe", "recipe.yml"))
+                 .parent_path();
   }
   if (recipe->prescript().size()) {
     PROCESS("executing prescript")
