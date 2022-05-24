@@ -1,9 +1,15 @@
 #ifndef LIBPKGUPD_UTILS_HH
 #define LIBPKGUPD_UTILS_HH
 
+#include <yaml-cpp/yaml.h>
+
 #include <functional>
 #include <memory>
 #include <string>
+
+#define _R(var) rlxos::libpkgupd::utils::resolve_variable(data, var)
+#define _RL(var) \
+  for (auto& i : var) _R(i)
 
 using defer = std::shared_ptr<void>;
 
@@ -21,6 +27,8 @@ static inline int get_version(std::string version) {
   }
   return std::stoi(version);
 }
+
+void resolve_variable(YAML::Node node, std::string& value);
 }  // namespace rlxos::libpkgupd::utils
 
 #endif

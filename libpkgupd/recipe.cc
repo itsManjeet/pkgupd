@@ -135,8 +135,11 @@ Recipe::Recipe(YAML::Node data, std::string file, std::string const& repo)
         splitPackage.into = i["into"].as<std::string>();
         splitPackage.about = i["about"].as<std::string>();
 
-        for (auto const& file : i["files"]) {
-          splitPackage.files.push_back(file.as<std::string>());
+        _R(splitPackage.about);
+        for (auto f : i["files"]) {
+          auto file = f.as<std::string>();
+          _R(file);
+          splitPackage.files.push_back(file);
         }
 
         if (i["depends"]) {
@@ -156,6 +159,19 @@ Recipe::Recipe(YAML::Node data, std::string file, std::string const& repo)
   } else {
     m_BuildType = BuildType::N_BUILD_TYPE;
   }
+
+  _R(m_About);
+  _RL(m_Environ);
+  _RL(m_Sources);
+  _R(m_BuildDir);
+  _R(m_Configure);
+  _R(m_Compile);
+  _R(m_Install);
+  _R(m_PreScript);
+  _R(m_PostScript);
+  _RL(m_SkipStrip);
+  _R(m_InstallScript);
+  _R(m_Script);
 }
 
 std::shared_ptr<PackageInfo> Recipe::operator[](std::string const& name) const {
