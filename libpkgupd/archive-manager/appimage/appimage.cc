@@ -57,7 +57,7 @@ bool AppImage::extract(char const* input_path, char const* output_path,
 }
 
 bool AppImage::compress(char const* input_path, char const* src_dir) {
-  std::string cmd = "appimagetool ";
+  std::string cmd = "ARCH=x86_64 appimagetool ";
   cmd += src_dir;
   cmd += " ";
   cmd += input_path;
