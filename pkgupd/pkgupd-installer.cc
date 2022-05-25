@@ -28,8 +28,8 @@ PKGUPD_MODULE(install) {
   downloader = std::make_shared<Downloader>(config);
   triggerer = std::make_shared<Triggerer>();
 
-  resolver =
-      std::make_shared<Resolver>(system_database.get(), repository.get());
+  resolver = std::make_shared<Resolver>(DEFAULT_GET_PACKAE_FUNCTION,
+                                        DEFAULT_SKIP_PACKAGE_FUNCTION);
 
   std::vector<std::shared_ptr<PackageInfo>> pkgs;
   for (auto const& pkg_id : args) {
@@ -67,8 +67,11 @@ PKGUPD_MODULE(install) {
       pkgs = resolver->list();
     }
 
-    MESSAGE(BLUE("::"), "found " << pkgs.size() << " dependencies");
-    if (!config->get("mode.all-yes", false)) {
+    MESSAGE(BLUE("::"), "required " << pkgs.size() << " packagess");
+    for (auto const& i : pkgs) {
+      cout << "- " << i->id() << ":" << i->version() << endl;
+    }
+    if (!config->get("mode.all-yes", false) && pkgs.size() > 1) {
       cout << BOLD("Press [Y] if you want to contine: ");
       int c = cin.get();
       if (c != 'Y' && c != 'y') {
@@ -111,7 +114,7 @@ PKGUPD_MODULE(install) {
     }
 
     // TODO: add validator here
-
+    
     auto installed_package_info = installer->install(
         pkgfile.c_str(), system_database.get(), config->get("force", false));
     if (installed_package_info == nullptr) {
@@ -126,6 +129,9 @@ PKGUPD_MODULE(install) {
       }
     }
   }
+
+  cout << BOLD("successfully installed ") << GREEN(pkgs.size())
+       << BOLD(" package(s)") << endl;
 
   return 0;
 }

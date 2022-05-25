@@ -29,8 +29,8 @@ std::shared_ptr<PackageInfo> Repository::get(char const *packageName) {
   for (auto const &repo : repos_list) {
     auto repo_path = fs::path(repo_dir) / repo;
     if (!fs::exists(repo_path)) {
-      throw std::runtime_error(repo_path.string() + " for " + repo +
-                               " not exists");
+      p_Error = "repository data for '" + repo + "' not found";
+      return nullptr;
     }
 
     YAML::Node node = YAML::LoadFile(repo_path);

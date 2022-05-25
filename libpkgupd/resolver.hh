@@ -7,6 +7,16 @@
 #include "repository.hh"
 #include "system-database.hh"
 
+#define DEFAULT_GET_PACKAE_FUNCTION                     \
+  [&](char const *id) -> std::shared_ptr<PackageInfo> { \
+    return repository->get(id);                         \
+  }
+
+#define DEFAULT_SKIP_PACKAGE_FUNCTION                          \
+  [&](PackageInfo *pkg) -> bool {                              \
+    return system_database->get(pkg->id().c_str()) != nullptr; \
+  }
+
 namespace rlxos::libpkgupd {
 class Resolver : public Object {
  public:
@@ -26,16 +36,6 @@ class Resolver : public Object {
  public:
   Resolver(GetPackageFunctionType get_fun, SkipPackageFunctionType skip_fun)
       : mGetPackageFunction{get_fun}, mSkipPackageFunction{skip_fun} {}
-
-  Resolver(SystemDatabase *system_database, Repository *repository) {
-    mGetPackageFunction = [&](char const *id) -> std::shared_ptr<PackageInfo> {
-      return repository->get(id);
-    };
-
-    mSkipPackageFunction = [&](PackageInfo *pkg) -> bool {
-      return system_database->get(pkg->id().c_str()) != nullptr;
-    };
-  }
 
   bool resolve(std::shared_ptr<PackageInfo> info);
 
