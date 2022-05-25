@@ -26,7 +26,7 @@ bool Meson::compile(Recipe* recipe, Configuration* config, std::string dir,
         " --localstatedir=" +
         config->get<std::string>(BUILD_CONFIG_LOCALSTATEDIR,
                                  DEFAULT_LOCALSTATEDIR) +
-        configure;
+        " " + configure;
   }
   if (int status = Executor().execute("meson  _pkgupd_builddir " + configure,
                                       dir, environ);
