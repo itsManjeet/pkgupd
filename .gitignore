@@ -8,3 +8,4 @@ tests/data/
 tests/root
 tests/pkgs
 tests/src
+tests/repo
