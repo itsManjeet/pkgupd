@@ -11,7 +11,8 @@ using namespace rlxos::libpkgupd;
   X(remove)                 \
   X(build)                  \
   X(trigger)                \
-  X(sync)
+  X(sync)                   \
+  X(update)
 
 #include <functional>
 #include <iostream>

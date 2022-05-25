@@ -18,6 +18,8 @@ class Configuration {
     return t;
   }
 
+  YAML::Node& node() { return mNode; }
+
   void get(char const* key, std::vector<std::string>& list) {
     for (auto const& i : mNode[key]) {
       list.push_back(i.as<std::string>());
