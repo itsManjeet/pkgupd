@@ -52,14 +52,15 @@ PKGUPD_MODULE(info) {
     cout << BLUE("Name") << "         :   " << GREEN(package->id()) << '\n'
          << BLUE("Version") << "      :   " << BOLD(package->version()) << '\n'
          << BLUE("About") << "        :   " << BOLD(package->about()) << '\n'
-         << BLUE("Repository") << "   :   " << BOLD(package->repository()) << '\n'
+         << BLUE("Repository") << "   :   " << BOLD(package->repository())
+         << '\n'
          << BLUE("Type") << "         :   "
          << GREEN(PACKAGE_TYPE_ID[PACKAGE_TYPE_INT(package->type())]) << endl;
 
-#define INSTALLED(in) std::static_pointer_cast<InstalledPackageInfo>(in)
+#define INSTALLED(in) std::dynamic_pointer_cast<InstalledPackageInfo>(in)
 
-    auto installed_info =
-        std::static_pointer_cast<InstalledPackageInfo>(package);
+    std::shared_ptr<InstalledPackageInfo> installed_info =
+        std::dynamic_pointer_cast<InstalledPackageInfo>(package);
     if (installed_info != nullptr) {
       cout << BLUE("Installed") << "    :   "
            << GREEN(installed_info->installed_on()) << '\n'

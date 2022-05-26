@@ -21,7 +21,8 @@ script: |
   echo 'int main() {return 0;}' > main.c
   echo 'int add(int a, int b) {return a + b;}' > add.c
 
-  mkdir -p ${pkgupd_pkgdir}/usr/{bin,lib}
+  mkdir -p ${pkgupd_pkgdir}/usr/bin
+  mkdir -p ${pkgupd_pkgdir}/usr/lib
   gcc main.c -o ${pkgupd_pkgdir}/usr/bin/test
   gcc -fPIC -shared add.c -o ${pkgupd_pkgdir}/usr/lib/libadd.so
 

@@ -10,8 +10,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/pkgupd",
             "args": [
-                "meta", "dir.pkgs=${workspaceFolder}/tests/pkgs",
-                "repos=extra,"
+                "install", "acl", "dir.pkgs=${workspaceFolder}/tests/pkgs", "dir.repo=${workspaceFolder}/tests/repo",
+                "dir.root=${workspaceFolder}/tests/root", "repos=core,"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

@@ -103,7 +103,7 @@ class PackageInfo {
         m_Script{script},
         m_Repository{repo},
         m_Node{node} {}
-
+  virtual ~PackageInfo() = default;
   std::string const& id() const { return m_ID; }
   std::string const& version() const { return m_Version; }
   std::string const& about() const { return m_About; }
