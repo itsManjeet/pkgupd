@@ -114,7 +114,7 @@ PKGUPD_MODULE(install) {
     }
 
     // TODO: add validator here
-    
+
     auto installed_package_info = installer->install(
         pkgfile.c_str(), system_database.get(), config->get("force", false));
     if (installed_package_info == nullptr) {
@@ -126,6 +126,13 @@ PKGUPD_MODULE(install) {
       if (!triggerer->trigger(installed_package_info.get())) {
         ERROR("Error! failed to execute triggers");
         return -1;
+      }
+
+      if (installed_package_info->script().size()) {
+        if (int status = Executor::execute(installed_package_info->script());
+            status != 0) {
+          ERROR("install script failed with exit code: " << status);
+        }
       }
     }
   }
