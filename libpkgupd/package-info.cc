@@ -57,6 +57,8 @@ void PackageInfo::dump(std::ostream& os, bool as_meta) const {
   }
 
   if (m_Node["extra"]) {
-    os << m_Node["extra"] << std::endl;
+    YAML::Node extra;
+    extra["extra"] = m_Node["extra"];
+    os << extra << std::endl;
   }
 }

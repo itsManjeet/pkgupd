@@ -156,9 +156,11 @@ bool Builder::build(Recipe *recipe) {
       }
     }
   } else if (build_work_type == "local") {
-    wrkdir = std::filesystem::path(
-                 mConfig->get<std::string>("build.recipe", "recipe.yml"))
-                 .parent_path();
+    wrkdir =
+        std::filesystem::path(
+            mConfig->get<std::string>(
+                "build.recipe", std::filesystem::current_path() / "recipe.yml"))
+            .parent_path();
   }
   if (recipe->prescript().size()) {
     PROCESS("executing prescript")
@@ -300,6 +302,7 @@ bool Builder::compile(Recipe *recipe, std::string dir, std::string destdir,
   } else if (recipe->script().size() != 0) {
     type = BuildType::Script;
   } else {
+    DEBUG("detecting build type in: " << dir);
     type = DETECT_BUILD_TYPE(dir);
   }
   compiler = Compiler::create(type);
