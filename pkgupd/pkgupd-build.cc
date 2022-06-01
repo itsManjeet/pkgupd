@@ -18,6 +18,9 @@ PKGUPD_MODULE(build) {
     return 1;
   }
 
+  config->node()["build.recipe-dir"] =
+      std::filesystem::path(recipe_file).parent_path().string();
+
   std::shared_ptr<Recipe> recipe;
   try {
     auto node = YAML::LoadFile(recipe_file);
