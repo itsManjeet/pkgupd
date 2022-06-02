@@ -7,6 +7,7 @@ using namespace std;
 #include "../libpkgupd/resolver.hh"
 #include "../libpkgupd/system-database.hh"
 #include "../libpkgupd/triggerer.hh"
+#include "common.hh"
 
 using namespace rlxos::libpkgupd;
 
@@ -71,13 +72,9 @@ PKGUPD_MODULE(install) {
     for (auto const& i : pkgs) {
       cout << "- " << i->id() << ":" << i->version() << endl;
     }
-    if (!config->get("mode.all-yes", false) && pkgs.size() > 1) {
-      cout << BOLD("Press [Y] if you want to contine: ");
-      int c = cin.get();
-      if (c != 'Y' && c != 'y') {
-        ERROR("user cancelled the operation")
-        return 1;
-      }
+    if (!ask_user("Do you want to continue", config)) {
+      ERROR("user cancelled the operation");
+      return 1;
     }
   }
 

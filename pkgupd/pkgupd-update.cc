@@ -1,6 +1,7 @@
 #include "../libpkgupd/repository.hh"
 #include "../libpkgupd/system-database.hh"
 #include "../libpkgupd/utils/utils.hh"
+#include "common.hh"
 using namespace rlxos::libpkgupd;
 
 #include <filesystem>
@@ -64,16 +65,11 @@ PKGUPD_MODULE(update) {
   }
 
   INFO("found " << outdated_packages.size() << " update(s)");
-  if (!config->get("mode.ask", false)) {
-    cout << BOLD("Press [Y] if you want to contine: ");
-    int c = cin.get();
-    if (c != 'Y' && c != 'y') {
-      ERROR("user cancelled the operation")
-      return 1;
-    }
+  if (!ask_user("Do you want to continue", config)) {
+    ERROR("user cancelled the operation");
+    return 1;
   }
 
-  config->node()["mod.all-yes"] = true;
   config->node()["force"] = true;
   return PKGUPD_install(outdated_packages, config);
 }
