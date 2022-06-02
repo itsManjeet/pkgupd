@@ -52,7 +52,7 @@ PKGUPD_MODULE(update) {
     }
 
     if (installed_info->version() != repository_info->version()) {
-      INFO("updated for " << installed_info->id() << " "
+      INFO("updates for " << installed_info->id() << " "
                           << installed_info->version() << "->"
                           << repository_info->version());
       outdated_packages.push_back(installed_info->id());
@@ -71,5 +71,7 @@ PKGUPD_MODULE(update) {
   }
 
   config->node()["force"] = true;
+  config->node()["mode.ask"] = false;
+  config->node()["is-updating"] = true;
   return PKGUPD_install(outdated_packages, config);
 }

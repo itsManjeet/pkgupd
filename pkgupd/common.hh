@@ -6,7 +6,7 @@
 #include "../libpkgupd/configuration.hh"
 namespace rlxos::libpkgupd {
 static inline bool ask_user(std::string mesg, Configuration* config) {
-  if (!config->get("mode.ask", false)) {
+  if (config->get("mode.ask", true)) {
     std::cout << mesg << " [Y|N] >> ";
     int c = std::cin.get();
     if (c == 'Y' || c == 'y') {

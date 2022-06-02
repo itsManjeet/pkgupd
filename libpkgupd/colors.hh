@@ -15,7 +15,7 @@
 
 #define ERROR(mesg) MESSAGE(RED("ERROR"), mesg)
 #define PROCESS(mesg) MESSAGE(GREEN("::"), mesg)
-#define INFO(mesg) MESSAGE(BLUE("INFO"), mesg)
+#define INFO(mesg) MESSAGE(BLUE("::"), mesg)
 #define DEBUG(mesg) \
   if (getenv("DEBUG") != nullptr) MESSAGE(BLUE("DEBUG"), mesg)
 

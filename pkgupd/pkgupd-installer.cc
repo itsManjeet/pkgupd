@@ -82,7 +82,8 @@ PKGUPD_MODULE(install) {
       filesystem::path(config->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR));
 
   for (auto p : pkgs) {
-    PROCESS("installing " << p->id() << "-" << p->version());
+    PROCESS((config->get("is-updating", false) ? "updating" : "installing")
+            << " " << p->id() << "-" << p->version());
     installer = Installer::create(p->type(), config);
     if (installer == nullptr) {
       ERROR("Error! no valid installer avaliable for '" + p->id()
@@ -134,8 +135,9 @@ PKGUPD_MODULE(install) {
     }
   }
 
-  cout << BOLD("successfully installed ") << GREEN(pkgs.size())
-       << BOLD(" package(s)") << endl;
+  cout << BOLD("successfully") << " "
+       << BLUE((config->get("is-updating", false) ? "installed" : "updated"))
+       << " " << GREEN(pkgs.size()) << BOLD(" package(s)") << endl;
 
   return 0;
 }
