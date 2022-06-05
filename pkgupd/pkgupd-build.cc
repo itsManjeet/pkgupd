@@ -57,6 +57,8 @@ PKGUPD_MODULE(build) {
           auto packageInfo = repository->get(id);
           auto recipe = sourceRepository->get(id);
 
+          if (recipe == nullptr) return packageInfo;
+
           if (packageInfo != nullptr && recipe != nullptr) {
             if (recipe->version() == packageInfo->version()) {
               return packageInfo;
