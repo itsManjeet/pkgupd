@@ -135,6 +135,13 @@ int main(int argc, char** argv) {
   if (node["debug"].as<bool>()) {
     cout << "Configuration: " << node << endl;
   }
+  if (!node["repos"])
+    node["repos"] = std::vector<std::string>{"core", "extra", "apps"};
+
+  if (!node["mirrors"])
+    node["mirrors"] =
+        std::vector<std::string>{"https://rlxos.dev/storage/stable"};
+
   Configuration config(node);
   try {
     return iter->second(args, &config);
