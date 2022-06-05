@@ -55,9 +55,14 @@ PKGUPD_MODULE(build) {
     std::shared_ptr<Resolver> resolver = std::make_shared<Resolver>(
         [&](char const* id) -> std::shared_ptr<PackageInfo> {
           auto packageInfo = repository->get(id);
-          if (packageInfo != nullptr) return packageInfo;
-
           auto recipe = sourceRepository->get(id);
+          
+          if (packageInfo != nullptr && recipe != nullptr) {
+            if (recipe->version() == packageInfo->version()) {
+              return packageInfo;
+            }
+          }
+
           if (recipe != nullptr) {
             source_packages.push_back(id);
             std::vector<std::string> depends = recipe->depends();
