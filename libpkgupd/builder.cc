@@ -133,7 +133,7 @@ bool Builder::build(Recipe *recipe) {
   environ.push_back("PKGUPD_PKGDIR=" + mPackageDir);
   environ.push_back("pkgupd_srcdir=" + srcdir.string());
   environ.push_back("pkgupd_pkgdir=" + pkgdir.string());
-  environ.push_back("FILES_DIR=" + recipe->filePath());
+  environ.push_back("FILES_DIR=" + std::filesystem::path(recipe->filePath()).parent_path().string());
   environ.push_back("DESTDIR=" + pkgdir.string());
   mConfig->get("environ", environ);
 
