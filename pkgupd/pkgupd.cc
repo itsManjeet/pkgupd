@@ -88,6 +88,15 @@ int main(int argc, char** argv) {
     append_config(node, "/etc/pkgupd.yml");
   }
 
+  if (filesystem::exists("/etc/pkgupd.conf.d")) {
+    for (auto const& i :
+         std::filesystem::directory_iterator("/etc/pkgupd.conf.d")) {
+      if (i.path().has_extension() && i.path().extension() == ".yml") {
+        append_config(node, i.path().c_str());
+      }
+    }
+  }
+
   string task = argv[1];
   auto iter = MODULES.find(task);
   if (iter == MODULES.end()) {

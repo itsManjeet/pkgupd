@@ -3,6 +3,7 @@
 #include "../libpkgupd/uninstaller/uninstaller.hh"
 using namespace rlxos::libpkgupd;
 
+#include <algorithm>
 #include <iostream>
 using namespace std;
 
@@ -12,6 +13,17 @@ PKGUPD_MODULE(remove) {
   CHECK_ARGS(1);
 
   auto pkg_id = args[0];
+
+  std::vector<std::string> excludedPackages;
+
+  // exclude all system image packages
+  config->get("system.packages", excludedPackages);
+  if (std::find(excludedPackages.begin(), excludedPackages.end(), pkg_id) !=
+      excludedPackages.end()) {
+    ERROR("can't remove package from system image");
+    return 1;
+  }
+
   auto system_database = std::make_shared<SystemDatabase>(config);
 
   auto pkg_info = system_database->get(pkg_id.c_str());

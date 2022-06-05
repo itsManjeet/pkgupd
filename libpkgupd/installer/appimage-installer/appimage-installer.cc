@@ -14,7 +14,7 @@ std::shared_ptr<InstalledPackageInfo> AppImageInstaller::install(
     char const* path, SystemDatabase* sys_db, bool force) {
   std::shared_ptr<ArchiveManager> archive_manager;
   std::shared_ptr<PackageInfo> package_info;
-  std::string root_dir, apps_dir;
+  std::filesystem::path root_dir, apps_dir;
   std::vector<std::string> extracted_files;
   std::shared_ptr<InstalledPackageInfo> installed_package_info;
   std::string offset;
@@ -27,20 +27,17 @@ std::shared_ptr<InstalledPackageInfo> AppImageInstaller::install(
     p_Error = archive_manager->error();
     return nullptr;
   }
-
-  extracted_files.push_back("/apps/" +
-                            std::filesystem::path(path).filename().string());
-
   root_dir = mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
   apps_dir = mConfig->get<std::string>(DIR_APPS, DEFAULT_APPS_DIR);
 
-  auto app_path = std::filesystem::path(root_dir) / apps_dir /
-                  std::filesystem::path(path).filename();
+  auto app_path = root_dir / apps_dir / std::filesystem::path(path).filename();
+
+  extracted_files.push_back(apps_dir / std::filesystem::path(path).filename());
 
   for (std::string dir :
        {"share/pixmaps", "share/applications", "share/dbus-1/services"}) {
     std::error_code err;
-    std::filesystem::create_directories(apps_dir + "/" + dir, err);
+    std::filesystem::create_directories(apps_dir / dir, err);
     if (err) {
       p_Error = "failed to create required directories, " + err.message();
       return nullptr;
@@ -66,10 +63,11 @@ std::shared_ptr<InstalledPackageInfo> AppImageInstaller::install(
     return nullptr;
   }
 
-  std::string icon_file_path = "/" + apps_dir + "/share/pixmaps/" +
-                               package_info->id() + "-" + utils::random(10) +
-                               ".png";
-  std::ofstream icon(root_dir + icon_file_path);
+  std::string icon_file_path =
+      apps_dir / "share/pixmaps" /
+      (package_info->id() + "-" + utils::random(10) + ".png");
+
+  std::ofstream icon(root_dir / icon_file_path);
   icon << icon_file;
   icon.close();
   extracted_files.push_back(icon_file_path);
@@ -81,10 +79,10 @@ std::shared_ptr<InstalledPackageInfo> AppImageInstaller::install(
     return nullptr;
   }
 
-  std::string desktop_file_path = "/" + apps_dir + "/share/applications/" +
-                                  package_info->id() + "-" + utils::random(10) +
-                                  ".desktop";
-  std::ofstream desktop(root_dir + desktop_file_path);
+  std::string desktop_file_path =
+      apps_dir / "share/applications" /
+      (package_info->id() + "-" + utils::random(10) + ".desktop");
+  std::ofstream desktop(root_dir / desktop_file_path);
   desktop << desktop_file;
   desktop.close();
 

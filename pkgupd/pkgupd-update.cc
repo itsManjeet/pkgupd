@@ -23,6 +23,11 @@ PKGUPD_MODULE(update) {
 
   std::vector<std::string> packages_id;
   std::vector<std::string> outdated_packages;
+  std::vector<std::string> excludedPackages;
+
+  // exclude all system image packages
+  config->get("system.packages", excludedPackages);
+  config->get("update.exclude", excludedPackages);
 
   if (int status = PKGUPD_sync({}, config); status != 0) {
     return status;
@@ -39,6 +44,10 @@ PKGUPD_MODULE(update) {
   }
 
   for (auto const& i : packages_id) {
+    if (std::find(excludedPackages.begin(), excludedPackages.end(), i) !=
+        excludedPackages.end()) {
+      continue;
+    }
     auto installed_info = system_database->get(i.c_str());
     if (installed_info == nullptr) {
       ERROR("missing installed package information for " << i << ", skipping");
