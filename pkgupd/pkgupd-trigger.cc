@@ -19,7 +19,7 @@ PKGUPD_MODULE(trigger) {
       continue;
     }
 
-    if (!triggerer->trigger(installed_info.get())) {
+    if (!triggerer->trigger({installed_info})) {
       cerr << "Error! " << triggerer->error() << endl;
     }
   }

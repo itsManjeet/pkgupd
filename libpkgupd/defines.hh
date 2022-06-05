@@ -97,7 +97,9 @@ static inline std::string humanize(size_t bytes) {
 #define DIR_PKGS "dir.pkgs"
 #define DIR_SRC "dir.src"
 #define DIR_REPO "dir.repo"
+#define DIR_RECIPES "dir.recipes"
 #define DIR_APPS "dir.apps"
+#define DIR_APPS_DATA "dir.apps.data"
 #define REPOS "repos"
 #define SKIP_TRIGGERS "triggers.skip"
 
@@ -106,6 +108,7 @@ static inline std::string humanize(size_t bytes) {
 #define DEFAULT_PKGS_DIR DEFAULT_CACHE_DIR "/pkgs"
 #define DEFAULT_SRC_DIR DEFAULT_CACHE_DIR "/src"
 #define DEFAULT_REPO_DIR DEFAULT_CACHE_DIR "/repo"
+#define DEFAULT_RECIPE_DIR DEFAULT_CACHE_DIR "/recipes"
 #define DEFAULT_DATA_DIR "/var/lib/pkgupd/data"
 #define DEFAULT_APPS_DIR "apps"
 

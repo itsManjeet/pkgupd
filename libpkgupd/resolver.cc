@@ -21,6 +21,16 @@ bool Resolver::toSkip(PackageInfo *info) {
   return false;
 }
 
+bool Resolver::resolve(std::string id) {
+  auto packageInfo = mGetPackageFunction(id.c_str());
+  if (packageInfo == nullptr) {
+    p_Error = "required package '" + id + "' is missing";
+    mMissing.push_back(id);
+    return false;
+  }
+  return resolve(packageInfo);
+}
+
 bool Resolver::resolve(std::shared_ptr<PackageInfo> info) {
   if (toSkip(info.get())) return true;
 
@@ -28,6 +38,7 @@ bool Resolver::resolve(std::shared_ptr<PackageInfo> info) {
   for (auto const &i : depends) {
     auto dep_info = mGetPackageFunction(i.c_str());
     if (dep_info == nullptr) {
+      mMissing.push_back(i);
       p_Error = "Failed to get required package " + i;
       return false;
     }

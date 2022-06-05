@@ -30,6 +30,7 @@ class Resolver : public Object {
 
   std::vector<std::string> mVisited;
   std::vector<std::shared_ptr<PackageInfo>> mPackageList;
+  std::vector<std::string> mMissing;
 
   bool toSkip(PackageInfo *info);
 
@@ -38,12 +39,16 @@ class Resolver : public Object {
       : mGetPackageFunction{get_fun}, mSkipPackageFunction{skip_fun} {}
 
   bool resolve(std::shared_ptr<PackageInfo> info);
+  
+  bool resolve(std::string id);
 
   void clear();
 
   std::vector<std::shared_ptr<PackageInfo>> const &list() const {
     return mPackageList;
   }
+
+  std::vector<std::string> const &missing() const { return mMissing; }
 };
 }  // namespace rlxos::libpkgupd
 

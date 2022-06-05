@@ -4,14 +4,13 @@
 #include "../installer.hh"
 
 namespace rlxos::libpkgupd {
-class AppImageInstaller : public Installer {
+class AppImageInstaller : public Installer::Injector {
  private:
  public:
-  AppImageInstaller(Configuration* config) : Installer{config} {}
+  AppImageInstaller(Configuration* config) : Installer::Injector{config} {}
 
-  std::shared_ptr<InstalledPackageInfo> install(char const* path,
-                                                SystemDatabase* sys_db,
-                                                bool force = false);
+  std::shared_ptr<PackageInfo> inject(char const* path,
+                                      std::vector<std::string>& files);
 };
 }  // namespace rlxos::libpkgupd
 

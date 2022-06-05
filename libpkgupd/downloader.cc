@@ -146,10 +146,10 @@ bool Downloader::get(char const *file, char const *outdir) {
     return false;
   }
 
-  std::string version = mConfig->get<std::string>("version", "2200");
+  std::string version_part = "/" + mConfig->get<std::string>("version", "2200");
 
   for (auto const &mirror : mirrors) {
-    std::string fileurl = mirror + "/" + version + "/pkgs/" + file;
+    std::string fileurl = mirror + version_part + "/pkgs/" + file;
 
     DEBUG("GET " << fileurl)
     if (!getenv("NO_CURL_CHECK"))

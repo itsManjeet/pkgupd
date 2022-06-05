@@ -39,7 +39,7 @@ class Triggerer : public Object {
  public:
   Triggerer() {}
 
-  bool trigger(InstalledPackageInfo *info);
+  bool trigger(std::vector<std::shared_ptr<InstalledPackageInfo>> infos);
 
   bool trigger();
 };

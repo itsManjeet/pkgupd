@@ -10,13 +10,11 @@ using namespace rlxos::libpkgupd;
 
 #include "../../utils/utils.hh"
 
-std::shared_ptr<InstalledPackageInfo> AppImageInstaller::install(
-    char const* path, SystemDatabase* sys_db, bool force) {
+std::shared_ptr<PackageInfo> AppImageInstaller::inject(
+    char const* path, std::vector<std::string>& files) {
   std::shared_ptr<ArchiveManager> archive_manager;
   std::shared_ptr<PackageInfo> package_info;
-  std::filesystem::path root_dir, apps_dir;
-  std::vector<std::string> extracted_files;
-  std::shared_ptr<InstalledPackageInfo> installed_package_info;
+  std::filesystem::path root_dir, apps_dir, apps_data_dir;
   std::string offset;
 
   archive_manager = ArchiveManager::create(ARCHIVE_MANAGER_TYPE);
@@ -29,15 +27,26 @@ std::shared_ptr<InstalledPackageInfo> AppImageInstaller::install(
   }
   root_dir = mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
   apps_dir = mConfig->get<std::string>(DIR_APPS, DEFAULT_APPS_DIR);
+  apps_data_dir = mConfig->get<std::string>(DIR_APPS_DATA, DEFAULT_APPS_DIR "/share");
 
   auto app_path = root_dir / apps_dir / std::filesystem::path(path).filename();
 
-  extracted_files.push_back(apps_dir / std::filesystem::path(path).filename());
+  files.push_back("./" +
+                  (apps_dir / std::filesystem::path(path).filename()).string());
+
+  if (!std::filesystem::exists(apps_dir)) {
+    std::error_code err;
+    std::filesystem::create_directories(root_dir / apps_dir, err);
+    if (err) {
+      p_Error = "failed to create required app directory, " + err.message();
+      return nullptr;
+    }
+  }
 
   for (std::string dir :
-       {"share/pixmaps", "share/applications", "share/dbus-1/services"}) {
+       {"pixmaps", "applications", "dbus-1/services"}) {
     std::error_code err;
-    std::filesystem::create_directories(root_dir / apps_dir / dir, err);
+    std::filesystem::create_directories(root_dir / apps_data_dir / dir, err);
     if (err) {
       p_Error = "failed to create required directories, " + err.message();
       return nullptr;
@@ -60,7 +69,7 @@ std::shared_ptr<InstalledPackageInfo> AppImageInstaller::install(
   }
 
   std::string icon_file_path =
-      apps_dir / "share/pixmaps" / (package_info->id() + ".png");
+      apps_data_dir / "pixmaps" / (package_info->id() + ".png");
   if (!archive_manager->extract_file(path,
                                      (package_info->id() + ".png").c_str(),
                                      (root_dir / icon_file_path).c_str())) {
@@ -68,7 +77,7 @@ std::shared_ptr<InstalledPackageInfo> AppImageInstaller::install(
     return nullptr;
   }
 
-  extracted_files.push_back(icon_file_path);
+  files.push_back("./" + icon_file_path);
 
   std::string desktop_file;
   if (!archive_manager->get(path, (package_info->id() + ".desktop").c_str(),
@@ -78,14 +87,14 @@ std::shared_ptr<InstalledPackageInfo> AppImageInstaller::install(
   }
 
   std::string desktop_file_path =
-      apps_dir / "share/applications" /
+      apps_data_dir / "applications" /
       (package_info->id() + "-" +
        std::to_string(std::hash<std::string>()(package_info->id() + "-" +
                                                package_info->version())) +
        ".desktop");
   std::ofstream desktop(root_dir / desktop_file_path);
   std::stringstream ss(desktop_file);
-  extracted_files.push_back("./" + desktop_file_path);
+  files.push_back("./" + desktop_file_path);
 
   std::string line;
   bool is_action = false;
@@ -111,13 +120,5 @@ std::shared_ptr<InstalledPackageInfo> AppImageInstaller::install(
           << std::endl;
   desktop.close();
 
-  if (!sys_db->add(package_info.get(), extracted_files, root_dir, force)) {
-    p_Error = sys_db->error();
-    return nullptr;
-  }
-
-  installed_package_info = sys_db->get(package_info->id().c_str());
-  p_Error = sys_db->error();
-  // TODO: check equality of installed package info;
-  return installed_package_info;
+  return package_info;
 }

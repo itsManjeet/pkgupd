@@ -231,34 +231,50 @@ std::vector<Triggerer::type> Triggerer::_get(
   return requiredTriggers;
 }
 
-bool Triggerer::trigger(InstalledPackageInfo *info) {
+bool Triggerer::trigger(
+    std::vector<std::shared_ptr<InstalledPackageInfo>> infos) {
   bool status = true;
-  for (auto const &grp : info->groups()) {
-    if (!grp.exists()) {
-      PROCESS("creating group " + grp.name());
-      if (!grp.create()) {
-        ERROR("failed to create " + grp.name() + " group");
-        status = false;
+  std::vector<Triggerer::type> triggers;
+  for (auto const &info : infos) {
+    for (auto const &grp : info->groups()) {
+      if (!grp.exists()) {
+        PROCESS("creating group " + grp.name());
+        if (!grp.create()) {
+          ERROR("failed to create " + grp.name() + " group");
+        }
       }
     }
-  }
-  for (auto const &usr : info->users()) {
-    if (!usr.exists()) {
-      PROCESS("creating user " + usr.name());
-      if (!usr.create()) {
-        ERROR("failed to create " + usr.name() + " user");
-        status = false;
+    for (auto const &usr : info->users()) {
+      if (!usr.exists()) {
+        PROCESS("creating user " + usr.name());
+        if (!usr.create()) {
+          ERROR("failed to create " + usr.name() + " user");
+        }
       }
     }
+
+    if (info->script().length()) {
+      int status = Executor::execute(info->script(), ".",
+                                     {"VERSION=" + info->version()});
+      if (status != 0) {
+        ERROR("failed to execute script");
+      }
+    }
+    auto requiredTriggers = _get(info->files());
+    std::for_each(requiredTriggers.begin(), requiredTriggers.end(),
+                  [&](Triggerer::type type) {
+                    if (std::find(triggers.begin(), triggers.end(), type) ==
+                        triggers.end()) {
+                      triggers.push_back(type);
+                    }
+                  });
   }
 
-  auto requiredTriggers = _get(info->files());
-  for (auto const &i : requiredTriggers) {
+  for (auto const &i : triggers) {
     PROCESS(_mesg(i))
 
     if (!_exec(i)) {
       p_Error += "\n" + p_Error;
-      status = false;
     }
   }
 

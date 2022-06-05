@@ -352,8 +352,9 @@ bool Builder::pack(
       p_Error = "compression failed " + archive_manager->error();
       return false;
     }
-  }
 
+    mPackages.push_back(i.second);
+  }
   return true;
 }
 

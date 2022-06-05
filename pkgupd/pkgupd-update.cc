@@ -1,7 +1,8 @@
+#include "../libpkgupd/common.hh"
+#include "../libpkgupd/installer/installer.hh"
 #include "../libpkgupd/repository.hh"
 #include "../libpkgupd/system-database.hh"
 #include "../libpkgupd/utils/utils.hh"
-#include "common.hh"
 using namespace rlxos::libpkgupd;
 
 #include <filesystem>
@@ -11,7 +12,6 @@ namespace fs = std::filesystem;
 using namespace std;
 
 PKGUPD_MODULE(sync);
-PKGUPD_MODULE(install);
 
 PKGUPD_MODULE_HELP(update) { os << "perform the system updates" << endl; }
 
@@ -20,9 +20,10 @@ PKGUPD_MODULE(update) {
       std::make_shared<SystemDatabase>(config);
 
   std::shared_ptr<Repository> repository = std::make_shared<Repository>(config);
+  std::shared_ptr<Installer> installer = std::make_shared<Installer>(config);
 
   std::vector<std::string> packages_id;
-  std::vector<std::string> outdated_packages;
+  std::vector<std::shared_ptr<PackageInfo>> outdated_packages;
   std::vector<std::string> excludedPackages;
 
   // exclude all system image packages
@@ -64,7 +65,7 @@ PKGUPD_MODULE(update) {
       INFO("updates for " << installed_info->id() << " "
                           << installed_info->version() << "->"
                           << repository_info->version());
-      outdated_packages.push_back(installed_info->id());
+      outdated_packages.push_back(installed_info);
     }
   }
 
@@ -82,5 +83,14 @@ PKGUPD_MODULE(update) {
   config->node()["force"] = true;
   config->node()["mode.ask"] = false;
   config->node()["is-updating"] = true;
-  return PKGUPD_install(outdated_packages, config);
+  if (!installer->install(outdated_packages, repository.get(),
+                          system_database.get())) {
+    ERROR(installer->error());
+    return 1;
+  }
+
+  cout << BOLD("successfully") << " " << BLUE("updated") << " "
+       << GREEN(outdated_packages.size()) << BOLD(" package(s)") << endl;
+
+  return 0;
 }

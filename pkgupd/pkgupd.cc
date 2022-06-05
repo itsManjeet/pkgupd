@@ -12,7 +12,8 @@ using namespace rlxos::libpkgupd;
   X(build)                  \
   X(trigger)                \
   X(sync)                   \
-  X(update)
+  X(update)                 \
+  X(inject)
 
 #include <functional>
 #include <iostream>

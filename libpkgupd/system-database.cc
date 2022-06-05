@@ -37,22 +37,22 @@ std::shared_ptr<InstalledPackageInfo> SystemDatabase::get(char const *pkgid) {
                                                 datafile.c_str());
 }
 
-bool SystemDatabase::add(PackageInfo *pkginfo,
-                         std::vector<std::string> const &files,
-                         std::string root, bool update) {
+std::shared_ptr<InstalledPackageInfo> SystemDatabase::add(
+    PackageInfo *pkginfo, std::vector<std::string> const &files,
+    std::string root, bool update) {
   auto data_file = std::filesystem::path(data_dir) / pkginfo->id();
   if (!std::filesystem::exists(data_dir)) {
     std::error_code code;
     if (!std::filesystem::create_directories(data_dir, code)) {
       p_Error = "failed to create required data directory, " + code.message();
-      return false;
+      return nullptr;
     }
   }
 
   std::ofstream file(data_file);
   if (!file.is_open()) {
     p_Error = "failed to open data file to write at " + data_file.string();
-    return false;
+    return nullptr;
   }
 
   pkginfo->dump(file);
@@ -72,7 +72,7 @@ bool SystemDatabase::add(PackageInfo *pkginfo,
        << std::endl;
 
   file.close();
-  return true;
+  return std::make_shared<InstalledPackageInfo>(pkginfo, files);
 }
 
 bool SystemDatabase::remove(InstalledPackageInfo *pkginfo) {

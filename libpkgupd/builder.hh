@@ -105,6 +105,8 @@ class Builder : public Object {
   std::string mSourceDir;
   std::string mPackageDir;
 
+  std::vector<std::string> mPackages;
+
  public:
   Builder(Configuration *config) : mConfig{config} {
     mBuildDir = config->get<std::string>("dir.build",
@@ -123,6 +125,12 @@ class Builder : public Object {
   }
 
   bool prepare(std::vector<std::string> const &sources, std::string const &dir);
+
+  std::vector<std::string> packages() {
+    std::vector<std::string> build_packages = mPackages;
+    mPackages.clear();
+    return build_packages;
+  }
 
   bool pack(
       std::vector<std::pair<std::shared_ptr<PackageInfo>, std::string>> const

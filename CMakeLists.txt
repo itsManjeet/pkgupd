@@ -16,17 +16,23 @@ find_library(LIBCURL curl REQUIRED)
 file(GLOB_RECURSE LIBPKGUPD_Src "libpkgupd/*.cc" "libpkgupd/*.hh")
 add_library(libpkgupd ${LIBPKGUPD_Src})
 target_link_libraries(libpkgupd ${LIBCURL} ${YAML_CPP_LIBRARIES})
-
+set_target_properties(libpkgupd PROPERTIES OUTPUT_NAME "pkgupd")
 
 file(GLOB PKGUPD_Src "pkgupd/*.cc" "pkgupd/*.hh")
 add_executable(pkgupd ${PKGUPD_Src})
 add_dependencies(pkgupd libpkgupd)
 target_link_libraries(pkgupd libpkgupd)
 
-install(TARGETS pkgupd
-    DESTINATION bin)
+install(TARGETS pkgupd libpkgupd
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib)
 
-set(BUILD_TEST "build test" OFF)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/libpkgupd/
+        DESTINATION "include/libpkgupd"
+        FILES_MATCHING
+            PATTERN "*.hh")
+
+set(INSTALL_GTEST OFF)
 if (BUILD_TEST)
 enable_testing()
 add_subdirectory(tests)
