@@ -353,7 +353,7 @@ bool Builder::pack(
       return false;
     }
 
-    mPackages.push_back(i.second);
+    mPackages.push_back(packagefile_Path);
   }
   return true;
 }
