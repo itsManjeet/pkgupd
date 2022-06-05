@@ -86,7 +86,11 @@
         "latch": "cpp",
         "semaphore": "cpp",
         "source_location": "cpp",
-        "syncstream": "cpp"
+        "syncstream": "cpp",
+        "*.ipp": "cpp",
+        "strstream": "cpp",
+        "rope": "cpp",
+        "slist": "cpp"
     },
     "python.formatting.provider": "yapf",
     "C_Cpp.clang_format_fallbackStyle": "Google"

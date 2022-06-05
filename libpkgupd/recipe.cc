@@ -8,7 +8,7 @@ using std::string;
 
 namespace rlxos::libpkgupd {
 Recipe::Recipe(YAML::Node data, std::string file, std::string const& repo)
-    : m_Repository(repo) {
+    : m_Repository(repo), mFilePath(file) {
   m_Node = data;
 
   READ_VALUE(string, "id", m_ID);

@@ -21,6 +21,7 @@ struct SplitPackage {
 
 class Recipe {
  private:
+  std::string mFilePath;
   std::string m_ID, m_Version, m_About;
   PackageType m_PackageType;
   std::vector<std::string> m_Depends, m_BuildTime;
@@ -81,6 +82,10 @@ class Recipe {
   std::vector<SplitPackage> const& splits() const { return m_SplitPackages; }
 
   bool dostrip() const { return m_DoStrip; }
+
+  std::string const& filePath() const {
+    return mFilePath;
+  }
 
   YAML::Node const& node() const { return m_Node; }
 

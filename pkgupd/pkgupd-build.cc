@@ -56,7 +56,7 @@ PKGUPD_MODULE(build) {
         [&](char const* id) -> std::shared_ptr<PackageInfo> {
           auto packageInfo = repository->get(id);
           auto recipe = sourceRepository->get(id);
-          
+
           if (packageInfo != nullptr && recipe != nullptr) {
             if (recipe->version() == packageInfo->version()) {
               return packageInfo;
