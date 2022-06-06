@@ -24,6 +24,25 @@ bool TarBall::get(char const* tarfile, char const* input_path,
   return true;
 }
 
+bool TarBall::extract_file(char const* tarfile, char const* input_path,
+                           char const* output_path) {
+  string cmd = "/bin/tar";
+  cmd += " --zstd -O -xPf";
+  cmd += tarfile;
+  cmd += " ";
+  cmd += " ";
+  cmd += input_path;
+  cmd += " >";
+  cmd += output_path;
+
+  auto [status, out] = Executor::output(cmd);
+  if (status != 0) {
+    p_Error = "failed to get data from " + string(input_path) + ", " + out;
+    return false;
+  }
+  return true;
+}
+
 shared_ptr<PackageInfo> TarBall::info(char const* input_path) {
   std::string content;
   if (!get(input_path, "./info", content)) {

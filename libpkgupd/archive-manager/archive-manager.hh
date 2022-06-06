@@ -49,6 +49,9 @@ class ArchiveManager : public Object {
   virtual bool get(char const *archive_file, char const *input_path,
                    std::string &output) = 0;
 
+  virtual bool extract_file(char const *archive_file, char const *input_path,
+                            char const *output_file) = 0;
+
   virtual std::shared_ptr<PackageInfo> info(char const *) = 0;
   /**
    * List all files in the archive

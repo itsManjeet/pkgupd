@@ -33,6 +33,28 @@ bool Squash::get(char const* imagefile, char const* input_path,
   return true;
 }
 
+bool Squash::extract_file(char const* imagefile, char const* input_path,
+                          char const* output_path) {
+  string cmd = "/bin/unsquashfs";
+  cmd += " -o ";
+  cmd += mOffset;
+  cmd += " ";
+  cmd += " -cat";
+  cmd += " ";
+  cmd += imagefile;
+  cmd += " ";
+  cmd += input_path;
+  cmd += " >";
+  cmd += output_path;
+
+  auto [status, out] = Executor::output(cmd);
+  if (status != 0) {
+    p_Error = "failed to get data from " + string(imagefile) + ", " + out;
+    return false;
+  }
+  return true;
+}
+
 shared_ptr<PackageInfo> Squash::info(char const* input_path) {
   std::string content;
   if (!get(input_path, "info", content)) {

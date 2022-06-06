@@ -59,20 +59,15 @@ std::shared_ptr<InstalledPackageInfo> AppImageInstaller::install(
     return nullptr;
   }
 
-  std::string icon_file;
-  if (!archive_manager->get(path, (package_info->id() + ".png").c_str(),
-                            icon_file)) {
+  std::string icon_file_path =
+      apps_dir / "share/pixmaps" / (package_info->id() + ".png");
+  if (!archive_manager->extract_file(path,
+                                     (package_info->id() + ".png").c_str(),
+                                     (root_dir / icon_file_path).c_str())) {
     p_Error = "failed to read icon file, not exists";
     return nullptr;
   }
 
-  std::string icon_file_path =
-      apps_dir / "share/pixmaps" /
-      (package_info->id() + "-" + utils::random(10) + ".png");
-
-  std::ofstream icon(root_dir / icon_file_path);
-  icon << icon_file;
-  icon.close();
   extracted_files.push_back(icon_file_path);
 
   std::string desktop_file;
@@ -84,9 +79,36 @@ std::shared_ptr<InstalledPackageInfo> AppImageInstaller::install(
 
   std::string desktop_file_path =
       apps_dir / "share/applications" /
-      (package_info->id() + "-" + utils::random(10) + ".desktop");
+      (package_info->id() + "-" +
+       std::to_string(std::hash<std::string>()(package_info->id() + "-" +
+                                               package_info->version())) +
+       ".desktop");
   std::ofstream desktop(root_dir / desktop_file_path);
-  desktop << desktop_file;
+  std::stringstream ss(desktop_file);
+  extracted_files.push_back("./" + desktop_file_path);
+
+  std::string line;
+  bool is_action = false;
+  while (std::getline(ss, line, '\n')) {
+    if (line.find("Exec=", 0) == 0) {
+      desktop << "Exec=/" << apps_dir.string() << "/"
+              << std::filesystem::path(path).filename().string() << std::endl;
+    } else if (line.find("Icon=", 0) == 0) {
+      desktop << "Icon=" << package_info->id() << std::endl;
+    } else if (line.find("Actions=", 0) == 0) {
+      is_action = true;
+      desktop << line << ";Remove" << std::endl;
+    } else {
+      desktop << line << std::endl;
+    }
+  }
+
+  if (!is_action) desktop << "Actions=Remove;" << std::endl;
+
+  desktop << "\n[Desktop Action Remove]\n"
+          << "Name=Uninstall\n"
+          << "Exec=/usr/bin/pkexec pkgupd remove " << package_info->id()
+          << std::endl;
   desktop.close();
 
   if (!sys_db->add(package_info.get(), extracted_files, root_dir, force)) {

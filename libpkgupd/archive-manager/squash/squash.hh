@@ -13,6 +13,9 @@ class Squash : public ArchiveManager {
 
   bool get(char const* app_image, char const* input_path, std::string& output);
 
+  bool extract_file(char const* imagefile, char const* input_path,
+                    char const* output_path);
+
   std::shared_ptr<PackageInfo> info(char const* input_path);
 
   bool list(char const* input_path, std::vector<std::string>& files);
