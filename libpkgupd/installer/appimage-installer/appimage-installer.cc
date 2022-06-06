@@ -37,22 +37,25 @@ std::shared_ptr<InstalledPackageInfo> AppImageInstaller::install(
   for (std::string dir :
        {"share/pixmaps", "share/applications", "share/dbus-1/services"}) {
     std::error_code err;
-    std::filesystem::create_directories(apps_dir / dir, err);
+    std::filesystem::create_directories(root_dir / apps_dir / dir, err);
     if (err) {
       p_Error = "failed to create required directories, " + err.message();
       return nullptr;
     }
   }
   std::error_code err;
-  std::filesystem::copy(path, app_path, err);
+  std::filesystem::copy(path, app_path,
+                        std::filesystem::copy_options::overwrite_existing, err);
   if (err) {
-    p_Error = err.message();
+    p_Error =
+        "failed to inject app '" + app_path.string() + "'" + err.message();
     return nullptr;
   }
 
-  if (!chmod(app_path.c_str(), 0755)) {
+  if (chmod(app_path.string().c_str(), 0755) != 0) {
     p_Error = "failed to change executable permission '" +
-              std::string(strerror(errno)) + "'";
+              std::string(strerror(errno)) + "' for '" + app_path.string() +
+              "'";
     return nullptr;
   }
 
