@@ -13,7 +13,15 @@ using namespace std;
 
 PKGUPD_MODULE(sync);
 
-PKGUPD_MODULE_HELP(update) { os << "perform the system updates" << endl; }
+PKGUPD_MODULE_HELP(update) {
+  os << "Update non-system packages of system" << endl
+     << PADDING << " " << BOLD("Options:") << endl
+     << PADDING << "  - system.packages=" << BOLD("<list>")
+     << "    # Skip all system packages" << endl
+     << PADDING << "  - update.exclude=" << BOLD("<list>")
+     << "    # Specify package to exclude from update" << endl
+     << endl;
+}
 
 PKGUPD_MODULE(update) {
   std::shared_ptr<SystemDatabase> system_database =

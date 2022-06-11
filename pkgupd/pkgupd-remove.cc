@@ -7,7 +7,13 @@ using namespace rlxos::libpkgupd;
 #include <iostream>
 using namespace std;
 
-PKGUPD_MODULE_HELP(remove) { os << "remove package from system" << endl; }
+PKGUPD_MODULE_HELP(remove) {
+  os << "Remove package from system" << endl
+     << PADDING << " " << BOLD("Options:") << endl
+     << PADDING << "  - system.packages=" << BOLD("<list>")
+     << "    # Skip System packages for removal" << endl
+     << endl;
+}
 
 PKGUPD_MODULE(remove) {
   CHECK_ARGS(1);

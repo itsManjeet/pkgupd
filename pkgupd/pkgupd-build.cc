@@ -14,7 +14,9 @@ using namespace std;
 PKGUPD_MODULE(install);
 
 PKGUPD_MODULE_HELP(build) {
-  os << "build binary package from source file" << endl;
+  os << "Build the specified package either from recipe file or from the "
+        "source repository."
+     << endl;
 }
 
 PKGUPD_MODULE(build) {

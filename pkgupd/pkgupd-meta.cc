@@ -8,7 +8,7 @@ using namespace rlxos::libpkgupd;
 using namespace std;
 
 PKGUPD_MODULE_HELP(meta) {
-  os << "generate repository meta information" << endl;
+  os << "Generate meta information for package repository" << endl;
 }
 
 PKGUPD_MODULE(meta) {

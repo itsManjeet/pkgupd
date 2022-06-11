@@ -7,7 +7,12 @@ using namespace rlxos::libpkgupd;
 using namespace std;
 
 PKGUPD_MODULE_HELP(depends) {
-  os << "List all the dependent packages required" << endl;
+  os << "List all the dependent packages required" << endl
+     << PADDING << " " << BOLD("Options:") << endl
+     << PADDING << "  - depends.all=" << BOLD("<bool>")
+     << "    # List all dependent packages including already installed packages"
+     << endl
+     << endl;
 }
 
 PKGUPD_MODULE(depends) {

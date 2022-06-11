@@ -6,7 +6,7 @@ using namespace rlxos::libpkgupd;
 #include <iostream>
 using namespace std;
 
-PKGUPD_MODULE_HELP(search) { os << "search package from repository" << endl; }
+PKGUPD_MODULE_HELP(search) { os << "Search package from repository" << endl; }
 
 PKGUPD_MODULE(search) {
   CHECK_ARGS(1);

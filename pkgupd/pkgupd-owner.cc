@@ -7,7 +7,9 @@ using namespace rlxos::libpkgupd;
 #include <fstream>
 using namespace std;
 
-PKGUPD_MODULE_HELP(owner) { os << "Print file owner" << std::endl; }
+PKGUPD_MODULE_HELP(owner) {
+  os << "Search the package who provide specified file." << std::endl;
+}
 
 PKGUPD_MODULE(owner) {
   CHECK_ARGS(1);
@@ -37,7 +39,8 @@ PKGUPD_MODULE(owner) {
                        return filepath.compare("/" + path.substr(2)) == 0;
                      });
     if (iter != package_info->files().end()) {
-      std::cout << BOLD("Provided by") << " " << GREEN(package_info->id()) << std::endl;
+      std::cout << BOLD("Provided by") << " " << GREEN(package_info->id())
+                << std::endl;
       status = 0;
     }
   }

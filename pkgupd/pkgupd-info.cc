@@ -6,7 +6,17 @@ using namespace rlxos::libpkgupd;
 #include <iostream>
 using namespace std;
 
-PKGUPD_MODULE_HELP(info) { os << "print package information" << endl; }
+PKGUPD_MODULE_HELP(info) {
+  os << "Display package information of specified package" << endl
+     << PADDING << " " << BOLD("Options:") << endl
+     << PADDING << "  - info.value=" << BOLD("<param>")
+     << "        # show particular information value" << endl
+     << PADDING << "  - info.value=" << BOLD("installed.time")
+     << " # extra parameter for installed package" << endl
+     << PADDING << "  - info.value=" << BOLD("files.count")
+     << "    # extra parameter for installed package" << endl
+     << endl;
+}
 
 PKGUPD_MODULE(info) {
   auto system_database = std::make_shared<SystemDatabase>(config);

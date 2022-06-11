@@ -11,7 +11,21 @@ using namespace std;
 using namespace rlxos::libpkgupd;
 
 PKGUPD_MODULE_HELP(install) {
-  os << "install specified package from the repository" << endl;
+  os << "Install package from repository" << endl
+     << PADDING << " " << BOLD("Options:") << endl
+     << PADDING << "  - installer.depends=" << BOLD("<bool>")
+     << "   # Enable or disable dependency management" << endl
+     << PADDING << "  - force=" << BOLD("<bool>")
+     << "               # Force installation of already installed package"
+     << endl
+     << PADDING << "  - installer.triggers=" << BOLD("<bool>")
+     << "  # Skip triggers during installation, also include user/group "
+        "creation"
+     << endl
+     << PADDING << "  - downloader.force=" << BOLD("<bool>")
+     << "    # Force redownload of specified package" << endl
+     << endl;
+  ;
 }
 
 PKGUPD_MODULE(install) {

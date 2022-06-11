@@ -5,7 +5,7 @@ using namespace rlxos::libpkgupd;
 using namespace std;
 
 PKGUPD_MODULE_HELP(trigger) {
-  os << "execute required triggers and create required users & groups" << endl;
+  os << "Execute required triggers and create required users & groups" << endl;
 }
 
 PKGUPD_MODULE(trigger) {

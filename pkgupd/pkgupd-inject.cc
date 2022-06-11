@@ -5,7 +5,11 @@ using namespace rlxos::libpkgupd;
 #include <iostream>
 using namespace std;
 
-PKGUPD_MODULE_HELP(inject) { os << "inject package into system" << std::endl; }
+PKGUPD_MODULE_HELP(inject) {
+  os << "Inject package from url or filepath directly into system\n" << PADDING
+     << "  - Can be used for rlxos .app files or bundle packages" << endl
+     << endl;
+}
 PKGUPD_MODULE(inject) {
   CHECK_ARGS(1);
   std::shared_ptr<Installer> installer = std::make_shared<Installer>(config);
@@ -19,10 +23,15 @@ PKGUPD_MODULE(inject) {
     Downloader downloader(config);
     std::string filename =
         "/tmp/" + std::filesystem::path(uri).filename().string();
-    if (!downloader.download(uri.c_str(), filename.c_str())) {
-      ERROR("failed to download '" << std::filesystem::path(filename).filename()
-                                   << "' '" << downloader.error() << "'");
-      return 1;
+    if (std::filesystem::exists(filename)) {
+      INFO(filename << " already downloaded");
+    } else {
+      if (!downloader.download(uri.c_str(), filename.c_str())) {
+        ERROR("failed to download '"
+              << std::filesystem::path(filename).filename() << "' '"
+              << downloader.error() << "'");
+        return 1;
+      }
     }
     uri = filename;
   }

@@ -135,10 +135,11 @@ static inline std::string humanize(size_t bytes) {
                              rlxos::libpkgupd::Configuration *config)
 
 #define PKGUPD_MODULE_HELP(id) \
-  extern "C" void PKGUPD_help_##id(std::ostream &os)
+  extern "C" void PKGUPD_help_##id(std::ostream &os, int padding)
 #define CHECK_ARGS(s)                                     \
   if (args.size() != s) {                                 \
     cerr << "need exactly " << s << " arguments" << endl; \
     return 1;                                             \
   }
+#define PADDING std::string(padding, ' ')
 #endif

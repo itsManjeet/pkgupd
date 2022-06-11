@@ -4,7 +4,9 @@ using namespace rlxos::libpkgupd;
 #include <iostream>
 using namespace std;
 
-PKGUPD_MODULE_HELP(sync) { os << "sync repository data to local" << endl; }
+PKGUPD_MODULE_HELP(sync) {
+  os << "Sync local database from server repository" << endl;
+}
 
 PKGUPD_MODULE(sync) {
   auto downloader = std::make_shared<Downloader>(config);

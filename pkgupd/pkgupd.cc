@@ -2,18 +2,20 @@
 #include "../libpkgupd/defines.hh"
 using namespace rlxos::libpkgupd;
 
+#include <string.h>
+
 #define PKGUPD_MODULES_LIST \
-  X(info)                   \
   X(install)                \
-  X(search)                 \
-  X(depends)                \
-  X(meta)                   \
   X(remove)                 \
+  X(sync)                   \
+  X(info)                   \
+  X(search)                 \
+  X(update)                 \
+  X(depends)                \
+  X(inject)                 \
+  X(meta)                   \
   X(build)                  \
   X(trigger)                \
-  X(sync)                   \
-  X(update)                 \
-  X(inject) \
   X(owner)
 
 #include <functional>
@@ -66,13 +68,26 @@ void print_help(char const* id) {
        << "Perform system level package transcations like installation, "
           "upgradation and removal of packages.\n"
        << endl;
-
-  cout << "Task:" << endl;
-#define X(id)            \
-  cout << "  " << #id << "\t\t"; \
-  PKGUPD_help_##id(cout);
+  int size = 10;
+#define X(id) \
+  if (strlen(#id) > size) size = strlen(#id);
   PKGUPD_MODULES_LIST
 #undef X
+
+  cout << "Task:" << endl;
+#define X(id)                                                        \
+  cout << " - " << BLUE(#id) << std::string(size - strlen(#id), ' ') \
+       << "    ";                                                    \
+  PKGUPD_help_##id(cout, 2 + size + 4);
+  PKGUPD_MODULES_LIST
+#undef X
+
+  cout << "\nExit Status:\n"
+       << "  0 if OK\n"
+       << "  1 if process failed.\n"
+       << "\n"
+       << "Full documentation <https://docs.rlxos.dev/pkgupd>\n"
+       << endl;
 }
 
 int main(int argc, char** argv) {
