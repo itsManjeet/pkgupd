@@ -13,7 +13,8 @@ using namespace rlxos::libpkgupd;
   X(trigger)                \
   X(sync)                   \
   X(update)                 \
-  X(inject)
+  X(inject) \
+  X(owner)
 
 #include <functional>
 #include <iostream>
@@ -68,7 +69,7 @@ void print_help(char const* id) {
 
   cout << "Task:" << endl;
 #define X(id)            \
-  cout << #id << "\t\t"; \
+  cout << "  " << #id << "\t\t"; \
   PKGUPD_help_##id(cout);
   PKGUPD_MODULES_LIST
 #undef X
