@@ -261,13 +261,11 @@ bool Triggerer::trigger(
       }
     }
     auto requiredTriggers = _get(info->files());
-    std::for_each(requiredTriggers.begin(), requiredTriggers.end(),
-                  [&](Triggerer::type type) {
-                    if (std::find(triggers.begin(), triggers.end(), type) ==
-                        triggers.end()) {
-                      triggers.push_back(type);
-                    }
-                  });
+    for (auto i : requiredTriggers) {
+      if (std::find(triggers.begin(), triggers.end(), i) == triggers.end()) {
+        triggers.push_back(i);
+      }
+    }
   }
 
   for (auto const &i : triggers) {

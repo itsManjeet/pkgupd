@@ -51,6 +51,7 @@ bool Installer::install(std::vector<std::string> pkgs, SystemDatabase* sys_db) {
       return false;
     }
 
+    PROCESS("installing " << package_path.parent_path().string());
     auto injector = Injector::create(package_type, mConfig);
     if (injector == nullptr) {
       p_Error = "no supported injector configured for '" + ext + "'";
@@ -153,11 +154,18 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
       }
     }
 
-    if (!downloader.get((i->repository() + "/" + (PACKAGE_FILE(i))).c_str(),
-                        package_path.c_str())) {
-      p_Error = "failed to get required file '" + PACKAGE_FILE(i);
-      return false;
+    if (std::filesystem::exists(package_path) &&
+        !mConfig->get("download.force", false)) {
+      INFO(i->id() << " found in cache");
+    } else {
+      PROCESS("downloading " << i->id());
+      if (!downloader.get((i->repository() + "/" + (PACKAGE_FILE(i))).c_str(),
+                          package_path.c_str())) {
+        p_Error = "failed to get required file '" + PACKAGE_FILE(i);
+        return false;
+      }
     }
+
     packages.push_back(package_path);
   }
   return install(packages, system_database);
