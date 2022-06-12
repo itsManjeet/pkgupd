@@ -47,20 +47,10 @@ bool is_number(string s) {
   return true;
 }
 
-bool is_bool(string s) { return s == "true" || s == "false"; }
+#define SET_DEFAULT_VALUE(id, value) \
+  if (!node[#id]) node[#id] = (value);
 
-bool append_config(YAML::Node& node, const char* file) {
-  try {
-    auto config = YAML::LoadFile(file);
-    for (auto const& i : config) {
-      node[i.first] = i.second;
-    }
-  } catch (std::exception const& e) {
-    cerr << "Error! in configuration file " << file << ", " << e.what() << endl;
-    exit(EXIT_FAILURE);
-  }
-  return true;
-}
+bool is_bool(string s) { return s == "true" || s == "false"; }
 
 void print_help(char const* id) {
   cout << id << " [TASK] <args>.." << endl
@@ -98,21 +88,8 @@ int main(int argc, char** argv) {
 
   vector<string> args;
   YAML::Node node;
-  node["self.path"] = argv[0];
-  node["debug"] = false;
-
-  if (filesystem::exists("/etc/pkgupd.yml")) {
-    append_config(node, "/etc/pkgupd.yml");
-  }
-
-  if (filesystem::exists("/etc/pkgupd.conf.d")) {
-    for (auto const& i :
-         std::filesystem::directory_iterator("/etc/pkgupd.conf.d")) {
-      if (i.path().has_extension() && i.path().extension() == ".yml") {
-        append_config(node, i.path().c_str());
-      }
-    }
-  }
+  SET_DEFAULT_VALUE("self.path", argv[0]);
+  SET_DEFAULT_VALUE("debug", false);
 
   string task = argv[1];
   auto iter = MODULES.find(task);
@@ -141,27 +118,20 @@ int main(int argc, char** argv) {
       } else {
         node[var] = val;
       }
-      if (var == "config") {
-        append_config(node, val.c_str());
-      }
     } else {
       args.push_back(arg);
     }
   }
 
-  if (node["debug"].as<bool>()) {
-    cout << "Configuration: " << node << endl;
-  }
-  if (!node["repos"])
-    node["repos"] = std::vector<std::string>{"core", "extra", "apps"};
+  if (node["debug"].as<bool>()) cout << "Configuration: " << node << endl;
 
-  if (!node["mirrors"])
-    node["mirrors"] =
-        std::vector<std::string>{"https://rlxos.dev/storage/stable"};
+  SET_DEFAULT_VALUE(repos, (std::vector<std::string>{"core", "extra", "apps"}));
+  SET_DEFAULT_VALUE(
+      mirrors, (std::vector<std::string>{"https://rlxos.dev/storage/stable"}));
 
-  Configuration config(node);
+  auto config = Configuration::create();
   try {
-    return iter->second(args, &config);
+    return iter->second(args, config.get());
   } catch (std::exception const& err) {
     cerr << "Error! failed to perfrom task, unhandled exception " << err.what()
          << endl;
