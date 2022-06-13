@@ -47,9 +47,6 @@ bool is_number(string s) {
   return true;
 }
 
-#define SET_DEFAULT_VALUE(id, value) \
-  if (!node[#id]) node[#id] = (value);
-
 bool is_bool(string s) { return s == "true" || s == "false"; }
 
 void print_help(char const* id) {
@@ -88,8 +85,6 @@ int main(int argc, char** argv) {
 
   vector<string> args;
   YAML::Node node;
-  SET_DEFAULT_VALUE("self.path", argv[0]);
-  SET_DEFAULT_VALUE("debug", false);
 
   string task = argv[1];
   auto iter = MODULES.find(task);
@@ -123,13 +118,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (node["debug"].as<bool>()) cout << "Configuration: " << node << endl;
-
-  SET_DEFAULT_VALUE(repos, (std::vector<std::string>{"core", "extra", "apps"}));
-  SET_DEFAULT_VALUE(
-      mirrors, (std::vector<std::string>{"https://rlxos.dev/storage/stable"}));
-
-  auto config = Configuration::create();
+  auto config = Configuration::create(node);
   try {
     return iter->second(args, config.get());
   } catch (std::exception const& err) {

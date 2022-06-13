@@ -10,7 +10,7 @@ class Configuration {
  public:
   Configuration(YAML::Node const& node) : mNode{node} {}
 
-  static std::shared_ptr<Configuration> create();
+  static std::shared_ptr<Configuration> create(YAML::Node node);
 
   template <typename T>
   T get(char const* key, T t) {

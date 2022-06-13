@@ -10,9 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/pkgupd",
             "args": [
-                "inject", "https://rlxos.dev/storage/2200/pkgs/apps/neofetch-7.1.0.app",
-                "dir.root=${PWD}/tests/data/root",
-                "dir.data=${PWD}/tests/data/data"
+                "update"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
