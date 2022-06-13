@@ -73,7 +73,7 @@ PKGUPD_MODULE(update) {
       INFO("updates for " << installed_info->id() << " "
                           << installed_info->version() << "->"
                           << repository_info->version());
-      outdated_packages.push_back(installed_info);
+      outdated_packages.push_back(repository_info);
     }
   }
 
