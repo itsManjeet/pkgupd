@@ -36,7 +36,6 @@ PKGUPD_MODULE(inject) {
     uri = filename;
   }
 
-  PROCESS("installing " << std::filesystem::path(uri).filename().string());
   if (!installer->install({uri}, system_database.get())) {
     ERROR(installer->error());
     return 1;

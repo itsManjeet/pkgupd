@@ -51,7 +51,7 @@ bool Installer::install(std::vector<std::string> pkgs, SystemDatabase* sys_db) {
       return false;
     }
 
-    PROCESS("installing " << package_path.parent_path().string());
+    PROCESS("installing " << package_path.filename().string());
     auto injector = Injector::create(package_type, mConfig);
     if (injector == nullptr) {
       p_Error = "no supported injector configured for '" + ext + "'";
@@ -65,32 +65,37 @@ bool Installer::install(std::vector<std::string> pkgs, SystemDatabase* sys_db) {
       return false;
     }
 
-    auto installed_package_info =
+    auto old_package_info = sys_db->get(package_info->id().c_str());
+    if (old_package_info != nullptr) {
+      std::cout << "Found old package info" << std::endl;
+      auto old_files = old_package_info->files();
+      for (auto i = old_files.rbegin(); i != old_files.rend(); ++i) {
+        std::string file = *i;
+        if (file.length()) {
+          file = file.substr(2);
+        }
+        if (std::filesystem::exists(root_dir / file) &&
+            std::find(files.begin(), files.end(), "./" + file) == files.end()) {
+          if (file.find("./bin", 0) == 0 || file.find("./lib", 0) == 0 ||
+              file.find("./sbin", 0) == 0) {
+continue;
+          }
+
+          std::error_code error;
+
+          DEBUG("removing " << root_dir / file)
+          std::filesystem::remove(root_dir / file, error);
+          if (error) ERROR("failed to remove " << file);
+        }
+      }
+    }
+        auto installed_package_info =
         sys_db->add(package_info.get(), files,
                     mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR));
     if (installed_package_info == nullptr) {
       p_Error =
           "failed to register '" + package_info->id() + "', " + sys_db->error();
       return false;
-    }
-
-    if (mConfig->get("force", false) != false) {
-      auto old_files = installed_package_info->files();
-      std::for_each(
-          old_files.rbegin(), old_files.rend(), [&](std::string const& file) {
-            if (std::filesystem::exists(file) &&
-                std::find(files.begin(), files.end(), file) == files.end()) {
-              if (file.find("./bin", 0) == 0 || file.find("./lib", 0) == 0 ||
-                  file.find("./sbin", 0) == 0) {
-                return;
-              }
-
-              std::error_code error;
-
-              std::filesystem::remove(root_dir / file, error);
-              if (error) ERROR("failed to remove " << file);
-            }
-          });
     }
     packages.push_back(installed_package_info);
   }
