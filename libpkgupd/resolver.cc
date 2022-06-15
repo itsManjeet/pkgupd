@@ -6,6 +6,8 @@ void Resolver::clear() {
 }
 
 bool Resolver::toSkip(PackageInfo *info) {
+  if (mToBreak) return true;
+  
   auto iter = std::find_if(mPackageList.begin(), mPackageList.end(),
                            [&](std::shared_ptr<PackageInfo> const &p) -> bool {
                              return (p->id() == info->id());
@@ -32,6 +34,9 @@ bool Resolver::resolve(std::string id) {
 }
 
 bool Resolver::resolve(std::shared_ptr<PackageInfo> info) {
+  if (mBreakOn.length() && info->id() == mBreakOn) mToBreak = true;
+
+  if (mToBreak == true) return true;
   if (toSkip(info.get())) return true;
 
   auto depends = info->depends();

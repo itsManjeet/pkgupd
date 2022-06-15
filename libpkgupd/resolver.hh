@@ -31,16 +31,22 @@ class Resolver : public Object {
   std::vector<std::string> mVisited;
   std::vector<std::shared_ptr<PackageInfo>> mPackageList;
   std::vector<std::string> mMissing;
+  std::string mBreakOn = "";
+  bool mToBreak = false;
 
   bool toSkip(PackageInfo *info);
 
  public:
-  Resolver(GetPackageFunctionType get_fun, SkipPackageFunctionType skip_fun)
-      : mGetPackageFunction{get_fun}, mSkipPackageFunction{skip_fun} {}
+  Resolver(GetPackageFunctionType get_fun, SkipPackageFunctionType skip_fun, std::string break_on = "")
+      : mGetPackageFunction{get_fun}, mSkipPackageFunction{skip_fun}, mBreakOn(break_on) {}
 
   bool resolve(std::shared_ptr<PackageInfo> info);
   
   bool resolve(std::string id);
+
+  bool found() {
+    return mToBreak;
+  }
 
   void clear();
 
