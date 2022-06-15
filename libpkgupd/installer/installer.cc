@@ -77,7 +77,7 @@ bool Installer::install(std::vector<std::string> pkgs, SystemDatabase* sys_db) {
     if (mConfig->get("force", false) != false) {
       auto old_files = installed_package_info->files();
       std::for_each(
-          old_files.begin(), old_files.end(), [&](std::string const& file) {
+          old_files.rbegin(), old_files.rend(), [&](std::string const& file) {
             if (std::filesystem::exists(file) &&
                 std::find(files.begin(), files.end(), file) == files.end()) {
               if (file.find("./bin", 0) == 0 || file.find("./lib", 0) == 0 ||
