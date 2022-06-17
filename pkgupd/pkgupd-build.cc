@@ -53,32 +53,7 @@ PKGUPD_MODULE(build) {
   if (config->get("build.depends", true)) {
     PROCESS("generating dependency tree");
     std::shared_ptr<Resolver> resolver = std::make_shared<Resolver>(
-        [&](char const* id) -> std::shared_ptr<PackageInfo> {
-          auto packageInfo = repository->get(id);
-          auto recipe = sourceRepository->get(id);
-
-          if (recipe == nullptr) return packageInfo;
-
-          if (packageInfo != nullptr && recipe != nullptr) {
-            if (recipe->version() == packageInfo->version()) {
-              return packageInfo;
-            }
-          }
-
-          if (recipe != nullptr) {
-            std::vector<std::string> depends = recipe->depends();
-            depends.insert(depends.end(), recipe->buildTime().begin(),
-                           recipe->buildTime().end());
-
-            return std::make_shared<PackageInfo>(
-                recipe->id(), recipe->version(), recipe->about(), depends,
-                recipe->packageType(), recipe->packages()[0]->users(),
-                recipe->packages()[0]->groups(),
-                recipe->packages()[0]->script(),
-                recipe->packages()[0]->repository(), recipe->node());
-          }
-          return nullptr;
-        },
+        DEFAULT_GET_PACKAE_FUNCTION,
         DEFAULT_SKIP_PACKAGE_FUNCTION);
     std::vector<std::string> packages = required_recipe->depends();
     packages.insert(packages.end(), required_recipe->buildTime().begin(),
