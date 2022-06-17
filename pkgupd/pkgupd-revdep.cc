@@ -21,35 +21,56 @@ PKGUPD_MODULE(revdep) {
   auto system_database = std::make_shared<SystemDatabase>(config);
 
   std::vector<std::shared_ptr<PackageInfo>> packages;
-
   std::vector<std::string> all_packages;
   if (!repository->list_all(all_packages)) {
     ERROR("failed to list repository packages, " + repository->error());
     return 1;
   }
 
-  PROCESS("searching reverse dependencies");
-  for (auto const& package_id : all_packages) {
-    auto package = repository->get(package_id.c_str());
-    if (package == nullptr) {
-      ERROR(repository->error());
-      return 1;
+  std::function<bool(std::shared_ptr<PackageInfo> const&)>
+      getReverseDependencies =
+          [&](std::shared_ptr<PackageInfo> const& package) -> bool {
+    if (std::find_if(
+            packages.begin(), packages.end(),
+            [&](std::shared_ptr<PackageInfo> const& package_info) -> bool {
+              return package_info->id() == package->id();
+            }) != packages.end()) {
+      return true;
     }
+    packages.push_back(package);
+    std::cout << "checking for " << package->id() << std::endl;
 
-    if (std::find(package->depends().begin(), package->depends().end(),
-                  parent) != package->depends().end()) {
-      packages.push_back(package);
-    } else {
-      auto resolver = std::make_shared<Resolver>(
-          DEFAULT_GET_PACKAE_FUNCTION, DEFAULT_SKIP_PACKAGE_FUNCTION, parent);
-      if (!resolver->resolve(package)) {
-        ERROR(resolver->error());
-        return 1;
+    for (auto const& a : all_packages) {
+      auto package_info = repository->get(a.c_str());
+      if (package_info == nullptr) {
+        ERROR("missing required package '" + a + "'");
+        return false;
       }
-      if (resolver->found()) {
-        packages.push_back(package);
+      if (std::find(package_info->depends().begin(),
+                    package_info->depends().end(),
+                    package->id()) != package_info->depends().end() &&
+          std::find_if(
+              packages.begin(), packages.end(),
+              [&](std::shared_ptr<PackageInfo> const& package_info) -> bool {
+                return package_info->id() == package->id();
+              }) == packages.end()) {
+        if (!getReverseDependencies(package_info)) {
+          return false;
+        }
       }
     }
+    return true;
+  };
+
+  PROCESS("searching reverse dependencies");
+  auto package = repository->get(parent.c_str());
+  if (package == nullptr) {
+    ERROR("missing required package '" + parent + "'");
+    return 0;
+  }
+  
+  if (!getReverseDependencies(package)) {
+    return 1;
   }
 
   for (auto const& i : packages) {

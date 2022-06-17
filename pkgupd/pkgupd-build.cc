@@ -52,8 +52,6 @@ PKGUPD_MODULE(build) {
 
   if (config->get("build.depends", true)) {
     PROCESS("generating dependency tree");
-    std::vector<std::string> source_packages;
-
     std::shared_ptr<Resolver> resolver = std::make_shared<Resolver>(
         [&](char const* id) -> std::shared_ptr<PackageInfo> {
           auto packageInfo = repository->get(id);
@@ -68,7 +66,6 @@ PKGUPD_MODULE(build) {
           }
 
           if (recipe != nullptr) {
-            source_packages.push_back(id);
             std::vector<std::string> depends = recipe->depends();
             depends.insert(depends.end(), recipe->buildTime().begin(),
                            recipe->buildTime().end());
@@ -99,38 +96,12 @@ PKGUPD_MODULE(build) {
 
     PROCESS("installing/building required packages");
     config->node()["installer.depends"] = false;
+
     config->node()["mode.ask"] = false;
-    for (auto const& i : resolver->list()) {
-      auto iter = std::find_if(source_packages.begin(), source_packages.end(),
-                               [&](std::string const& source_package) -> bool {
-                                 return i->id() == source_package;
-                               });
-      if (iter == source_packages.end()) {
-        if (!installer->install({i}, repository.get(), system_database.get())) {
-          ERROR("failed to install dependent package, '" << i->id() << "', "
-                                                         << installer->error());
-          return 1;
-        }
-      } else {
-        auto source_package = sourceRepository->get(i->id().c_str());
-        if (source_package == nullptr) {
-          ERROR("internal error, failed to retrieve source package "
-                << i->id());
-          return 1;
-        }
-
-        if (!builder->build(source_package.get())) {
-          ERROR("failed to build required recipe, "
-                << source_package->id() << ", " << builder->error());
-          return 1;
-        }
-
-        std::vector<std::string> built_packages = builder->packages();
-        if (!installer->install(built_packages, system_database.get())) {
-          ERROR("failed to install build packages, " << installer->error());
-          return 1;
-        }
-      }
+    if (!installer->install(resolver->list(), repository.get(),
+                            system_database.get())) {
+      ERROR("failed to install dependent package, " << installer->error());
+      return 1;
     }
   }
 
