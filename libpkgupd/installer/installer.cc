@@ -67,7 +67,7 @@ bool Installer::install(std::vector<std::string> pkgs, SystemDatabase* sys_db) {
 
     auto old_package_info = sys_db->get(package_info->id().c_str());
     if (old_package_info != nullptr) {
-      std::cout << "Found old package info" << std::endl;
+      PROCESS("cleaning old packages")
       auto old_files = old_package_info->files();
       for (auto i = old_files.rbegin(); i != old_files.rend(); ++i) {
         std::string file = *i;
