@@ -34,7 +34,7 @@ PKGUPD_MODULE(depends) {
   for (auto const& i : args) {
     auto pkginfo = repository.get(i.c_str());
     if (pkginfo == nullptr) {
-      ERROR("Error! missing required package " << pkginfo);
+      ERROR("Error! missing required package " << i);
       return 1;
     }
 
