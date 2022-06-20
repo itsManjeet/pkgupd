@@ -22,7 +22,7 @@ std::string rlxos::libpkgupd::utils::random(size_t size) {
 
 void rlxos::libpkgupd::utils::resolve_variable(YAML::Node node,
                                                std::string& value) {
-  std::vector<std::string> variables = {"id", "version", "commit"};
+  std::vector<std::string> variables = {"id", "version", "release", "commit"};
   if (!node["variables"]) {
     node["variables"] = YAML::Node();
   }

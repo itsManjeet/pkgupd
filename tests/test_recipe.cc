@@ -9,7 +9,8 @@ using namespace std;
 const string RECIPE_FILE = R"(
 id: test
 version: 2.0.5
-about: "{{id }} {{ version}} package"
+release: 5
+about: "{{id }} {{ version}} {{release}} package"
 sources:
  - https://url.com/{{id}}-{{version}}.tar.gz
 )";
@@ -25,6 +26,6 @@ class TestRecipe : public testing::Test {
 TEST_F(TestRecipe, CheckVariableResolving) {
   std::shared_ptr<Recipe> r = recipe();
 
-  ASSERT_EQ(r->about(), "test 2.0.5 package");
+  ASSERT_EQ(r->about(), "test 2.0.5 5 package");
   ASSERT_EQ(r->sources()[0], "https://url.com/test-2.0.5.tar.gz");
 }
