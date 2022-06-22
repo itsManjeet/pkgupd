@@ -9,7 +9,8 @@ PKGUPD_MODULE_HELP(run) {
   os << "Run binaries inside container" << endl
      << PADDING << "  " << BOLD("Options:") << endl
      << PADDING << "  - run.config=" << BOLD("<path>")
-     << "   # Set container configuration" << endl;
+     << "   # Set container configuration" << endl
+     << endl;
 }
 
 PKGUPD_MODULE(run) {
