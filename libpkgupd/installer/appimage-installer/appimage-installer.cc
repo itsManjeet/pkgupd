@@ -66,7 +66,7 @@ std::shared_ptr<PackageInfo> AppImageInstaller::inject(
     char const* path, std::vector<std::string>& files) {
   std::shared_ptr<ArchiveManager> archive_manager;
   std::shared_ptr<PackageInfo> package_info;
-  std::filesystem::path root_dir, apps_dir, apps_data_dir;
+  std::filesystem::path root_dir, apps_dir, app_data_path;
   std::string offset;
 
   archive_manager = ArchiveManager::create(ARCHIVE_MANAGER_TYPE);
@@ -79,8 +79,6 @@ std::shared_ptr<PackageInfo> AppImageInstaller::inject(
   }
   root_dir = mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
   apps_dir = mConfig->get<std::string>(DIR_APPS, DEFAULT_APPS_DIR);
-  apps_data_dir =
-      mConfig->get<std::string>(DIR_APPS_DATA, DEFAULT_APPS_DIR "/share");
 
   auto app_file = apps_dir / std::filesystem::path(path).filename().string();
   auto app_path = root_dir / app_file;
@@ -113,76 +111,114 @@ std::shared_ptr<PackageInfo> AppImageInstaller::inject(
     return nullptr;
   }
 
+  if (!intergrate(app_file.c_str(), files, [&](mINI::INIStructure& ini) {
+        ini["Desktop Entry"]["Actions"] += ";Uninstall;";
+
+        ini["Desktop Action Uninstall"]["Name"] = "Uninstall";
+        ini["Desktop Action Uninstall"]["Exec"] =
+            "/bin/pkexec pkgupd remove " + package_info->id();
+      })) {
+    return nullptr;
+  }
+
+  return package_info;
+}
+
+bool AppImageInstaller::intergrate(
+    char const* app_file, std::vector<std::string>& files,
+    std::function<void(mINI::INIStructure&)> desktopFileModifier) {
+  auto archive_manager = ArchiveManager::create(ARCHIVE_MANAGER_TYPE);
+  assert(archive_manager != nullptr);
+
+  std::filesystem::path app_data_path =
+      mConfig->get<std::string>(DIR_APPS_DATA, DEFAULT_APPS_DIR "/share");
+  std::filesystem::path root_dir =
+      mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
+
+  std::string path = (root_dir / std::string(app_file)).c_str();
+  auto package_info = archive_manager->info(path.c_str());
+  if (package_info == nullptr) {
+    p_Error = archive_manager->error();
+    return false;
+  }
+
   // install icon
   std::string _path;
-  std::string icon_file_path = "pixmaps/" + package_info->id() + ".png";
+  std::filesystem::path icon_file_path =
+      app_data_path / ("pixmaps/" + package_info->id() + ".png");
   if (!extract(archive_manager.get(), path,
-               package_info->id() + ".png:" + icon_file_path,
-               root_dir / apps_data_dir, _path)) {
-    return nullptr;
+               package_info->id() + ".png:" + icon_file_path.string(), root_dir,
+               _path)) {
+    return false;
   }
-  files.push_back("./" + apps_data_dir.string() + "/" + icon_file_path);
+  files.push_back("./" + icon_file_path.string());
 
   // install desktop file
-  std::string desktop_file_path =
-      "applications/" + package_info->id() + "-" +
-      std::to_string(std::hash<std::string>()(package_info->id() + "-" +
-                                              package_info->version())) +
-      ".desktop";
-
-  files.push_back("./" + apps_data_dir.string() + "/" + desktop_file_path);
-
-  std::string desktop_file;
-  if (!archive_manager->get(path, (package_info->id() + ".desktop").c_str(),
-                            desktop_file)) {
-    p_Error = "failed to read desktop file, not exists";
-    return nullptr;
+  std::filesystem::path desktop_file_path =
+      app_data_path /
+      ("applications/" + package_info->id() + "-" +
+       std::to_string(std::hash<std::string>()(package_info->id() + "-" +
+                                               package_info->version())) +
+       ".desktop");
+  if (!extract(archive_manager.get(), path,
+               package_info->id() + ".desktop:" + desktop_file_path.string(),
+               root_dir, _path)) {
+    return false;
   }
+  files.push_back("./" + desktop_file_path.string());
 
-  std::ofstream desktop(root_dir / desktop_file_path);
-  std::stringstream ss(desktop_file);
-  files.push_back("./" + desktop_file_path);
+  // Legcay Patch
+  {
+    std::ifstream infile(_path);
+    std::string input((std::istreambuf_iterator<char>(infile)),
+                      (std::istreambuf_iterator<char>()));
+    infile.close();
 
-  std::string line;
-  bool is_action = false;
-  while (std::getline(ss, line, '\n')) {
-    if (line.find("Exec=", 0) == 0) {
-      desktop << "Exec=/" << app_file.string() << std::endl;
-    } else if (line.find("Icon=", 0) == 0) {
-      desktop << "Icon=" << package_info->id() << std::endl;
-    } else if (line.find("Actions=", 0) == 0) {
-      is_action = true;
-      desktop << line << ";Remove" << std::endl;
-    } else {
-      desktop << line << std::endl;
+    std::ofstream outfile(_path);
+    std::string line;
+    std::stringstream ss(input);
+    while (std::getline(ss, line, '\n')) {
+      if (line.find("Exec=", 0) == 0) {
+        outfile << "Exec=/" << app_file << std::endl;
+      } else if (line.find("Icon=", 0) == 0) {
+        outfile << "Icon=" << package_info->id() << std::endl;
+      } else {
+        outfile << line << std::endl;
+      }
     }
   }
 
-  if (!is_action) desktop << "Actions=Remove;" << std::endl;
+  if (!patch(_path, {
+                        {"@@exec@@", app_file},
+                        {"@@icon@@", package_info->id()},
+                    })) {
+    return false;
+  }
 
-  desktop << "\n[Desktop Action Remove]\n"
-          << "Name=Uninstall\n"
-          << "Exec=/usr/bin/pkexec pkgupd remove " << package_info->id()
-          << std::endl;
-  desktop.close();
+  if (desktopFileModifier != nullptr) {
+    mINI::INIFile desktopfile(_path);
+    mINI::INIStructure ini;
+    desktopfile.read(ini);
+    desktopFileModifier(ini);
+    desktopfile.write(ini);
+  }
 
   if (package_info->node()["extra"] && package_info->node()["extra"]["files"]) {
     for (auto const& i : package_info->node()["extra"]["files"]) {
       std::string target_path;
       if (!extract(archive_manager.get(), path, i.as<std::string>(),
-                   root_dir / apps_data_dir, target_path)) {
-        return nullptr;
+                   root_dir / app_data_path, target_path)) {
+        return false;
       }
-      files.push_back("./" + (apps_data_dir / target_path).string());
+      files.push_back("./" + (app_data_path / target_path).string());
 
       if (!patch(target_path, {
-                                  {"@@exec@@", "/" + app_file.string()},
+                                  {"@@exec@@", "/" + std::string(app_file)},
                                   {"@@id@@", package_info->id()},
                               })) {
-        return nullptr;
+        return false;
       }
     }
   }
-
-  return package_info;
+  return true;
 }

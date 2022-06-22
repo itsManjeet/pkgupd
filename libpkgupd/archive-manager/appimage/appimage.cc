@@ -6,8 +6,8 @@ using namespace rlxos::libpkgupd;
 #include "../../exec.hh"
 
 bool AppImage::get_offset(char const* path, std::string& offset) {
-  if (chmod(path, 0755) != 0) {
-    offset = "failed to set executable permission";
+  if (chmod(path, 0755) == -1) {
+    offset = "failed to set executable permission " + std::string(path);
     return false;
   }
 

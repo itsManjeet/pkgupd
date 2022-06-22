@@ -41,7 +41,7 @@ PKGUPD_MODULE(install) {
   for (auto const& i : args) {
     auto package_info = repository->get(i.c_str());
     if (package_info == nullptr) {
-      ERROR("required package '" << package_info << "' not found");
+      ERROR("required package '" << i << "' not found");
       return 1;
     }
     packages.push_back(package_info);
