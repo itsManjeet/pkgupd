@@ -107,14 +107,17 @@ PKGUPD_MODULE(watchdog) {
     std::string file_hash = std::to_string(std::hash<std::string>()(path));
     std::string file_datapath = app_data / "pkgupd" / file_hash;
 
-    // check if file is in use
-    {
-      if (status != Status::REMOVED) {
-        FILE* f = fopen(path.c_str(), "r");
-        if (f == nullptr) {
-          return;
-        }
-        fclose(f);
+    if (status != Status::REMOVED) {
+      // check if file is in use
+      FILE* f = fopen(path.c_str(), "rb");
+      if (f == nullptr) {
+        return;
+      }
+      fclose(f);
+
+      // check if already installed
+      if (std::filesystem::exists(file_datapath)) {
+        return;
       }
     }
 
