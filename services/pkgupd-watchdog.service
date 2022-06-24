@@ -2,7 +2,7 @@
 Description=PKGUPD watchdog
 
 [Service]
-ExecStart=pkgupd watchdog watchdog.dirs=%h/Applications, dir.apps.data=%h/.local/share
+ExecStart=pkgupd watchdog watchdog.dir=%h/Applications dir.apps.data=%h/.local/share
 Restart=always
 RestartSec=60
 
