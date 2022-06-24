@@ -18,8 +18,9 @@ using namespace rlxos::libpkgupd;
   X(trigger)                \
   X(revdep)                 \
   X(owner)                  \
-  X(run) \
-  X(cleanup)
+  X(run)                    \
+  X(cleanup)                \
+  X(watchdog)
 
 #include <functional>
 #include <iostream>

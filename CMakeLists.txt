@@ -32,6 +32,9 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/libpkgupd/
         FILES_MATCHING
             PATTERN "*.hh")
 
+install(FILES services/pkgupd-watchdog.service
+    DESTINATION "lib/systemd/user")
+
 set(INSTALL_GTEST OFF)
 if (BUILD_TEST)
 enable_testing()
