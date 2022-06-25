@@ -20,7 +20,7 @@ std::string random(size_t size);
 static inline int get_version(std::string version) {
   version.erase(
       std::remove_if(version.begin(), version.end(),
-                     [](auto const& c) -> bool { return !std::isalnum(c); }),
+                     [](auto const& c) -> bool { return !std::isdigit(c); }),
       version.end());
   if (version.length() == 0) {
     return 0;
