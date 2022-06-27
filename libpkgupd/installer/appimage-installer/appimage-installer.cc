@@ -112,7 +112,11 @@ std::shared_ptr<PackageInfo> AppImageInstaller::inject(
   }
 
   if (!intergrate(app_file.c_str(), files, [&](mINI::INIStructure& ini) {
-        ini["Desktop Entry"]["Actions"] += ";Uninstall;";
+        auto oldAction = ini["Desktop Entry"]["Actions"];
+        std::string id = "Uninstall";
+        if (oldAction.back() != ';') id = ";" + id;
+
+        ini["Desktop Entry"]["Actions"] += id + ";";
 
         ini["Desktop Action Uninstall"]["Name"] = "Uninstall";
         ini["Desktop Action Uninstall"]["Exec"] =
@@ -182,6 +186,8 @@ bool AppImageInstaller::intergrate(
         outfile << "Exec=/" << app_file << std::endl;
       } else if (line.find("Icon=", 0) == 0) {
         outfile << "Icon=" << package_info->id() << std::endl;
+      } else if (line.find("TryExec=", 0) == 0) {
+        continue;
       } else {
         outfile << line << std::endl;
       }
