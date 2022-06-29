@@ -156,8 +156,11 @@ PKGUPD_MODULE(watchdog) {
         if (!installer.intergrate(
                 path.c_str(), files,
                 [&](mINI::INIStructure& desktopFile) -> void {
-                  desktopFile["Desktop Entry"]["Actions"] += ";Uninstall;";
+                  auto oldAction = desktopFile["Desktop Entry"]["Actions"];
+                  std::string id = "Uninstall";
+                  if (oldAction.back() != ';') id = ";" + id;
 
+                  desktopFile["Desktop Entry"]["Actions"] += id + ";";
                   desktopFile["Desktop Action Uninstall"]["Name"] = "Uninstall";
                   desktopFile["Desktop Action Uninstall"]["Exec"] =
                       "rm " + path;
