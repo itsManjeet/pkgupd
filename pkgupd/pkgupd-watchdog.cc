@@ -178,6 +178,14 @@ PKGUPD_MODULE(watchdog) {
         }
         outfile.close();
 
+        for(auto const& i : {"home", "config"}) {
+          if (!std::filesystem::exists(path +"." + i)) {
+            std::error_code error;
+            std::filesystem::create_directories(path + "." + i);          
+          }
+        }
+        
+
         Executor::execute("update-desktop-database " +
                           (app_data / "applications").string());
         return;
