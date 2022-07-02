@@ -183,7 +183,12 @@ bool AppImageInstaller::intergrate(
     std::stringstream ss(input);
     while (std::getline(ss, line, '\n')) {
       if (line.find("Exec=", 0) == 0) {
-        outfile << "Exec=/" << app_file << std::endl;
+        auto first_space = line.find_first_of(' ');
+        if (first_space == std::string::npos) {
+          outfile << "Exec=/" << app_file << std::endl;
+        } else {
+          outfile << "Exec=/" << app_file << " " << line.substr(first_space) << std::endl;
+        }
       } else if (line.find("Icon=", 0) == 0) {
         outfile << "Icon=" << package_info->id() << std::endl;
       } else if (line.find("TryExec=", 0) == 0) {
