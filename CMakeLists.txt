@@ -35,6 +35,13 @@ install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/libpkgupd/
 install(FILES services/pkgupd-watchdog.service
     DESTINATION "lib/systemd/user")
 
+install(FILES scripts/pkgupd-app-remove
+    PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+                GROUP_EXECUTE GROUP_READ
+                WORLD_EXECUTE WORLD_READ
+
+    DESTINATION bin)
+
 set(INSTALL_GTEST OFF)
 if (BUILD_TEST)
 enable_testing()

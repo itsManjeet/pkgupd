@@ -160,8 +160,7 @@ PKGUPD_MODULE(watchdog) {
 
                   desktopFile["Desktop Entry"]["Actions"] += "Uninstall;";
                   desktopFile["Desktop Action Uninstall"]["Name"] = "Uninstall";
-                  desktopFile["Desktop Action Uninstall"]["Exec"] =
-                      "zenity --question --title=\"Uninstall\" --text=\"Do you want to remove " + std::filesystem::path(path).filename().string() + " \" && rm " + path;
+                  desktopFile["Desktop Action Uninstall"]["Exec"] = "pkgupd-app-remove " + path;
                 })) {
           push_notification("Integration failed for " +
                                 std::filesystem::path(path).filename().string(),
@@ -176,13 +175,12 @@ PKGUPD_MODULE(watchdog) {
         }
         outfile.close();
 
-        for(auto const& i : {"home", "config"}) {
-          if (!std::filesystem::exists(path +"." + i)) {
+        for (auto const& i : {"home", "config"}) {
+          if (!std::filesystem::exists(path + "." + i)) {
             std::error_code error;
-            std::filesystem::create_directories(path + "." + i);          
+            std::filesystem::create_directories(path + "." + i);
           }
         }
-        
 
         Executor::execute("update-desktop-database " +
                           (app_data / "applications").string());
