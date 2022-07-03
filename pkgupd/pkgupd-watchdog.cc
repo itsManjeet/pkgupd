@@ -157,13 +157,11 @@ PKGUPD_MODULE(watchdog) {
                 path.c_str(), files,
                 [&](mINI::INIStructure& desktopFile) -> void {
                   auto oldAction = desktopFile["Desktop Entry"]["Actions"];
-                  std::string id = "Uninstall";
-                  if (oldAction.back() != ';') id = ";" + id;
 
-                  desktopFile["Desktop Entry"]["Actions"] += id + ";";
+                  desktopFile["Desktop Entry"]["Actions"] += "Uninstall;";
                   desktopFile["Desktop Action Uninstall"]["Name"] = "Uninstall";
                   desktopFile["Desktop Action Uninstall"]["Exec"] =
-                      "rm " + path;
+                      "zenity --question --title=\"Uninstall\" --text=\"Do you want to remove " + std::filesystem::path(path).filename().string() + " \" && rm " + path;
                 })) {
           push_notification("Integration failed for " +
                                 std::filesystem::path(path).filename().string(),
