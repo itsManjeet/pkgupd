@@ -31,6 +31,7 @@ Recipe::Recipe(YAML::Node data, std::string file, std::string const& repo)
   READ_LIST(string, "environ", m_Environ);
 
   READ_LIST(string, "skip-strip", m_SkipStrip);
+  READ_LIST(string, "backup", m_Backup);
 
   OPTIONAL_VALUE(bool, "strip", m_DoStrip, true);
 
@@ -203,13 +204,13 @@ std::vector<std::shared_ptr<PackageInfo>> Recipe::packages() const {
   std::vector<std::shared_ptr<PackageInfo>> packagesList;
   packagesList.push_back(std::make_shared<PackageInfo>(
       m_ID, m_Version, m_About, m_Depends, m_PackageType, m_Users, m_Groups,
-      m_InstallScript, m_Repository, m_Node));
+      m_Backup, m_InstallScript, m_Repository, m_Node));
 
   for (auto const& i : m_SplitPackages) {
     packagesList.push_back(std::make_shared<PackageInfo>(
         i.into, m_Version, i.about.size() ? i.about : m_About,
         i.depends.size() ? i.depends : m_Depends, m_PackageType, m_Users,
-        m_Groups, m_InstallScript, m_Repository, m_Node));
+        m_Groups, m_Backup, m_InstallScript, m_Repository, m_Node));
   }
 
   return packagesList;

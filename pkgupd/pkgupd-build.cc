@@ -53,18 +53,15 @@ PKGUPD_MODULE(build) {
   if (config->get("build.depends", true)) {
     PROCESS("generating dependency tree");
     std::shared_ptr<Resolver> resolver = std::make_shared<Resolver>(
-        DEFAULT_GET_PACKAE_FUNCTION,
-        DEFAULT_SKIP_PACKAGE_FUNCTION);
+        DEFAULT_GET_PACKAE_FUNCTION, DEFAULT_SKIP_PACKAGE_FUNCTION);
     std::vector<std::string> packages = required_recipe->depends();
     packages.insert(packages.end(), required_recipe->buildTime().begin(),
                     required_recipe->buildTime().end());
 
+    std::vector<std::shared_ptr<PackageInfo>> packagesList;
     for (auto const& i : packages) {
-      if (!resolver->resolve(i)) {
+      if (!resolver->depends(i, packagesList)) {
         ERROR(resolver->error());
-        for (auto const& i : resolver->missing()) {
-          std::cout << " - " << i << std::endl;
-        }
         return 1;
       }
     }
@@ -73,7 +70,7 @@ PKGUPD_MODULE(build) {
     config->node()["installer.depends"] = false;
 
     config->node()["mode.ask"] = false;
-    if (!installer->install(resolver->list(), repository.get(),
+    if (!installer->install(packagesList, repository.get(),
                             system_database.get())) {
       ERROR("failed to install dependent package, " << installer->error());
       return 1;

@@ -41,6 +41,7 @@ class Recipe {
 
   std::string m_Script;
   std::string m_Repository;
+  std::vector<std::string> m_Backup;
 
   std::vector<User> m_Users;
   std::vector<Group> m_Groups;

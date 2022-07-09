@@ -18,18 +18,23 @@ bool Uninstaller::uninstall(InstalledPackageInfo* pkginfo,
     }
 
     std::error_code error;
-    if (std::filesystem::exists(filepath)) {
-      if (std::filesystem::is_directory(filepath) &&
-          std::filesystem::is_empty(filepath)) {
-        std::filesystem::remove_all(filepath, error);
-      } else if (!std::filesystem::is_directory(filepath)) {
-        std::filesystem::remove(filepath, error);
-      }
+    try {
+      if (std::filesystem::exists(filepath)) {
+        if (std::filesystem::is_directory(filepath) &&
+            std::filesystem::is_empty(filepath)) {
+          std::filesystem::remove_all(filepath, error);
+        } else if (!std::filesystem::is_directory(filepath)) {
+          std::filesystem::remove(filepath, error);
+        }
 
-      if (error) {
-        std::cerr << "FAILED TO REMOVE " << filepath << " : " << error.message()
-                  << std::endl;
+        if (error) {
+          std::cerr << "FAILED TO REMOVE " << filepath << " : "
+                    << error.message() << std::endl;
+        }
       }
+    } catch (std::exception const& exc) {
+      std::cerr << "FAILED TO REMOVE " << filepath << " : " << exc.what()
+                << std::endl;
     }
   }
 

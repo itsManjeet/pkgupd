@@ -31,20 +31,15 @@ PKGUPD_MODULE(depends) {
         return false;
       });
 
+  std::vector<std::shared_ptr<PackageInfo>> packagesList;
   for (auto const& i : args) {
-    auto pkginfo = repository.get(i.c_str());
-    if (pkginfo == nullptr) {
-      ERROR("Error! missing required package " << i);
-      return 1;
-    }
-
-    if (!resolver.resolve(pkginfo)) {
+    if (!resolver.depends(i, packagesList)) {
       ERROR(resolver.error());
       return 1;
     }
   }
 
-  for (auto const& i : resolver.list()) {
+  for (auto const& i : packagesList) {
     cout << i->id() << endl;
   }
   return 0;

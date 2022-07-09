@@ -36,4 +36,19 @@ std::shared_ptr<ArchiveManager> ArchiveManager::create(PackageType type) {
 
   return nullptr;
 }
+
+std::shared_ptr<ArchiveManager> ArchiveManager::create(
+    std::string packagePath) {
+  std::filesystem::path package(packagePath);
+  if (!package.has_extension()) {
+    return nullptr;
+  }
+
+  std::string ext = package.extension();
+  auto packageType = PACKAGE_TYPE_FROM_STR(ext.c_str());
+  if (packageType == PackageType::N_PACKAGE_TYPE) {
+    return nullptr;
+  }
+  return ArchiveManager::create(packageType);
+}
 }  // namespace rlxos::libpkgupd

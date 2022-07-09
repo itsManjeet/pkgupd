@@ -70,7 +70,7 @@ static char const*
  * their dependencies and required user groups
  */
 class PackageInfo {
- private:
+ protected:
   std::string m_ID;
   std::string m_Version;
   std::string m_About;
@@ -85,6 +85,10 @@ class PackageInfo {
   std::string m_Script;
   std::string m_Repository;
 
+  std::vector<std::string> m_Backup;
+
+  bool m_IsDependency = false;
+
   YAML::Node m_Node;
 
  public:
@@ -92,7 +96,8 @@ class PackageInfo {
   PackageInfo(std::string id, std::string version, std::string about,
               std::vector<std::string> depends, PackageType packageType,
               std::vector<User> users, std::vector<Group> groups,
-              std::string script, std::string repo, YAML::Node node)
+              std::vector<std::string> backup, std::string script,
+              std::string repo, YAML::Node node)
       : m_ID{id},
         m_Version{version},
         m_About{about},
@@ -102,6 +107,7 @@ class PackageInfo {
         m_Groups{groups},
         m_Script{script},
         m_Repository{repo},
+        m_Backup{backup},
         m_Node{node} {}
   virtual ~PackageInfo() = default;
   std::string const& id() const { return m_ID; }
@@ -111,6 +117,7 @@ class PackageInfo {
   PackageType type() const { return m_PackageType; }
 
   std::vector<std::string> const& depends() const { return m_Depends; }
+  std::vector<std::string> const& backups() const { return m_Backup; }
 
   std::vector<User> const& users() const { return m_Users; }
   std::vector<Group> const& groups() const { return m_Groups; }
@@ -118,6 +125,11 @@ class PackageInfo {
   std::string const& script() const { return m_Script; };
 
   YAML::Node const& node() const { return m_Node; }
+
+  bool isDependency() const { return m_IsDependency; }
+
+  void setDependency() { m_IsDependency = true; }
+  void unsetDependency() { m_IsDependency = false; }
 
   void dump(std::ostream& os, bool as_meta = false) const;
 };

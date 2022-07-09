@@ -39,7 +39,7 @@ class SystemDatabase : public Object {
 
   std::shared_ptr<InstalledPackageInfo> add(
       PackageInfo *pkginfo, std::vector<std::string> const &files,
-      std::string root, bool update = false);
+      std::string root, bool update = false, bool is_dependency = false);
 
   bool remove(InstalledPackageInfo *pkginfo);
 };

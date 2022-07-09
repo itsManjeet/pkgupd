@@ -22,7 +22,8 @@ class AppImageInstaller : public Installer::Injector {
                   std::function<void(mINI::INIStructure&)> desktopFileModifier);
 
   std::shared_ptr<PackageInfo> inject(char const* path,
-                                      std::vector<std::string>& files);
+                                      std::vector<std::string>& files,
+                                      bool is_dependency = false);
 };
 }  // namespace rlxos::libpkgupd
 

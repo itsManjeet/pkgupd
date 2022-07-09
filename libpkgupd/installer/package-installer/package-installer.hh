@@ -9,7 +9,8 @@ class PackageInstaller : public Installer::Injector {
   PackageInstaller(Configuration* config) : Installer::Injector{config} {}
 
   std::shared_ptr<PackageInfo> inject(char const* path,
-                                      std::vector<std::string>& files);
+                                      std::vector<std::string>& files,
+                                      bool is_dependency = false);
 };
 }  // namespace rlxos::libpkgupd
 

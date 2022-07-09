@@ -23,6 +23,13 @@ add_executable(pkgupd ${PKGUPD_Src})
 add_dependencies(pkgupd libpkgupd)
 target_link_libraries(pkgupd libpkgupd)
 
+# find_package(PkgConfig REQUIRED)
+# pkg_check_modules(SQUASHFUSE squashfuse REQUIRED)
+# include_directories(${SQUASHFUSE_INCLUDE_DIRS})
+# file(GLOB RUNTIME_Src "runtime/*.cc" "runtime/*.hh")
+# add_executable(runtime ${RUNTIME_Src})
+# target_link_libraries(runtime ${SQUASHFUSE_LIBRARIES})
+
 install(TARGETS pkgupd libpkgupd
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib)

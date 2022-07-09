@@ -1,3 +1,4 @@
+#include "../libpkgupd/archive-manager/archive-manager.hh"
 #include "../libpkgupd/downloader.hh"
 #include "../libpkgupd/installer/installer.hh"
 using namespace rlxos::libpkgupd;
@@ -6,8 +7,9 @@ using namespace rlxos::libpkgupd;
 using namespace std;
 
 PKGUPD_MODULE_HELP(inject) {
-  os << "Inject package from url or filepath directly into system\n" << PADDING
-     << "  - Can be used for rlxos .app files or bundle packages" << endl
+  os << "Inject package from url or filepath directly into system\n"
+     << PADDING << "  - Can be used for rlxos .app files or bundle packages"
+     << endl
      << endl;
 }
 PKGUPD_MODULE(inject) {
@@ -36,7 +38,21 @@ PKGUPD_MODULE(inject) {
     uri = filename;
   }
 
-  if (!installer->install({uri}, system_database.get())) {
+  auto archiveManager = ArchiveManager::create(uri);
+  if (archiveManager == nullptr) {
+    ERROR("failed to get a valid archive manager for " << uri);
+    return 1;
+  }
+
+  auto packageInfo = archiveManager->info(uri.c_str());
+  if (packageInfo == nullptr) {
+    ERROR("failed to read package information for " << uri);
+    return 1;
+  }
+
+  std::vector<std::pair<std::string, std::shared_ptr<PackageInfo>>> packages;
+  packages.push_back({uri, packageInfo});
+  if (!installer->install(packages, system_database.get())) {
     ERROR(installer->error());
     return 1;
   }

@@ -76,6 +76,9 @@ PKGUPD_MODULE(info) {
            << GREEN(installed_info->installed_on()) << '\n'
            << BLUE("Files") << "        :   "
            << BOLD(to_string(installed_info->files().size())) << endl;
+      cout << BLUE("Dependency") << "   :   "
+           << BOLD((installed_info->isDependency() ? "true" : "false"))
+           << std::endl;
     }
   } else {
     if (info_value == "id") {

@@ -63,7 +63,7 @@ bool AppImageInstaller::extract(ArchiveManager* archiveManager,
 }
 
 std::shared_ptr<PackageInfo> AppImageInstaller::inject(
-    char const* path, std::vector<std::string>& files) {
+    char const* path, std::vector<std::string>& files, bool is_dependency) {
   std::shared_ptr<ArchiveManager> archive_manager;
   std::shared_ptr<PackageInfo> package_info;
   std::filesystem::path root_dir, apps_dir, app_data_path;
@@ -77,6 +77,10 @@ std::shared_ptr<PackageInfo> AppImageInstaller::inject(
     p_Error = archive_manager->error();
     return nullptr;
   }
+  if (is_dependency) {
+    package_info->setDependency();
+  }
+  
   root_dir = mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
   apps_dir = mConfig->get<std::string>(DIR_APPS, DEFAULT_APPS_DIR);
 
@@ -187,10 +191,11 @@ bool AppImageInstaller::intergrate(
         if (first_space == std::string::npos) {
           outfile << "Exec=/" << app_file << std::endl;
         } else {
-          outfile << "Exec=/" << app_file << " " << line.substr(first_space) << std::endl;
+          outfile << "Exec=/" << app_file << " " << line.substr(first_space)
+                  << std::endl;
         }
       } else if (line.find("Icon=", 0) == 0) {
-        outfile << "Icon=" << package_info->id() << std::endl;
+        outfile << "Icon=" << icon_file_path << std::endl;
       } else if (line.find("TryExec=", 0) == 0) {
         continue;
       } else {
@@ -201,7 +206,7 @@ bool AppImageInstaller::intergrate(
 
   if (!patch(_path, {
                         {"@@exec@@", app_file},
-                        {"@@icon@@", package_info->id()},
+                        {"@@icon@@", icon_file_path},
                     })) {
     return false;
   }

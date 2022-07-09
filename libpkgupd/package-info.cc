@@ -6,6 +6,7 @@ PackageInfo::PackageInfo(YAML::Node const& data, std::string const& file) {
   READ_VALUE(std::string, "version", m_Version);
   READ_VALUE(std::string, "about", m_About);
   READ_LIST(std::string, "depends", m_Depends);
+  READ_LIST(std::string, "backup", m_Backup);
   OPTIONAL_VALUE(std::string, "repository", m_Repository, "core");
 
   READ_OBJECT_LIST(User, "users", m_Users);
@@ -36,6 +37,12 @@ void PackageInfo::dump(std::ostream& os, bool as_meta) const {
     os << prefix << "depends:"
        << "\n";
     for (auto const& i : m_Depends) os << prefix << " - " << i << "\n";
+  }
+
+  if (m_Backup.size()) {
+    os << prefix << "backup:"
+       << "\n";
+    for (auto const& i : m_Backup) os << prefix << " - " << i << "\n";
   }
 
   if (m_Users.size()) {

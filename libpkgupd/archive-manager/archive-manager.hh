@@ -65,6 +65,7 @@ class ArchiveManager : public Object {
 
   static std::shared_ptr<ArchiveManager> create(ArchiveManagerType type);
   static std::shared_ptr<ArchiveManager> create(PackageType type);
+  static std::shared_ptr<ArchiveManager> create(std::string packagePath);
 };
 }  // namespace rlxos::libpkgupd
 

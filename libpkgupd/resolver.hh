@@ -28,33 +28,17 @@ class Resolver : public Object {
   GetPackageFunctionType mGetPackageFunction;
   SkipPackageFunctionType mSkipPackageFunction;
 
-  std::vector<std::string> mVisited;
-  std::vector<std::shared_ptr<PackageInfo>> mPackageList;
-  std::vector<std::string> mMissing;
-  std::string mBreakOn = "";
-  bool mToBreak = false;
-
-  bool toSkip(PackageInfo *info);
+  bool resolve(std::shared_ptr<PackageInfo> const &info,
+               std::vector<std::shared_ptr<PackageInfo>> &list);
 
  public:
-  Resolver(GetPackageFunctionType get_fun, SkipPackageFunctionType skip_fun, std::string break_on = "")
-      : mGetPackageFunction{get_fun}, mSkipPackageFunction{skip_fun}, mBreakOn(break_on) {}
+  Resolver(GetPackageFunctionType get_fun, SkipPackageFunctionType skip_fun)
+      : mGetPackageFunction{get_fun}, mSkipPackageFunction{skip_fun} {}
 
-  bool resolve(std::shared_ptr<PackageInfo> info);
-  
-  bool resolve(std::string id);
+  bool depends(std::string id, std::vector<std::shared_ptr<PackageInfo>> &list);
 
-  bool found() {
-    return mToBreak;
-  }
-
-  void clear();
-
-  std::vector<std::shared_ptr<PackageInfo>> const &list() const {
-    return mPackageList;
-  }
-
-  std::vector<std::string> const &missing() const { return mMissing; }
+  bool depends(std::shared_ptr<PackageInfo> const &info,
+               std::vector<std::shared_ptr<PackageInfo>> &list);
 };
 }  // namespace rlxos::libpkgupd
 

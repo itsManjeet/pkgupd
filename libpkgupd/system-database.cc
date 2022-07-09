@@ -15,6 +15,7 @@ InstalledPackageInfo::InstalledPackageInfo(YAML::Node const &data,
     : PackageInfo(data, file) {
   READ_LIST(std::string, "files", mFiles);
   READ_VALUE(std::string, "installed_on", mInstalledon);
+  OPTIONAL_VALUE(bool, "is-dependency", m_IsDependency, false);
 }
 
 bool SystemDatabase::list_all(std::vector<std::string> &ids) {
@@ -39,7 +40,7 @@ std::shared_ptr<InstalledPackageInfo> SystemDatabase::get(char const *pkgid) {
 
 std::shared_ptr<InstalledPackageInfo> SystemDatabase::add(
     PackageInfo *pkginfo, std::vector<std::string> const &files,
-    std::string root, bool update) {
+    std::string root, bool update, bool is_dependency) {
   auto data_file = std::filesystem::path(data_dir) / pkginfo->id();
   if (!std::filesystem::exists(data_dir)) {
     std::error_code code;
@@ -63,6 +64,8 @@ std::shared_ptr<InstalledPackageInfo> SystemDatabase::add(
       file << " - " << f << '\n';
     }
   }
+
+  file << "is-dependency: " << (is_dependency ? "true" : "false") << "\n";
 
   std::time_t t = std::time(0);
   std::tm *now = std::localtime(&t);

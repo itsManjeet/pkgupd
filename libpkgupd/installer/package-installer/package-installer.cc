@@ -7,7 +7,7 @@ using namespace rlxos::libpkgupd;
 #include <algorithm>
 
 std::shared_ptr<PackageInfo> PackageInstaller::inject(
-    char const* path, std::vector<std::string>& files) {
+    char const* path, std::vector<std::string>& files, bool is_dependency) {
   std::shared_ptr<ArchiveManager> archive_manager;
   std::shared_ptr<PackageInfo> package_info;
   std::filesystem::path root_dir;
@@ -19,6 +19,9 @@ std::shared_ptr<PackageInfo> PackageInstaller::inject(
   if (package_info == nullptr) {
     p_Error = archive_manager->error();
     return nullptr;
+  }
+  if (is_dependency) {
+    package_info->setDependency();
   }
 
   if (!archive_manager->list(path, files)) {
