@@ -65,6 +65,19 @@ PKGUPD_MODULE(build) {
         return 1;
       }
     }
+    for(auto const& i : packages) {
+      if (std::find_if(packagesList.begin(), packagesList.end(), [&](std::shared_ptr<PackageInfo> const& pkg) -> bool {
+        return pkg->id() == i;
+      }) == packagesList.end()) {
+        auto p = repository->get(i.c_str());
+        if (p == nullptr) {
+          ERROR(repository->error());
+          return 1;
+        }
+        p->setDependency();
+        packagesList.push_back(p);
+      }
+    }
 
     PROCESS("installing/building required packages");
     config->node()["installer.depends"] = false;
