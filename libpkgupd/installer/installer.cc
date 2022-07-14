@@ -179,29 +179,38 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
       }
     }
 
-    for (auto const& p : pkgs) {
-      auto iter = std::find_if(
-          dependencies.begin(), dependencies.end(),
-          [&p](std::shared_ptr<PackageInfo> const& pkginfo) -> bool {
-            return p->id() == pkginfo->id();
-          });
-      if (iter == dependencies.end()) {
-        dependencies.push_back(p);
-      } else {
-        (*iter)->unsetDependency();
+    auto skip_fun = DEFAULT_SKIP_PACKAGE_FUNCTION;
+
+    if (dependencies.size()) {
+      for (auto const& p : pkgs) {
+        auto iter = std::find_if(
+            dependencies.begin(), dependencies.end(),
+            [&p](std::shared_ptr<PackageInfo> const& pkginfo) -> bool {
+              return p->id() == pkginfo->id();
+            });
+        if (iter == dependencies.end()) {
+          if (!skip_fun(p.get())) dependencies.push_back(p);
+        } else {
+          (*iter)->unsetDependency();
+        }
+      }
+
+      MESSAGE(BLUE("::"), "required " << dependencies.size() << " packagess");
+      for (auto const& i : dependencies) {
+        std::cout << "- " << i->id() << ":" << i->version() << std::endl;
+      }
+      if (!ask_user("Do you want to continue", mConfig)) {
+        ERROR("user cancelled the operation");
+        return 1;
       }
     }
 
-    MESSAGE(BLUE("::"), "required " << dependencies.size() << " packagess");
-    for (auto const& i : dependencies) {
-      std::cout << "- " << i->id() << ":" << i->version() << std::endl;
-    }
-    if (!ask_user("Do you want to continue", mConfig)) {
-      ERROR("user cancelled the operation");
-      return 1;
-    }
-
     pkgs = dependencies;
+  }
+
+  if (pkgs.size() == 0) {
+    p_Error = "dependency already satisfied";
+    return false;
   }
 
   for (auto i : pkgs) {

@@ -50,11 +50,11 @@ PKGUPD_MODULE(install) {
   if (!installer->install(packages, repository.get(), system_database.get())) {
     ERROR(installer->error());
     return 1;
+  } else {
+    cout << BOLD("successfully") << " "
+         << BLUE((config->get("is-updating", false) ? "installed" : "updated"))
+         << " " << GREEN(packages.size()) << BOLD(" package(s)") << endl;
   }
-
-  cout << BOLD("successfully") << " "
-       << BLUE((config->get("is-updating", false) ? "installed" : "updated"))
-       << " " << GREEN(packages.size()) << BOLD(" package(s)") << endl;
 
   return 0;
 }
