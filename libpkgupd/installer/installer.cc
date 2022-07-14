@@ -209,8 +209,8 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
   }
 
   if (pkgs.size() == 0) {
-    p_Error = "dependency already satisfied";
-    return false;
+    MESSAGE("success","dependency already satisfied");
+    return true;
   }
 
   for (auto i : pkgs) {
