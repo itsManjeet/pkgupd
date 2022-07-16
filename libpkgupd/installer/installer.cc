@@ -149,11 +149,26 @@ bool Installer::install(
 
   if (!mConfig->get("installer.triggers", true)) {
     INFO("skipping triggers");
+    std::cout << BOLD("successfully") << " "
+              << BLUE((mConfig->get("is-updating", false) ? "installed"
+                                                          : "updated"))
+              << " " << GREEN(packages.size()) << BOLD(" package(s)")
+              << std::endl;
     return true;
   }
 
   Triggerer triggerer;
-  return triggerer.trigger(packages);
+  if (!triggerer.trigger(packages)) {
+    p_Error = triggerer.error();
+    return false;
+  }
+
+  std::cout << BOLD("successfully") << " "
+            << BLUE((mConfig->get("is-updating", false) ? "installed"
+                                                        : "updated"))
+            << " " << GREEN(packages.size()) << BOLD(" package(s)")
+            << std::endl;
+  return true;
 }
 
 bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
@@ -189,7 +204,7 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
                                                DEFAULT_SKIP_PACKAGE_FUNCTION);
     PROCESS("generating dependency graph");
     std::vector<std::shared_ptr<PackageInfo>> dependencies;
-    for (auto p : pkgs) {
+    for (auto p : required_packages) {
       if (!resolver->depends(p, dependencies)) {
         p_Error = resolver->error();
         return false;
@@ -198,27 +213,27 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
 
     auto skip_fun = DEFAULT_SKIP_PACKAGE_FUNCTION;
 
-    if (dependencies.size()) {
-      for (auto const& p : required_packages) {
-        auto iter = std::find_if(
-            dependencies.begin(), dependencies.end(),
-            [&p](std::shared_ptr<PackageInfo> const& pkginfo) -> bool {
-              return p->id() == pkginfo->id();
-            });
-        if (iter == dependencies.end()) {
-          if (!skip_fun(p.get())) dependencies.push_back(p);
-        } else {
-          (*iter)->unsetDependency();
-        }
+    for (auto const& p : required_packages) {
+      auto iter = std::find_if(
+          dependencies.begin(), dependencies.end(),
+          [&p](std::shared_ptr<PackageInfo> const& pkginfo) -> bool {
+            return p->id() == pkginfo->id();
+          });
+      if (iter == dependencies.end()) {
+        if (!skip_fun(p.get())) dependencies.push_back(p);
+      } else {
+        (*iter)->unsetDependency();
       }
+    }
 
+    if (dependencies.size()) {
       MESSAGE(BLUE("::"), "required " << dependencies.size() << " package(s)");
       for (auto const& i : dependencies) {
         std::cout << "- " << i->id() << ":" << i->version() << std::endl;
       }
       if (!ask_user("Do you want to continue", mConfig)) {
-        ERROR("user cancelled the operation");
-        return 1;
+        p_Error = "user cancelled the operation";
+        return false;
       }
     }
 
