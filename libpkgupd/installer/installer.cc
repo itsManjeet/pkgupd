@@ -227,7 +227,7 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
     packages_to_install = required_packages;
   }
 
-  if (required_packages.size() == 0) {
+  if (packages_to_install.size() == 0) {
     INFO("no operation required");
     return true;
   }
