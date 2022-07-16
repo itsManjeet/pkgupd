@@ -167,7 +167,24 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
   std::filesystem::path pkgs_dir =
       mConfig->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR);
 
-  if (mConfig->get("installer.depends", false) == false) {
+  std::vector<std::shared_ptr<PackageInfo>> required_packages,
+      packages_to_install;
+
+  if (mConfig->get("force", false) == false) {
+    for (auto const& p : pkgs) {
+      auto system_package = system_database->get(p->id().c_str());
+      if (system_package != nullptr &&
+          system_package->version() == p->version()) {
+        INFO(p->id() << " is already installed and upto date");
+        continue;
+      }
+      required_packages.push_back(p);
+    }
+  } else {
+    required_packages = pkgs;
+  }
+
+  if (mConfig->get("installer.depends", true) == true) {
     auto resolver = std::make_shared<Resolver>(DEFAULT_GET_PACKAE_FUNCTION,
                                                DEFAULT_SKIP_PACKAGE_FUNCTION);
     PROCESS("generating dependency graph");
@@ -182,7 +199,7 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
     auto skip_fun = DEFAULT_SKIP_PACKAGE_FUNCTION;
 
     if (dependencies.size()) {
-      for (auto const& p : pkgs) {
+      for (auto const& p : required_packages) {
         auto iter = std::find_if(
             dependencies.begin(), dependencies.end(),
             [&p](std::shared_ptr<PackageInfo> const& pkginfo) -> bool {
@@ -195,7 +212,7 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
         }
       }
 
-      MESSAGE(BLUE("::"), "required " << dependencies.size() << " packagess");
+      MESSAGE(BLUE("::"), "required " << dependencies.size() << " package(s)");
       for (auto const& i : dependencies) {
         std::cout << "- " << i->id() << ":" << i->version() << std::endl;
       }
@@ -205,15 +222,17 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
       }
     }
 
-    pkgs = dependencies;
+    packages_to_install = dependencies;
+  } else {
+    packages_to_install = required_packages;
   }
 
-  if (pkgs.size() == 0) {
-    MESSAGE("success","dependency already satisfied");
+  if (required_packages.size() == 0) {
+    INFO("no operation required");
     return true;
   }
 
-  for (auto i : pkgs) {
+  for (auto i : packages_to_install) {
     std::filesystem::path package_path =
         pkgs_dir / i->repository() / (PACKAGE_FILE(i));
 
