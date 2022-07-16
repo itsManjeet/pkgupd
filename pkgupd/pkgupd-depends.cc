@@ -16,17 +16,17 @@ PKGUPD_MODULE_HELP(depends) {
 }
 
 PKGUPD_MODULE(depends) {
-  auto repository = Repository(config);
-  auto system_database = SystemDatabase(config);
+  auto repository = std::make_shared<Repository>(config);
+  auto system_database = std::make_shared<SystemDatabase>(config);
 
   bool list_all = config->get("depends.all", false);
   auto resolver = Resolver(
       [&](char const* id) -> std::shared_ptr<PackageInfo> {
-        return repository.get(id);
+        return repository->get(id);
       },
       [&](PackageInfo* pkginfo) -> bool {
         if (!list_all) {
-          return system_database.get(pkginfo->id().c_str()) != nullptr;
+          return system_database->get(pkginfo->id().c_str()) != nullptr;
         }
         return false;
       });
@@ -36,6 +36,15 @@ PKGUPD_MODULE(depends) {
     if (!resolver.depends(i, packagesList)) {
       ERROR(resolver.error());
       return 1;
+    }
+  }
+
+  for (auto const& i : args) {
+    if (std::find_if(packagesList.begin(), packagesList.end(),
+                     [&](std::shared_ptr<PackageInfo> const& pkginfo) -> bool {
+                       return pkginfo->id() == i;
+                     }) == packagesList.end()) {
+      packagesList.push_back(repository->get(i.c_str()));
     }
   }
 
