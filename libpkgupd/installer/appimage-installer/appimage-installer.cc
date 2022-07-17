@@ -80,7 +80,7 @@ std::shared_ptr<PackageInfo> AppImageInstaller::inject(
   if (is_dependency) {
     package_info->setDependency();
   }
-  
+
   root_dir = mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
   apps_dir = mConfig->get<std::string>(DIR_APPS, DEFAULT_APPS_DIR);
 
@@ -118,13 +118,12 @@ std::shared_ptr<PackageInfo> AppImageInstaller::inject(
   if (!intergrate(app_file.c_str(), files, [&](mINI::INIStructure& ini) {
         auto oldAction = ini["Desktop Entry"]["Actions"];
         std::string id = "Uninstall";
-        if (oldAction.back() != ';') id = ";" + id;
-
         ini["Desktop Entry"]["Actions"] += id + ";";
 
         ini["Desktop Action Uninstall"]["Name"] = "Uninstall";
-        ini["Desktop Action Uninstall"]["Exec"] =
-            "/bin/pkexec pkgupd remove " + package_info->id();
+        ini["Desktop Action Uninstall"]["Exec"] = "/bin/pkexec pkgupd remove " +
+                                                  package_info->id() +
+                                                  "mode.ask=false";
       })) {
     return nullptr;
   }
