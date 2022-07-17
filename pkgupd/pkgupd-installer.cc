@@ -44,11 +44,6 @@ PKGUPD_MODULE(install) {
       ERROR("required package '" << i << "' not found");
       return 1;
     }
-    auto system_package = system_database->get(i.c_str());
-    if (system_package != nullptr &&
-        system_package->version() == package_info->version()) {
-      continue;
-    }
     packages.push_back(package_info);
   }
 

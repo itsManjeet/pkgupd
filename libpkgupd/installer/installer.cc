@@ -111,8 +111,11 @@ bool Installer::install(
       }
     }
 
+    bool is_dependency = pkg.second->isDependency();
+
     auto old_package_info = sys_db->get(package_info->id().c_str());
     if (old_package_info != nullptr) {
+      is_dependency = old_package_info->isDependency();
       PROCESS("cleaning old packages")
       auto old_files = old_package_info->files();
       for (auto i = old_files.rbegin(); i != old_files.rend(); ++i) {
@@ -138,7 +141,7 @@ bool Installer::install(
     auto installed_package_info =
         sys_db->add(package_info.get(), files,
                     mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR),
-                    false, pkg.second->isDependency());
+                    false, is_dependency);
     if (installed_package_info == nullptr) {
       p_Error =
           "failed to register '" + package_info->id() + "', " + sys_db->error();
@@ -220,7 +223,11 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
             return p->id() == pkginfo->id();
           });
       if (iter == dependencies.end()) {
-        if (!skip_fun(p.get())) dependencies.push_back(p);
+        if (mConfig->get("force", false) == false) {
+          if (!skip_fun(p.get())) dependencies.push_back(p);
+        } else {
+          dependencies.push_back(p);
+        }
       } else {
         (*iter)->unsetDependency();
       }
