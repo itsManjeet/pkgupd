@@ -194,7 +194,8 @@ bool AppImageInstaller::intergrate(
                   << std::endl;
         }
       } else if (line.find("Icon=", 0) == 0) {
-        outfile << "Icon=" << icon_file_path << std::endl;
+        outfile << "Icon="
+                << "/" + (icon_file_path).string() << std::endl;
       } else if (line.find("TryExec=", 0) == 0) {
         continue;
       } else {
@@ -205,7 +206,7 @@ bool AppImageInstaller::intergrate(
 
   if (!patch(_path, {
                         {"@@exec@@", app_file},
-                        {"@@icon@@", icon_file_path},
+                        {"@@icon@@", "/" + (icon_file_path).string()},
                     })) {
     return false;
   }
