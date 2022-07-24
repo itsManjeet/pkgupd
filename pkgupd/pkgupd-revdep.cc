@@ -37,7 +37,6 @@ PKGUPD_MODULE(revdep) {
             }) != packages.end()) {
       return true;
     }
-    packages.push_back(package);
     std::cout << "checking for " << package->id() << std::endl;
 
     for (auto const& a : all_packages) {
@@ -59,6 +58,7 @@ PKGUPD_MODULE(revdep) {
         }
       }
     }
+    packages.push_back(package);
     return true;
   };
 
