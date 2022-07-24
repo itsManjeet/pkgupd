@@ -122,7 +122,7 @@ std::shared_ptr<PackageInfo> AppImageInstaller::inject(
 
         ini["Desktop Action Uninstall"]["Name"] = "Uninstall";
         ini["Desktop Action Uninstall"]["Exec"] = "/bin/pkexec pkgupd remove " +
-                                                  package_info->id() +
+                                                  package_info->id() + " " +
                                                   "mode.ask=false";
       })) {
     return nullptr;
