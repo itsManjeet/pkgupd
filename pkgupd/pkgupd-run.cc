@@ -14,15 +14,7 @@ PKGUPD_MODULE_HELP(run) {
 }
 
 PKGUPD_MODULE(run) {
-  YAML::Node container_node;
-  if (config->node()["run.config"]) {
-    container_node = YAML::LoadFile(config->get<std::string>("run.config", ""));
-  } else if (config->node()["container"]) {
-    container_node = config->node()["container"];
-  }
-
-  auto container_config = std::make_shared<Configuration>(container_node);
-  auto container = std::make_shared<Container>(container_config.get());
+  auto container = std::make_shared<Container>(config);
 
   if (!container->run(args, config->get<bool>("debug", false))) {
     ERROR(container->error());
