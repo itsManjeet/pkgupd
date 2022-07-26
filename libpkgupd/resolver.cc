@@ -1,8 +1,7 @@
 #include "resolver.hh"
 namespace rlxos::libpkgupd {
 
-bool Resolver::depends(std::string id,
-                       std::vector<std::shared_ptr<PackageInfo>> &list) {
+bool Resolver::depends(std::string id, std::vector<PackageInfo *> &list) {
   auto packageInfo = mGetPackageFunction(id.c_str());
   if (packageInfo == nullptr) {
     p_Error = "required package '" + id + "' is missing";
@@ -11,8 +10,7 @@ bool Resolver::depends(std::string id,
   return depends(packageInfo, list);
 }
 
-bool Resolver::depends(std::shared_ptr<PackageInfo> const &info,
-                       std::vector<std::shared_ptr<PackageInfo>> &list) {
+bool Resolver::depends(PackageInfo *info, std::vector<PackageInfo *> &list) {
   for (auto const &depid : info->depends()) {
     auto dep = mGetPackageFunction(depid.c_str());
     if (dep == nullptr) {
@@ -26,15 +24,13 @@ bool Resolver::depends(std::shared_ptr<PackageInfo> const &info,
   return true;
 }
 
-bool Resolver::resolve(std::shared_ptr<PackageInfo> const &info,
-                       std::vector<std::shared_ptr<PackageInfo>> &list) {
-  if (std::find_if(list.begin(), list.end(),
-                   [&](std::shared_ptr<PackageInfo> const &pkginfo) -> bool {
-                     return pkginfo->id() == info->id();
-                   }) != list.end()) {
+bool Resolver::resolve(PackageInfo *info, std::vector<PackageInfo *> &list) {
+  if (std::find_if(list.begin(), list.end(), [&](PackageInfo *pkginfo) -> bool {
+        return pkginfo->id() == info->id();
+      }) != list.end()) {
     return true;
   }
-  if (mSkipPackageFunction(info.get())) return true;
+  if (mSkipPackageFunction(info)) return true;
   info->setDependency();
 
   for (auto const &i : info->depends()) {

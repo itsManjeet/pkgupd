@@ -17,21 +17,11 @@ PKGUPD_MODULE(owner) {
 
   std::shared_ptr<SystemDatabase> system_database =
       std::make_shared<SystemDatabase>(config);
-  std::vector<std::string> ids;
-  if (!system_database->list_all(ids)) {
-    ERROR(system_database->error());
-    return 1;
-  }
 
   int status = 1;
 
-  for (auto const& id : ids) {
-    auto package_info = system_database->get(id.c_str());
-    if (package_info == nullptr) {
-      ERROR("missing required package " << id);
-      return 1;
-    }
-
+  for(auto const& p : system_database->get()) {
+    auto package_info = p.second.get();
     auto iter =
         std::find_if(package_info->files().begin(), package_info->files().end(),
                      [&filepath](std::string const& path) -> bool {

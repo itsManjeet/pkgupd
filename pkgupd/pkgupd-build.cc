@@ -58,7 +58,7 @@ PKGUPD_MODULE(build) {
     packages.insert(packages.end(), required_recipe->buildTime().begin(),
                     required_recipe->buildTime().end());
 
-    std::vector<std::shared_ptr<PackageInfo>> packagesList;
+    std::vector<PackageInfo*> packagesList;
     for (auto const& i : packages) {
       if (!resolver->depends(i, packagesList)) {
         ERROR(resolver->error());
@@ -66,7 +66,7 @@ PKGUPD_MODULE(build) {
       }
     }
     for(auto const& i : packages) {
-      if (std::find_if(packagesList.begin(), packagesList.end(), [&](std::shared_ptr<PackageInfo> const& pkg) -> bool {
+      if (std::find_if(packagesList.begin(), packagesList.end(), [&](PackageInfo* pkg) -> bool {
         return pkg->id() == i;
       }) == packagesList.end()) {
         auto p = repository->get(i.c_str());

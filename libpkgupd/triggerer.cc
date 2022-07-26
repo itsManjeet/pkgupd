@@ -231,8 +231,7 @@ std::vector<Triggerer::type> Triggerer::_get(
   return requiredTriggers;
 }
 
-bool Triggerer::trigger(
-    std::vector<std::shared_ptr<InstalledPackageInfo>> infos) {
+bool Triggerer::trigger(std::vector<InstalledPackageInfo *> const &infos) {
   bool status = true;
   std::vector<Triggerer::type> triggers;
   for (auto const &info : infos) {

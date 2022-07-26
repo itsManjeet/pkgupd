@@ -10,12 +10,12 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/pkgupd",
             "args": [
-                "install", "neofetch",
-                "dir.root=${workspaceFolder}/tests/data/root/",
-                "dir.data=${workspaceFolder}/tests/data/data/",
-                "dir.pkgs=${workspaceFolder}/tests/data/pkgs/",
-                "dir.cache=${workspaceFolder}/tests/data/cache",
-                "dir.repo=${workspaceFolder}/tests/data/repo/",
+                "install", "gnome",
+                // "dir.root=${workspaceFolder}/tests/data/root/",
+                // "dir.data=${workspaceFolder}/tests/data/data/",
+                // "dir.pkgs=${workspaceFolder}/tests/data/pkgs/",
+                // "dir.cache=${workspaceFolder}/tests/data/cache",
+                // "dir.repo=${workspaceFolder}/tests/data/repo/",
                 "force=true"
             ],
             "stopAtEntry": false,

@@ -8,7 +8,7 @@
 #include "system-database.hh"
 
 #define DEFAULT_GET_PACKAE_FUNCTION                     \
-  [&](char const *id) -> std::shared_ptr<PackageInfo> { \
+  [&](char const *id) -> PackageInfo* { \
     return repository->get(id);                         \
   }
 
@@ -21,24 +21,24 @@ namespace rlxos::libpkgupd {
 class Resolver : public Object {
  public:
   using GetPackageFunctionType =
-      std::function<std::shared_ptr<PackageInfo>(char const *id)>;
+      std::function<PackageInfo*(char const *id)>;
   using SkipPackageFunctionType = std::function<bool(PackageInfo *pkg)>;
 
  private:
   GetPackageFunctionType mGetPackageFunction;
   SkipPackageFunctionType mSkipPackageFunction;
 
-  bool resolve(std::shared_ptr<PackageInfo> const &info,
-               std::vector<std::shared_ptr<PackageInfo>> &list);
+  bool resolve(PackageInfo* info,
+               std::vector<PackageInfo*> &list);
 
  public:
   Resolver(GetPackageFunctionType get_fun, SkipPackageFunctionType skip_fun)
       : mGetPackageFunction{get_fun}, mSkipPackageFunction{skip_fun} {}
 
-  bool depends(std::string id, std::vector<std::shared_ptr<PackageInfo>> &list);
+  bool depends(std::string id, std::vector<PackageInfo*> &list);
 
-  bool depends(std::shared_ptr<PackageInfo> const &info,
-               std::vector<std::shared_ptr<PackageInfo>> &list);
+  bool depends(PackageInfo* info,
+               std::vector<PackageInfo*> &list);
 };
 }  // namespace rlxos::libpkgupd
 

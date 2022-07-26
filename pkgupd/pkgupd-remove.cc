@@ -48,25 +48,18 @@ PKGUPD_MODULE(remove) {
   PROCESS("removing " << GREEN(pkg_info->id()) << ":"
                       << BLUE(pkg_info->version()));
   auto uninstaller = std::make_shared<Uninstaller>(config);
-  if (!uninstaller->uninstall(pkg_info.get(), system_database.get())) {
+  if (!uninstaller->uninstall(pkg_info, system_database.get())) {
     ERROR("failed to remove " << RED(pkg_id) << " " << uninstaller->error());
     return 1;
   }
 
   PROCESS("calculating unneeded packages");
-  std::vector<std::string> allpackages;
-  if (!system_database->list_all(allpackages)) {
-    ERROR("failed to list all packages " << system_database->error());
-    return 1;
-  }
+  std::vector<InstalledPackageInfo*> packagesToRemove;
 
-  std::vector<std::shared_ptr<InstalledPackageInfo>> packagesToRemove;
-
-  auto is_required = [&](std::shared_ptr<PackageInfo> const& pkg) -> bool {
+  auto is_required = [&](PackageInfo* pkg) -> bool {
     // std::cout << "    checking requirement of " << pkg->id() << std::endl;
-    for (auto const& i : allpackages) {
-      auto pkginfo = system_database->get(i.c_str());
-      if (pkginfo == nullptr) continue;
+    for (auto const& p : system_database->get()) {
+      auto pkginfo = p.second.get();
       if (pkginfo->isDependency()) continue;
 
       if (std::find(pkginfo->depends().begin(), pkginfo->depends().end(),
@@ -80,21 +73,16 @@ PKGUPD_MODULE(remove) {
     return false;
   };
 
-  for (auto const& i : allpackages) {
+  for (auto const& i : system_database->get()) {
     // std::cout << "checking " << i << std::endl;
-    auto pkginfo = system_database->get(i.c_str());
-    if (pkginfo == nullptr) {
-      ERROR("internal error, failed to read package information for " << i);
-      continue;
-    }
+    auto pkginfo = i.second.get();
     if (!pkginfo->isDependency()) {
       // std::cout << "  " << i << " is not a dependency" << std::endl;
       continue;
     }
     if (!is_required(pkginfo)) {
       // std::cout << "  " << i << " is not required" << std::endl;
-      packagesToRemove.push_back(
-          std::dynamic_pointer_cast<InstalledPackageInfo>(pkginfo));
+      packagesToRemove.push_back(pkginfo);
     }
   }
 
@@ -109,7 +97,7 @@ PKGUPD_MODULE(remove) {
     } else {
       for (auto const& i : packagesToRemove) {
         PROCESS("removing " << GREEN(i->id()) << ":" << BLUE(i->version()));
-        if (!uninstaller->uninstall(i.get(), system_database.get())) {
+        if (!uninstaller->uninstall(i, system_database.get())) {
           ERROR("failed to remove " << i->id() << ", " << uninstaller->error());
         }
       }

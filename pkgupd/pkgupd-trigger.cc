@@ -11,10 +11,8 @@ PKGUPD_MODULE_HELP(trigger) {
 PKGUPD_MODULE(trigger) {
   auto triggerer = std::make_shared<Triggerer>();
   auto system_database = std::make_shared<SystemDatabase>(config);
-  std::vector<std::string> all_packages_id;
-  system_database->list_all(all_packages_id);
-  for (auto const& i : all_packages_id) {
-    auto installed_info = system_database->get(i.c_str());
+  for (auto const& i : system_database->get()) {
+    auto installed_info = i.second.get();
     if (installed_info == nullptr) {
       continue;
     }

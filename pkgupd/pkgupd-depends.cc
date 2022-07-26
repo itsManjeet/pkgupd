@@ -21,9 +21,7 @@ PKGUPD_MODULE(depends) {
 
   bool list_all = config->get("depends.all", false);
   auto resolver = Resolver(
-      [&](char const* id) -> std::shared_ptr<PackageInfo> {
-        return repository->get(id);
-      },
+      [&](char const* id) -> PackageInfo* { return repository->get(id); },
       [&](PackageInfo* pkginfo) -> bool {
         if (!list_all) {
           return system_database->get(pkginfo->id().c_str()) != nullptr;
@@ -31,7 +29,7 @@ PKGUPD_MODULE(depends) {
         return false;
       });
 
-  std::vector<std::shared_ptr<PackageInfo>> packagesList;
+  std::vector<PackageInfo*> packagesList;
   for (auto const& i : args) {
     if (!resolver.depends(i, packagesList)) {
       ERROR(resolver.error());
@@ -41,7 +39,7 @@ PKGUPD_MODULE(depends) {
 
   for (auto const& i : args) {
     if (std::find_if(packagesList.begin(), packagesList.end(),
-                     [&](std::shared_ptr<PackageInfo> const& pkginfo) -> bool {
+                     [&](PackageInfo* pkginfo) -> bool {
                        return pkginfo->id() == i;
                      }) == packagesList.end()) {
       packagesList.push_back(repository->get(i.c_str()));

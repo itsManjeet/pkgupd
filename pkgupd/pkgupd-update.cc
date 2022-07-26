@@ -31,7 +31,7 @@ PKGUPD_MODULE(update) {
   std::shared_ptr<Installer> installer = std::make_shared<Installer>(config);
 
   std::vector<std::string> packages_id;
-  std::vector<std::shared_ptr<PackageInfo>> outdated_packages;
+  std::vector<PackageInfo*> outdated_packages;
   std::vector<std::string> excludedPackages;
 
   // exclude all system image packages
@@ -43,29 +43,15 @@ PKGUPD_MODULE(update) {
   }
 
   PROCESS("checking system updates");
-  if (args.size()) {
-    packages_id = args;
-  } else {
-    if (!system_database->list_all(packages_id)) {
-      ERROR(system_database->error());
-      return 1;
-    }
-  }
-
-  for (auto const& i : packages_id) {
-    if (std::find(excludedPackages.begin(), excludedPackages.end(), i) !=
+  for (auto const& i : system_database->get()) {
+    if (std::find(excludedPackages.begin(), excludedPackages.end(), i.first) !=
         excludedPackages.end()) {
       continue;
     }
-    auto installed_info = system_database->get(i.c_str());
-    if (installed_info == nullptr) {
-      ERROR("missing installed package information for " << i << ", skipping");
-      continue;
-    }
-
-    auto repository_info = repository->get(i.c_str());
+    auto installed_info = i.second.get();
+    auto repository_info = repository->get(i.first.c_str());
     if (repository_info == nullptr) {
-      ERROR("missing repository information for " << i << ", skipping");
+      ERROR("missing repository information for " << i.first << ", skipping");
       continue;
     }
 

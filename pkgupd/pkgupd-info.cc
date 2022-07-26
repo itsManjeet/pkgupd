@@ -25,7 +25,8 @@ PKGUPD_MODULE(info) {
   CHECK_ARGS(1);
 
   auto package_id = args[0];
-  shared_ptr<PackageInfo> package;
+  PackageInfo* package;
+  std::shared_ptr<PackageInfo> archive_pkg;
 
   if (filesystem::exists(package_id) &&
       filesystem::path(package_id).has_extension()) {
@@ -37,13 +38,14 @@ PKGUPD_MODULE(info) {
             "'");
       return 1;
     }
-    package = archive_manager->info(package_id.c_str());
+    archive_pkg = archive_manager->info(package_id.c_str());
 
     if (package == nullptr) {
       ERROR("failed to read information file from '" + package_id + "', "
             << archive_manager->error());
       return 2;
     }
+    package = archive_pkg.get();
   } else {
     package = system_database->get(package_id.c_str());
   }
@@ -67,10 +69,10 @@ PKGUPD_MODULE(info) {
          << BLUE("Type") << "         :   "
          << GREEN(PACKAGE_TYPE_ID[PACKAGE_TYPE_INT(package->type())]) << endl;
 
-#define INSTALLED(in) std::dynamic_pointer_cast<InstalledPackageInfo>(in)
+#define INSTALLED(in) dynamic_cast<InstalledPackageInfo*>(in)
 
-    std::shared_ptr<InstalledPackageInfo> installed_info =
-        std::dynamic_pointer_cast<InstalledPackageInfo>(package);
+    auto installed_info =
+        dynamic_cast<InstalledPackageInfo*>(package);
     if (installed_info != nullptr) {
       cout << BLUE("Installed") << "    :   "
            << GREEN(installed_info->installed_on()) << '\n'

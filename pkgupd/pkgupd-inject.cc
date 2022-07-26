@@ -50,8 +50,8 @@ PKGUPD_MODULE(inject) {
     return 1;
   }
 
-  std::vector<std::pair<std::string, std::shared_ptr<PackageInfo>>> packages;
-  packages.push_back({uri, packageInfo});
+  std::vector<std::pair<std::string, PackageInfo*>> packages;
+  packages.push_back({uri, packageInfo.get()});
   if (!installer->install(packages, system_database.get())) {
     ERROR(installer->error());
     return 1;

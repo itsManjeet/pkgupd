@@ -22,10 +22,9 @@ std::shared_ptr<Installer::Injector> Installer::Injector::create(
 }
 
 bool Installer::install(
-    std::vector<std::pair<std::string, std::shared_ptr<PackageInfo>>> const&
-        pkgs,
+    std::vector<std::pair<std::string, PackageInfo*>> const& pkgs,
     SystemDatabase* sys_db) {
-  std::vector<std::shared_ptr<InstalledPackageInfo>> packages;
+  std::vector<InstalledPackageInfo*> packages;
 
   std::filesystem::path root_dir =
       mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
@@ -174,10 +173,9 @@ bool Installer::install(
   return true;
 }
 
-bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
-                        Repository* repository,
+bool Installer::install(std::vector<PackageInfo*> pkgs, Repository* repository,
                         SystemDatabase* system_database) {
-  std::vector<std::pair<std::string, std::shared_ptr<PackageInfo>>> packages;
+  std::vector<std::pair<std::string, PackageInfo*>> packages;
   Downloader downloader(mConfig);
 
   std::filesystem::path root_dir =
@@ -185,11 +183,10 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
   std::filesystem::path pkgs_dir =
       mConfig->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR);
 
-  std::vector<std::shared_ptr<PackageInfo>> required_packages,
-      packages_to_install;
+  std::vector<PackageInfo*> required_packages, packages_to_install;
 
   if (mConfig->get("force", false) == false) {
-    for (auto const& p : pkgs) {
+    for (auto p : pkgs) {
       auto system_package = system_database->get(p->id().c_str());
       if (system_package != nullptr &&
           system_package->version() == p->version()) {
@@ -203,13 +200,13 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
   }
 
   if (mConfig->get("installer.depends", true) == true) {
-    auto resolver = std::make_shared<Resolver>(DEFAULT_GET_PACKAE_FUNCTION,
-                                               DEFAULT_SKIP_PACKAGE_FUNCTION);
+    auto resolver =
+        Resolver(DEFAULT_GET_PACKAE_FUNCTION, DEFAULT_SKIP_PACKAGE_FUNCTION);
     PROCESS("generating dependency graph");
-    std::vector<std::shared_ptr<PackageInfo>> dependencies;
+    std::vector<PackageInfo*> dependencies;
     for (auto p : required_packages) {
-      if (!resolver->depends(p, dependencies)) {
-        p_Error = resolver->error();
+      if (!resolver.depends(p, dependencies)) {
+        p_Error = resolver.error();
         return false;
       }
     }
@@ -219,12 +216,12 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs,
     for (auto const& p : required_packages) {
       auto iter = std::find_if(
           dependencies.begin(), dependencies.end(),
-          [&p](std::shared_ptr<PackageInfo> const& pkginfo) -> bool {
+          [&p](PackageInfo* pkginfo) -> bool {
             return p->id() == pkginfo->id();
           });
       if (iter == dependencies.end()) {
         if (mConfig->get("force", false) == false) {
-          if (!skip_fun(p.get())) dependencies.push_back(p);
+          if (!skip_fun(p)) dependencies.push_back(p);
         } else {
           dependencies.push_back(p);
         }

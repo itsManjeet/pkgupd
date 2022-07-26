@@ -12,24 +12,18 @@ PKGUPD_MODULE(search) {
   CHECK_ARGS(1);
 
   auto package_id = args[0];
-  vector<string> packages_list;
   auto repository = Repository(config);
-  repository.list_all(packages_list);
 
-  vector<shared_ptr<PackageInfo>> packages;
   int found = 0;
-  for_each(
-      packages_list.begin(), packages_list.end(), [&](string& item) -> void {
-        if (item.find(package_id) != string::npos) {
-          std::shared_ptr<PackageInfo> package = repository.get(item.c_str());
-          found++;
-
-          cout << GREEN(package->id()) << ": " << BLUE(package->version())
-               << "\n  " << BOLD(package->about()) << '\n'
-               << endl;
-        }
-      });
-  packages_list.clear();
+  for(auto const& p : repository.get()) {
+    if (p.first.find(package_id) != string::npos) {
+      found++;
+      cout << GREEN(p.second->id()) << ": " << BLUE(p.second->version())
+            << "\n  " << BOLD(p.second->about()) << '\n'
+            << endl;
+    }
+  }
+  
   if (found == 0) {
     ERROR("no package found with name '" << package_id << "'");
   }

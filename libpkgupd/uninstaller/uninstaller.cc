@@ -38,5 +38,9 @@ bool Uninstaller::uninstall(InstalledPackageInfo* pkginfo,
     }
   }
 
-  return sys_db->remove(pkginfo);
+  if (!sys_db->remove(pkginfo->id().c_str())) {
+    p_Error = sys_db->error();
+    return false;
+  }
+  return true;
 }

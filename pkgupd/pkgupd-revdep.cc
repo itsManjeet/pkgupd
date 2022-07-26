@@ -17,64 +17,37 @@ PKGUPD_MODULE(revdep) {
 
   std::string parent = args[0];
 
-  auto repository = std::make_shared<Repository>(config);
+  // auto repository = std::make_shared<Repository>(config);
   auto system_database = std::make_shared<SystemDatabase>(config);
 
-  std::vector<std::shared_ptr<PackageInfo>> packages;
-  std::vector<std::string> all_packages;
-  if (!repository->list_all(all_packages)) {
-    ERROR("failed to list repository packages, " + repository->error());
-    return 1;
-  }
+  std::vector<std::string> packages;
 
-  std::function<bool(std::shared_ptr<PackageInfo> const&)>
-      getReverseDependencies =
-          [&](std::shared_ptr<PackageInfo> const& package) -> bool {
-    if (std::find_if(
-            packages.begin(), packages.end(),
-            [&](std::shared_ptr<PackageInfo> const& package_info) -> bool {
-              return package_info->id() == package->id();
-            }) != packages.end()) {
-      return true;
-    }
-    std::cout << "checking for " << package->id() << std::endl;
+  std::function<bool(std::string const& id, std::vector<std::string>& list)>
 
-    for (auto const& a : all_packages) {
-      auto package_info = repository->get(a.c_str());
-      if (package_info == nullptr) {
-        ERROR("missing required package '" + a + "'");
-        return false;
+      get_reverse_dependency =
+          [&](std::string const& id, std::vector<std::string>& list) -> bool {
+    for (auto const& i : system_database->get()) {
+      std::cout << "checking " << i.first << std::endl;
+      auto iter = std::find_if(
+          i.second->depends().begin(), i.second->depends().end(),
+          [&](std::string const& dep_id) -> bool { return dep_id == id; });
+      if (iter == i.second->depends().end()) {
+        continue;
       }
-      if (std::find(package_info->depends().begin(),
-                    package_info->depends().end(),
-                    package->id()) != package_info->depends().end() &&
-          std::find_if(
-              packages.begin(), packages.end(),
-              [&](std::shared_ptr<PackageInfo> const& package_info) -> bool {
-                return package_info->id() == package->id();
-              }) == packages.end()) {
-        if (!getReverseDependencies(package_info)) {
-          return false;
-        }
-      }
+      if (std::find_if(list.begin(), list.end(),
+                       [&](std::string const& pkgid) -> bool {
+                         return pkgid == (*iter);
+                       }) == list.end()) {
+        list.push_back(*iter);
+        get_reverse_dependency(*iter, list);
+      };
     }
-    packages.push_back(package);
     return true;
   };
 
-  PROCESS("searching reverse dependencies");
-  auto package = repository->get(parent.c_str());
-  if (package == nullptr) {
-    ERROR("missing required package '" + parent + "'");
-    return 0;
-  }
-  
-  if (!getReverseDependencies(package)) {
-    return 1;
-  }
-
+  get_reverse_dependency(parent, packages);
   for (auto const& i : packages) {
-    std::cout << i->id() << std::endl;
+    std::cout << "-> " << i << std::endl;
   }
 
   return 0;

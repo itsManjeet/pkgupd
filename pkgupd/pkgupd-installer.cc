@@ -37,7 +37,7 @@ PKGUPD_MODULE(install) {
   repository = std::make_shared<Repository>(config);
   installer = std::make_shared<Installer>(config);
 
-  std::vector<std::shared_ptr<PackageInfo>> packages;
+  std::vector<PackageInfo*> packages;
   for (auto const& i : args) {
     auto package_info = repository->get(i.c_str());
     if (package_info == nullptr) {
