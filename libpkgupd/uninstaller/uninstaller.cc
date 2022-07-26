@@ -4,17 +4,15 @@ using namespace rlxos::libpkgupd;
 bool Uninstaller::uninstall(InstalledPackageInfo* pkginfo,
                             SystemDatabase* sys_db) {
   std::string root_dir;
-  std::vector<std::string> files;
 
   root_dir = mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
-  files = pkginfo->files();
 
-  for (auto file = files.rbegin(); file != files.rend(); ++file) {
+  for (auto file : pkginfo->files()) {
     auto filepath = std::filesystem::path(root_dir);
-    if ((*file).find("./", 0) == 0) {
-      filepath /= (*file).substr(2, (*file).length() - 2);
+    if (file.find("./", 0) == 0) {
+      filepath /= file.substr(2, file.length() - 2);
     } else {
-      filepath /= *file;
+      filepath /= file;
     }
 
     std::error_code error;

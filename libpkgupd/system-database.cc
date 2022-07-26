@@ -36,9 +36,6 @@ bool SystemDatabase::init() {
   return true;
 }
 
-std::vector<std::string> const &InstalledPackageInfo::files() {
-  return mFiles;
-}
 
 InstalledPackageInfo *SystemDatabase::get(char const *pkgid) {
   auto iter = mPackages.find(pkgid);
@@ -69,11 +66,12 @@ InstalledPackageInfo *SystemDatabase::add(PackageInfo *pkginfo,
 
   pkginfo->dump(file);
 
-  std::ofstream files_list(data_file.string() + ".files");
-  std::for_each(files.begin(), files.end(),
-                [&files_list](std::string const &filepath) {
-                  files_list << filepath << std::endl;
-                });
+  if (files.size()) {
+    file << "files:\n";
+    for (auto const &f : files) {
+      file << " - " << f << '\n';
+    }
+  }
 
   file << "is-dependency: " << (is_dependency ? "true" : "false") << "\n";
 
@@ -106,11 +104,11 @@ bool SystemDatabase::remove(char const *id) {
     return false;
   }
 
-  auto iter = mPackages.find(id);
-  if (iter == mPackages.end()) {
-    return true;
-  }
-  mPackages.erase(iter);
+  // auto iter = mPackages.find(id);
+  // if (iter == mPackages.end()) {
+  //   return true;
+  // }
+  // mPackages.erase(iter);
   return true;
 }
 }  // namespace rlxos::libpkgupd

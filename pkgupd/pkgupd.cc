@@ -20,7 +20,8 @@ using namespace rlxos::libpkgupd;
   X(owner)                  \
   X(run)                    \
   X(cleanup)                \
-  X(watchdog)
+  X(watchdog)               \
+  X(autoremove)
 
 #include <functional>
 #include <iostream>

@@ -19,7 +19,9 @@ class InstalledPackageInfo : public PackageInfo {
 
   InstalledPackageInfo(YAML::Node const &node, char const *file);
 
-  std::vector<std::string> const &files();
+  std::vector<std::string> const &files() const {
+    return mFiles;
+  };
   std::string const &installed_on() const { return mInstalledon; }
 };
 
