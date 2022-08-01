@@ -50,17 +50,14 @@ static char const*
 #undef X
 };
 
-#define PACKAGE_TYPE_FROM_STR(str)                                            \
-  ({                                                                          \
-    PackageType pkgtype = PackageType::N_PACKAGE_TYPE;                        \
-    for (int i = 0; i < PACKAGE_TYPE_INT(PackageType::N_PACKAGE_TYPE); i++) { \
-      if (!strcmp(PACKAGE_TYPE_ID[i], str)) {                                 \
-        pkgtype = PackageType(i);                                             \
-        break;                                                                \
-      }                                                                       \
-    }                                                                         \
-    pkgtype;                                                                  \
-  })
+static inline const PackageType PACKAGE_TYPE_FROM_STR(std::string s) {
+  for (int i = 0; i < int(PackageType::N_PACKAGE_TYPE); ++i) {
+    if (s == PACKAGE_TYPE_ID[i]) {
+      return PackageType(i);
+    }
+  }
+  return PackageType::N_PACKAGE_TYPE;
+}
 
 #define PACKAGE_FILE(pkg)                  \
   pkg->id() + "-" + pkg->version() + "." + \

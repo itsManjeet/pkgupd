@@ -44,9 +44,11 @@ std::shared_ptr<ArchiveManager> ArchiveManager::create(
     return nullptr;
   }
 
-  std::string ext = package.extension();
+  std::string ext = package.extension().string();
+  ext = ext.substr(1, ext.length() - 1);
   auto packageType = PACKAGE_TYPE_FROM_STR(ext.c_str());
   if (packageType == PackageType::N_PACKAGE_TYPE) {
+    ERROR("invalid package type for extension: " << ext);
     return nullptr;
   }
   return ArchiveManager::create(packageType);
