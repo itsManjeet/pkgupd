@@ -91,7 +91,7 @@ PKGUPD_MODULE(build) {
   }
 
   PROCESS("build main package");
-  if (!builder->build(required_recipe.get())) {
+  if (!builder->build(required_recipe.get(), system_database.get(), repository.get())) {
     cerr << "Error! " << builder->error() << endl;
     return 1;
   }

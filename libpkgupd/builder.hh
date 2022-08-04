@@ -5,6 +5,8 @@
 #include <system_error>
 
 #include "archive-manager/archive-manager.hh"
+#include "system-database.hh"
+#include "repository.hh"
 #include "configuration.hh"
 #include "defines.hh"
 #include "utils/utils.hh"
@@ -139,7 +141,7 @@ class Builder : public Object {
   bool compile(Recipe *recipe, std::string dir, std::string destdir,
                std::vector<std::string> &environ);
 
-  bool build(Recipe *recipe);
+  bool build(Recipe *recipe, SystemDatabase* systemDatabase, Repository* repository);
 };
 }  // namespace rlxos::libpkgupd
 

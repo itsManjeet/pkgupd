@@ -137,16 +137,18 @@ bool Installer::install(
         }
       }
     }
+
     auto installed_package_info =
         sys_db->add(package_info.get(), files,
                     mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR),
                     false, is_dependency);
     if (installed_package_info == nullptr) {
-      p_Error =
-          "failed to register '" + package_info->id() + "', " + sys_db->error();
+      p_Error = "failed to register '" + package_info->id() + "', " +
+                sys_db->error();
       return false;
     }
     packages.push_back(installed_package_info);
+
   }
 
   if (!mConfig->get("installer.triggers", true)) {
@@ -214,11 +216,10 @@ bool Installer::install(std::vector<PackageInfo*> pkgs, Repository* repository,
     auto skip_fun = DEFAULT_SKIP_PACKAGE_FUNCTION;
 
     for (auto const& p : required_packages) {
-      auto iter = std::find_if(
-          dependencies.begin(), dependencies.end(),
-          [&p](PackageInfo* pkginfo) -> bool {
-            return p->id() == pkginfo->id();
-          });
+      auto iter = std::find_if(dependencies.begin(), dependencies.end(),
+                               [&p](PackageInfo* pkginfo) -> bool {
+                                 return p->id() == pkginfo->id();
+                               });
       if (iter == dependencies.end()) {
         if (mConfig->get("force", false) == false) {
           if (!skip_fun(p)) dependencies.push_back(p);

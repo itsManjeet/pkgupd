@@ -42,6 +42,7 @@ class Recipe {
   std::string m_Script;
   std::string m_Repository;
   std::vector<std::string> m_Backup;
+  std::vector<std::string> m_Include;
 
   std::vector<User> m_Users;
   std::vector<Group> m_Groups;
@@ -67,6 +68,7 @@ class Recipe {
   std::string const& configure() const { return m_Configure; }
   std::string const& compile() const { return m_Compile; }
   std::string const& install() const { return m_Install; }
+  std::vector<std::string> const& include() const { return m_Include; }
 
   std::string const& prescript() const { return m_PreScript; }
   std::string const& postscript() const { return m_PostScript; }
@@ -84,9 +86,7 @@ class Recipe {
 
   bool dostrip() const { return m_DoStrip; }
 
-  std::string const& filePath() const {
-    return mFilePath;
-  }
+  std::string const& filePath() const { return mFilePath; }
 
   YAML::Node const& node() const { return m_Node; }
 

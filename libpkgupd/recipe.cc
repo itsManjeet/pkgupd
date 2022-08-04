@@ -33,6 +33,8 @@ Recipe::Recipe(YAML::Node data, std::string file, std::string const& repo)
   READ_LIST(string, "skip-strip", m_SkipStrip);
   READ_LIST(string, "backup", m_Backup);
 
+  READ_LIST(string, "include", m_Include);
+
   OPTIONAL_VALUE(bool, "strip", m_DoStrip, true);
 
   std::string packageType;

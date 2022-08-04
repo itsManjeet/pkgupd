@@ -19,6 +19,7 @@
 #include "compilers/script.hh"
 #include "downloader.hh"
 #include "exec.hh"
+#include "installer/installer.hh"
 #include "recipe.hh"
 #include "stripper.hh"
 
@@ -107,7 +108,8 @@ bool Builder::prepare(std::vector<std::string> const &sources,
   return true;
 }
 
-bool Builder::build(Recipe *recipe) {
+bool Builder::build(Recipe *recipe, SystemDatabase *systemDatabase,
+                    Repository *repository) {
   auto srcdir = path(mBuildDir) / "src";
   auto pkgdir = path(mBuildDir) / "pkg" / recipe->id();
 
@@ -133,7 +135,9 @@ bool Builder::build(Recipe *recipe) {
   environ.push_back("PKGUPD_PKGDIR=" + mPackageDir);
   environ.push_back("pkgupd_srcdir=" + srcdir.string());
   environ.push_back("pkgupd_pkgdir=" + pkgdir.string());
-  environ.push_back("FILES_DIR=" + std::filesystem::path(recipe->filePath()).parent_path().string());
+  environ.push_back(
+      "FILES_DIR=" +
+      std::filesystem::path(recipe->filePath()).parent_path().string());
   environ.push_back("DESTDIR=" + pkgdir.string());
   mConfig->get("environ", environ);
 
@@ -170,6 +174,73 @@ bool Builder::build(Recipe *recipe) {
         status != 0) {
       p_Error = "prescript failed with exit code: " + std::to_string(status);
       return false;
+    }
+  }
+
+  if (recipe->include().size()) {
+    std::vector<PackageInfo *> packages;
+    for (auto const &pkg : recipe->include()) {
+      auto includePackage = repository->get(pkg.c_str());
+      if (includePackage == nullptr) {
+        p_Error = "missing required package to be included '" + pkg + "'";
+        return false;
+      }
+      packages.push_back(includePackage);
+    }
+    auto config = Configuration(*mConfig);
+    std::string local_roots = pkgdir;
+    std::string local_datapath =
+        (pkgdir / "usr" / "share" / recipe->id() / "included");
+
+    config.node()[DIR_ROOT] = local_roots;
+    config.node()[DIR_DATA] = local_datapath;
+    config.node()["installer.depends"] = mConfig->get("include-depends", true);
+
+    for (auto const &i : {local_roots, local_datapath}) {
+      if (!std::filesystem::exists(i)) {
+        std::error_code error;
+        std::filesystem::create_directories(i, error);
+        if (error) {
+          p_Error = "failed to create " + i + ", " + error.message();
+          return false;
+        }
+      }
+    }
+
+    auto installer = Installer(&config);
+    auto local_database = SystemDatabase(&config);
+    if (!installer.install(packages, repository, &local_database)) {
+      p_Error =
+          "failed to include specified packages '" + installer.error() + "'";
+      return false;
+    }
+    INFO("added included packages");
+    std::map<std::string, std::string> environmentPaths{
+        {"PATH", "usr/bin"},
+        {"LD_LIBRARY_PATH", "usr/lib"},
+        {"GI_TYPELIB_PATH", "usr/lib/girepository-1.0"},
+        {"XDG_DATA_DIRS", "usr/share"},
+        {"PKG_CONFIG_PATH", "usr/lib/pkgconfig"}};
+    if (recipe->node()["include-environments"]) {
+      for (auto const &i : recipe->node()["include-environments"]) {
+        environmentPaths[i.first.as<std::string>()] =
+            i.second.as<std::string>();
+      }
+    }
+    for (auto const &i : environmentPaths) {
+      auto env = getenv(i.first.c_str());
+      auto iter = std::find_if(environ.begin(), environ.end(),
+                               [&i](std::string const &j) -> bool {
+                                 return j.find(i.first + "=", 0) == 0;
+                               });
+
+      std::string envData =
+          i.second + (env == nullptr ? "" : ":" + std::string(env));
+      if (iter == environ.end()) {
+        *iter = envData + ":" + (*iter);
+      } else {
+        environ.push_back(i.first + "=" + envData);
+      }
     }
   }
 
