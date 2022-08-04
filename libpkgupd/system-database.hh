@@ -3,29 +3,56 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include "database.hh"
-
+#include "configuration.hh"
+#include "package-info.hh"
 namespace rlxos::libpkgupd {
 
-class SystemDatabase : public Database {
+class InstalledPackageInfo : public PackageInfo {
+ private:
+  std::vector<std::string> mFiles;
+  std::string mInstalledon;
+
  public:
-  SystemDatabase(std::string const &d) : Database(d) {
-    DEBUG("System Database: " << p_DataDir);
+  InstalledPackageInfo(PackageInfo *pkginfo,
+                       std::vector<std::string> const &files)
+      : PackageInfo{*pkginfo}, mFiles{files} {}
+
+  InstalledPackageInfo(YAML::Node const &node, char const *file);
+
+  std::vector<std::string> const &files() const {
+    return mFiles;
+  };
+  std::string const &installed_on() const { return mInstalledon; }
+};
+
+class SystemDatabase : public Object {
+ private:
+  Configuration *mConfig;
+  std::string data_dir;
+
+  std::map<std::string, std::unique_ptr<InstalledPackageInfo>> mPackages;
+
+ public:
+  SystemDatabase(Configuration *config) : mConfig{config} {
+    data_dir = mConfig->get<std::string>(DIR_DATA, DEFAULT_DATA_DIR);
+    init();
   }
 
-  std::optional<Package> operator[](std::string const &pkgid);
+  bool init();
 
-  std::vector<Package> all();
+  std::map<std::string, std::unique_ptr<InstalledPackageInfo>> const &get()
+      const {
+    return mPackages;
+  }
 
-  bool isInstalled(Package const &pkginfo);
+  InstalledPackageInfo *get(char const *id);
 
-  bool isOutDated(Package const &pkginfo);
+  InstalledPackageInfo *add(PackageInfo *pkginfo,
+                            std::vector<std::string> const &files,
+                            std::string root, bool update = false,
+                            bool is_dependency = false);
 
-  bool registerIntoSystem(Package const &pkginfo,
-           std::vector<std::string> const &files, std::string root,
-           bool update = false);
-
-  bool unregisterFromSystem(Package const &pkginfo);
+  bool remove(char const* id);
 };
 }  // namespace rlxos::libpkgupd
 

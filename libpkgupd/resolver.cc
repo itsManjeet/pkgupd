@@ -1,51 +1,53 @@
 #include "resolver.hh"
 namespace rlxos::libpkgupd {
-void Resolver::clear() {
-  m_PackagesList.clear();
-  m_Visited.clear();
-}
 
-bool Resolver::_to_skip(std::string const &pkgid) {
-  if ((std::find(m_PackagesList.begin(), m_PackagesList.end(), pkgid) !=
-       m_PackagesList.end()))
-    return true;
-
-  if (m_SystemDatabase[pkgid]) return true;
-
-  if ((std::find(m_Visited.begin(), m_Visited.end(), pkgid) != m_Visited.end()))
-    return true;
-
-  m_Visited.push_back(pkgid);
-  return false;
-}
-bool Resolver::resolve(std::string const &pkgid, bool all) {
-  if (_to_skip(pkgid)) return true;
-
-  DEBUG("checking " << pkgid);
-  auto recipe = m_Repository.recipe(pkgid);
-
-  if (!recipe) {
-    p_Error = "missing required dependency '" + pkgid + "'";
+bool Resolver::depends(std::string id, std::vector<PackageInfo *> &list) {
+  auto packageInfo = mGetPackageFunction(id.c_str());
+  if (packageInfo == nullptr) {
+    p_Error = "required package '" + id + "' is missing";
     return false;
   }
+  return depends(packageInfo, list);
+}
 
-  auto depends = recipe->depends();
-  if (all) {
-    auto build_depends = recipe->buildTime();
-    depends.insert(depends.begin(), build_depends.begin(), build_depends.end());
+bool Resolver::depends(PackageInfo *info, std::vector<PackageInfo *> &list) {
+  for (auto const &depid : info->depends()) {
+    auto dep = mGetPackageFunction(depid.c_str());
+    if (dep == nullptr) {
+      p_Error = "\n Missing required dependency " + depid;
+      return false;
+    }
+    if (!resolve(dep, list)) {
+      return false;
+    }
   }
+  return true;
+}
 
-  for (auto const &i : depends) {
-    DEBUG("depends " << i)
-    if (!resolve(i, all)) {
-      p_Error += "\n Trace Required by " + pkgid;
+bool Resolver::resolve(PackageInfo *info, std::vector<PackageInfo *> &list) {
+  if (std::find_if(list.begin(), list.end(), [&](PackageInfo *pkginfo) -> bool {
+        return pkginfo->id() == info->id();
+      }) != list.end()) {
+    return true;
+  }
+  if (mSkipPackageFunction(info)) return true;
+  info->setDependency();
+
+  for (auto const &i : info->depends()) {
+    auto dep_info = mGetPackageFunction(i.c_str());
+    if (dep_info == nullptr) {
+      p_Error = "Failed to get required package " + i;
+      return false;
+    }
+    if (!resolve(dep_info, list)) {
+      p_Error += "\n Trace Required by " + info->id();
       return false;
     }
   }
 
-  if ((std::find(m_PackagesList.begin(), m_PackagesList.end(), pkgid) ==
-       m_PackagesList.end()))
-    m_PackagesList.push_back(pkgid);
+  if ((std::find(list.begin(), list.end(), info) == list.end())) {
+    list.push_back(info);
+  }
 
   return true;
 }

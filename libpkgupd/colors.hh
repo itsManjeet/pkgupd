@@ -11,11 +11,11 @@
 #define BOLD(mesg) COLOR(49, mesg)
 
 #define MESSAGE(header, mesg) \
-  std::cout << header << BOLD(" ") << BOLD(mesg) << std::endl;
+  if (getenv("PKGUPD_NO_MESSAGE") == nullptr) std::cout << header << BOLD(" ") << BOLD(mesg) << std::endl;
 
-#define ERROR(mesg) std::cout << RED("ERROR " << mesg) << std::endl;
-#define PROCESS(mesg) MESSAGE(GREEN("=>"), mesg)
-#define INFO(mesg) MESSAGE(BLUE("INFO"), mesg)
+#define ERROR(mesg) MESSAGE(RED("ERROR"), mesg)
+#define PROCESS(mesg) MESSAGE(GREEN("::"), mesg)
+#define INFO(mesg) MESSAGE(BLUE("::"), mesg)
 #define DEBUG(mesg) \
   if (getenv("DEBUG") != nullptr) MESSAGE(BLUE("DEBUG"), mesg)
 

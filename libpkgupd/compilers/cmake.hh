@@ -3,9 +3,10 @@
 
 #include "../builder.hh"
 namespace rlxos::libpkgupd {
-class Cmake : public Compiler {
+class CMake : public Compiler {
  protected:
-  bool compile(Recipe const& recipe, std::string dir, std::string destdir, std::vector<std::string>& environ);
+  bool compile(Recipe* recipe, Configuration* config, std::string dir,
+               std::string destdir, std::vector<std::string>& environ);
 };
 }  // namespace rlxos::libpkgupd
 

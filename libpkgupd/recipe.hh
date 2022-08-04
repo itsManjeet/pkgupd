@@ -7,7 +7,7 @@
 
 #include "builder.hh"
 #include "defines.hh"
-#include "package.hh"
+#include "package-info.hh"
 
 namespace rlxos::libpkgupd {
 
@@ -21,6 +21,7 @@ struct SplitPackage {
 
 class Recipe {
  private:
+  std::string mFilePath;
   std::string m_ID, m_Version, m_About;
   PackageType m_PackageType;
   std::vector<std::string> m_Depends, m_BuildTime;
@@ -40,6 +41,8 @@ class Recipe {
 
   std::string m_Script;
   std::string m_Repository;
+  std::vector<std::string> m_Backup;
+  std::vector<std::string> m_Include;
 
   std::vector<User> m_Users;
   std::vector<Group> m_Groups;
@@ -65,6 +68,7 @@ class Recipe {
   std::string const& configure() const { return m_Configure; }
   std::string const& compile() const { return m_Compile; }
   std::string const& install() const { return m_Install; }
+  std::vector<std::string> const& include() const { return m_Include; }
 
   std::string const& prescript() const { return m_PreScript; }
   std::string const& postscript() const { return m_PostScript; }
@@ -82,21 +86,16 @@ class Recipe {
 
   bool dostrip() const { return m_DoStrip; }
 
+  std::string const& filePath() const { return mFilePath; }
+
   YAML::Node const& node() const { return m_Node; }
 
   void dump(std::ostream& os, bool as_meta = false);
 
-  bool contains(std::string const& pkgid) {
-    for (auto const& i : packages()) {
-      if (i.id() == pkgid) {
-        return true;
-      }
-    }
-    return false;
-  }
+  bool contains(std::string const& pkgid) { return (*this)[pkgid] != nullptr; }
 
-  std::optional<Package> operator[](std::string const& name) const;
-  std::vector<Package> packages() const;
+  std::shared_ptr<PackageInfo> operator[](std::string const& name) const;
+  std::vector<std::shared_ptr<PackageInfo>> packages() const;
 };
 }  // namespace rlxos::libpkgupd
 

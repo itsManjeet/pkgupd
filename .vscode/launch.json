@@ -5,11 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "g++-10 - Build and debug active file",
+            "name": "DEBUG",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/pkgupd-build",
+            "program": "${workspaceFolder}/build/pkgupd",
             "args": [
+                "remove", "glibc",
+                "dir.root=${workspaceFolder}/tests/data/root/",
+                "dir.data=${workspaceFolder}/tests/data/data/",
+                "dir.pkgs=${workspaceFolder}/tests/data/pkgs/",
+                "dir.cache=${workspaceFolder}/tests/data/cache",
+                "dir.repo=${workspaceFolder}/tests/data/repo/",
+                "force=true"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

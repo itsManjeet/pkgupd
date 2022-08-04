@@ -4,125 +4,97 @@
 #include <filesystem>
 #include <system_error>
 
+#include "archive-manager/archive-manager.hh"
+#include "system-database.hh"
+#include "repository.hh"
+#include "configuration.hh"
 #include "defines.hh"
-#include "packager.hh"
+#include "utils/utils.hh"
 
 namespace rlxos::libpkgupd {
 
-enum class BuildType {
-  INVALID,
-  CMAKE,
-  MESON,
-  SCRIPT,
-  AUTOCONF,
-  PYSETUP,
-  GO,
-  CARGO,
-  GEM,
-  QMAKE,
-  MAKEFILE,
+#define BUILD_TYPE_LIST              \
+  X(CMake, cmake, "CMakeLists.txt")  \
+  X(Meson, meson, "meson.build")     \
+  X(Script, script, "")              \
+  X(AutoConf, autoconf, "configure") \
+  X(PySetup, pysetup, "setup.py")    \
+  X(Go, go, "go.mod")                \
+  X(Cargo, cargo, "cargo.toml")      \
+  X(Makefile, makefile, "Makefile")
+
+enum class BuildType : int {
+#define X(ID, name, file) ID,
+  BUILD_TYPE_LIST
+#undef X
+      N_BUILD_TYPE
 };
 
-static std::string buildTypeToString(BuildType type) {
-  switch (type) {
-    case BuildType::CMAKE:
-      return "cmake";
-    case BuildType::MESON:
-      return "meson";
-    case BuildType::SCRIPT:
-      return "script";
-    case BuildType::AUTOCONF:
-      return "autoconf";
-    case BuildType::PYSETUP:
-      return "pysetup";
-    case BuildType::GO:
-      return "go";
-    case BuildType::CARGO:
-      return "cargo";
-    case BuildType::GEM:
-      return "gem";
-    case BuildType::QMAKE:
-      return "qmake";
-    case BuildType::MAKEFILE:
-      return "makefile";
-    default:
-      throw std::runtime_error("unimplemented buildtype");
-  }
-}
-static BuildType stringToBuildType(std::string type) {
-  if (type == "cmake") {
-    return BuildType::CMAKE;
-  } else if (type == "meson") {
-    return BuildType::MESON;
-  } else if (type == "script") {
-    return BuildType::SCRIPT;
-  } else if (type == "autoconf") {
-    return BuildType::AUTOCONF;
-  } else if (type == "pysetup") {
-    return BuildType::PYSETUP;
-  } else if (type == "go") {
-    return BuildType::GO;
-  } else if (type == "cargo") {
-    return BuildType::CARGO;
-  } else if (type == "gem") {
-    return BuildType::GEM;
-  } else if (type == "qmake") {
-    return BuildType::QMAKE;
-  } else if (type == "makefile") {
-    return BuildType::MAKEFILE;
-  }
-  throw std::runtime_error("unimplemented build type '" + type + "'");
-}
+#define BUILD_TYPE_INT(i) static_cast<int>(i)
 
-static BuildType buildTypeFromFile(std::string file) {
-  if (file == "CMakeLists.txt") {
-    return BuildType::CMAKE;
-  } else if (file == "meson.build") {
-    return BuildType::MESON;
-  } else if (file == "configure") {
-    return BuildType::AUTOCONF;
-  } else if (file == "setup.py") {
-    return BuildType::PYSETUP;
-  } else if (file == "go.mod") {
-    return BuildType::GO;
-  } else if (file == "Cargo.toml") {
-    return BuildType::CARGO;
-  } else if (file == "Makefile") {
-    return BuildType::MAKEFILE;
-  }
+static char const *BUILD_TYPE_STR[BUILD_TYPE_INT(BuildType::N_BUILD_TYPE)] = {
+#define X(ID, name, file) #name,
+    BUILD_TYPE_LIST
+#undef X
+};
 
-  throw std::runtime_error("no valid build type for file '" + file + "'");
-}
+static char const *BUILD_TYPE_FILE[BUILD_TYPE_INT(BuildType::N_BUILD_TYPE)] = {
+#define X(ID, name, file) file,
+    BUILD_TYPE_LIST
+#undef X
+};
 
-static BuildType detectBuildType(std::string path) {
-  for (std::string i : {"CMakeLists.txt", "meson.build", "configure",
-                        "setup.py", "go.mod", "Cargo.toml", "Makefile"}) {
-    if (std::filesystem::exists(path + "/" + i)) {
-      return buildTypeFromFile(i);
-    }
-  }
+static char const *BUILD_TYPE_NAME[BUILD_TYPE_INT(BuildType::N_BUILD_TYPE)] = {
+#define X(ID, name, file) #name,
+    BUILD_TYPE_LIST
+#undef X
+};
 
-  system(("ls " + path).c_str());
-  throw std::runtime_error("no valid build type found in '" + path + "'");
-}
+#define BUILD_TYPE_FROM_STR(s)                                           \
+  ({                                                                     \
+    BuildType t = BuildType::N_BUILD_TYPE;                               \
+    for (auto i = 0; i < BUILD_TYPE_INT(BuildType::N_BUILD_TYPE); i++) { \
+      if (!strcmp(BUILD_TYPE_NAME[i], s)) {                              \
+        t = BuildType(i);                                                \
+        break;                                                           \
+      }                                                                  \
+    }                                                                    \
+    t;                                                                   \
+  })
+
+#define BUILD_TYPE_FROM_FILE(s)                                          \
+  ({                                                                     \
+    BuildType t = BuildType::N_BUILD_TYPE;                               \
+    for (auto i = 0; i < BUILD_TYPE_INT(BuildType::N_BUILD_TYPE); i++) { \
+      if (!strcmp(BUILD_TYPE_FILE[i], s)) {                              \
+        t = BuildType(i);                                                \
+        break;                                                           \
+      }                                                                  \
+    }                                                                    \
+    t;                                                                   \
+  })
+
+#define DETECT_BUILD_TYPE(path)                                               \
+  ({                                                                          \
+    BuildType t = BuildType::N_BUILD_TYPE;                                    \
+    for (std::string file :                                                   \
+         {"CMakeLists.txt", "meson.build", "configure", "setup.py", "go.mod", \
+          "Cargo.toml", "Makefile"}) {                                        \
+      if (std::filesystem::exists(dir + "/" + file)) {                        \
+        t = BUILD_TYPE_FROM_FILE(file.c_str());                               \
+        break;                                                                \
+      }                                                                       \
+    }                                                                         \
+    t;                                                                        \
+  })
 
 class Recipe;
 class Builder;
 
 class Compiler : public Object {
- protected:
-  std::string const PREFIX = "/usr";
-  std::string const SYSCONF_DIR = "/etc";
-  std::string const BINDIR = "/usr/bin";
-  std::string const SBINDIR = "/usr/bin";
-  std::string const LIBDIR = "/usr/lib";
-  std::string const LIBEXEDIR = "/usr/lib";
-  std::string const DATADIR = "/usr/share";
-  std::string const CACHEDIR = "/var";
-
  public:
-  virtual bool compile(Recipe const &recipe, std::string dir,
-                       std::string destdir,
+  virtual bool compile(Recipe *recipe, Configuration *config,
+                       std::string source_dir, std::string destdir,
                        std::vector<std::string> &environ) = 0;
 
   static std::shared_ptr<Compiler> create(BuildType buildType);
@@ -130,30 +102,46 @@ class Compiler : public Object {
 
 class Builder : public Object {
  private:
-  std::string m_BuildDir, m_SourceDir, m_PackageDir;
+  Configuration *mConfig;
+  std::string mBuildDir;
+  std::string mSourceDir;
+  std::string mPackageDir;
+
+  std::vector<std::string> mPackages;
 
  public:
-  Builder(std::string const &builddir, std::string const &sourcedir,
-          std::string const &packagedir)
-      : m_BuildDir(builddir),
-        m_SourceDir(sourcedir),
-        m_PackageDir(packagedir) {}
+  Builder(Configuration *config) : mConfig{config} {
+    mBuildDir = config->get<std::string>("dir.build",
+                                         "/tmp/pkgupd-" + utils::random(10));
+    mSourceDir = config->get<std::string>(DIR_SRC, DEFAULT_SRC_DIR);
+    mPackageDir = config->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR);
+  }
 
   ~Builder() {
-    std::error_code err;
-    if (std::filesystem::exists(m_BuildDir)) {
-      std::filesystem::remove_all(m_BuildDir, err);
+    if (mConfig->get("build.clean", true)) {
+      std::error_code err;
+      if (std::filesystem::exists(mBuildDir)) {
+        std::filesystem::remove_all(mBuildDir, err);
+      }
     }
   }
 
   bool prepare(std::vector<std::string> const &sources, std::string const &dir);
 
-  bool pack(std::vector<std::pair<Package, std::string>> const &dirs);
+  std::vector<std::string> packages() {
+    std::vector<std::string> build_packages = mPackages;
+    mPackages.clear();
+    return build_packages;
+  }
 
-  bool compile(Recipe const &recipe, std::string dir, std::string destdir,
+  bool pack(
+      std::vector<std::pair<std::shared_ptr<PackageInfo>, std::string>> const
+          &dirs);
+
+  bool compile(Recipe *recipe, std::string dir, std::string destdir,
                std::vector<std::string> &environ);
 
-  bool build(Recipe const &recipe, bool local_build = false);
+  bool build(Recipe *recipe, SystemDatabase* systemDatabase, Repository* repository);
 };
 }  // namespace rlxos::libpkgupd
 

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <system_error>
 
+using std::string;
 namespace rlxos::libpkgupd {
 
 int progress_func(void *ptr, double TotalToDownload, double NowDownloaded,
@@ -25,25 +26,25 @@ int progress_func(void *ptr, double TotalToDownload, double NowDownloaded,
 
   // create the "meter"
   int ii = 0;
-  printf("%3.0f%% \033[1m[\033[0m", fractiondownloaded * 100);
+  printf("%3.0f%% ", fractiondownloaded * 100);
   // part  that's full already
   for (; ii < dotz; ii++) {
-    printf("\033[32;1m■\033[0m");
+    printf("\033[32;1m▰\033[0m");
   }
   // remaining part (spaces)
   for (; ii < totaldotz; ii++) {
-    printf("\033[1m \033[0m");
+    printf("\033[1m▱\033[0m");
   }
   // and back to line begin - do not forget the fflush to avoid output buffering
   // problems!
-  printf("\033[1m] [%.10s]\033[0m\r",
+  printf("\033[1m [%.10s]\033[0m\r",
          humanize(static_cast<size_t>(TotalToDownload)).c_str());
   fflush(stdout);
   // if you don't return 0, the transfer will be aborted - see the documentation
   return 0;
 }
 
-bool Downloader::download(std::string const &url, std::string const &outfile) {
+bool Downloader::download(char const *url, char const *outfile) {
   CURL *curl;
   CURLcode res;
   FILE *fptr;
@@ -66,13 +67,13 @@ bool Downloader::download(std::string const &url, std::string const &outfile) {
     }
   }
 
-  fptr = fopen((outfile + ".part").c_str(), "wb");
+  fptr = fopen((string(outfile) + ".part").c_str(), "wb");
   if (!fptr) {
-    p_Error = "Failed to open " + outfile + " for write";
+    p_Error = "Failed to open " + string(outfile) + " for write";
     return false;
   }
 
-  curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(curl, CURLOPT_URL, url);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, fwrite);
   curl_easy_setopt(curl, CURLOPT_WRITEDATA, fptr);
   curl_easy_setopt(curl, CURLOPT_VERBOSE,
@@ -85,7 +86,6 @@ bool Downloader::download(std::string const &url, std::string const &outfile) {
   curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1000);
   curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 10);
 
-  PROCESS("downloading " << std::filesystem::path(outfile).filename());
   res = curl_easy_perform(curl);
 
   std::cout << std::endl;
@@ -96,7 +96,7 @@ bool Downloader::download(std::string const &url, std::string const &outfile) {
   if (res == CURLE_OK) {
     std::error_code err;
 
-    std::filesystem::rename(outfile + ".part", outfile, err);
+    std::filesystem::rename(string(outfile) + ".part", outfile, err);
     if (err) {
       p_Error = err.message();
       return false;
@@ -106,7 +106,7 @@ bool Downloader::download(std::string const &url, std::string const &outfile) {
   return res == CURLE_OK;
 }
 
-bool Downloader::valid(std::string const &url) {
+bool Downloader::valid(char const *url) {
   CURL *curl;
   CURLcode resp;
 
@@ -116,7 +116,7 @@ bool Downloader::valid(std::string const &url) {
     return false;
   }
 
-  curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+  curl_easy_setopt(curl, CURLOPT_URL, url);
   curl_easy_setopt(curl, CURLOPT_NOBODY, 1);
   curl_easy_setopt(curl, CURLOPT_VERBOSE,
                    (getenv("CURL_DEBUG") == nullptr ? 0L : 1L));
@@ -133,29 +133,32 @@ bool Downloader::valid(std::string const &url) {
   curl_easy_cleanup(curl);
   if ((resp == CURLE_OK) && http_code == 200) return true;
 
-  p_Error = "invalid url " + url;
+  p_Error = "invalid url " + string(url);
   return false;
 }
 
-bool Downloader::get(std::string const &file, std::string const& repo, std::string const &outdir) {
-  if (m_Mirrors.size() == 0) {
+bool Downloader::get(char const *file, char const *outdir) {
+  std::vector<std::string> mirrors;
+
+  mConfig->get("mirrors", mirrors);
+  if (mirrors.size() == 0) {
     p_Error = "No mirror specified";
     return false;
   }
 
-  for (auto const &mirror : m_Mirrors) {
-    DEBUG("checking  mirror: " << mirror << " " << m_Version << " " << file);
+  std::string version_part = "/" + mConfig->get<std::string>("version", "2200");
 
-    std::string fileurl = mirror + "/" + m_Version + "/pkgs/" + repo + "/" + file;
+  for (auto const &mirror : mirrors) {
+    std::string fileurl = mirror + version_part + "/pkgs/" + file;
 
-    DEBUG("url: " << fileurl)
+    DEBUG("GET " << fileurl)
     if (!getenv("NO_CURL_CHECK"))
-      if (!valid(fileurl)) continue;
+      if (!valid(fileurl.c_str())) continue;
 
-    return download(fileurl, outdir);
+    return download(fileurl.c_str(), outdir);
   }
 
-  p_Error = file + " is missing on server";
+  p_Error = string(file) + " is missing on server";
 
   return false;
 }

@@ -5,3 +5,7 @@ cache/
 tests/data/
 /_pkgupd_builddir
 /_pkgupd_workdir
+tests/root
+tests/pkgs
+tests/src
+tests/repo

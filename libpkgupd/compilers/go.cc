@@ -4,8 +4,8 @@
 #include "../recipe.hh"
 
 namespace rlxos::libpkgupd {
-bool Go::compile(Recipe const& recipe, std::string dir, std::string destdir,
-                 std::vector<std::string>& environ) {
+bool Go::compile(Recipe* recipe, Configuration* config, std::string dir,
+                 std::string destdir, std::vector<std::string>& environ) {
   environ.push_back("CGO_CFLAGS=${CFLAGS:-''}");
   environ.push_back("CGO_CPPFLAGS=${CPPFLAGS:-''}");
   environ.push_back("CGO_CXXFLAGS=${CXXFLAGS:-''}");
@@ -18,26 +18,26 @@ bool Go::compile(Recipe const& recipe, std::string dir, std::string destdir,
   environ.push_back("GOPATH=${pkgupd_srcdir}");
 
   // Do configure
-  if (!recipe.node()["GoImportPath"]) {
-    p_Error = "GoImportPath not set on " + recipe.id();
+  if (!recipe->node()["GoImportPath"]) {
+    p_Error = "GoImportPath not set on " + recipe->id();
     return false;
   }
-  auto goImportPath = recipe.node()["GoImportPath"].as<std::string>();
+  auto goImportPath = recipe->node()["GoImportPath"].as<std::string>();
   environ.push_back("GOSRCPATH=${GOPATH}/src/" + goImportPath);
   // Do Build
   auto goPackage = goImportPath;
-  if (recipe.node()["GoPackage"]) {
-    goPackage = recipe.node()["GoPackage"].as<std::string>();
+  if (recipe->node()["GoPackage"]) {
+    goPackage = recipe->node()["GoPackage"].as<std::string>();
   }
 
   std::string goModMode = "";
-  if (recipe.node()["GoMode"]) {
-    goModMode = recipe.node()["GoMode"].as<std::string>();
+  if (recipe->node()["GoMode"]) {
+    goModMode = recipe->node()["GoMode"].as<std::string>();
   }
 
   if (goModMode != "off" && std::filesystem::exists(dir + "/go.mod")) {
     if (goModMode.length() == 0 && std::filesystem::exists(dir + "/vendor")) {
-      INFO("using vendor dir for " << recipe.id() << " go dependencies");
+      INFO("using vendor dir for " << recipe->id() << " go dependencies");
       goModMode = "vendor";
     } else if (goModMode == "default") {
       goModMode.clear();

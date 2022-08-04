@@ -11,10 +11,10 @@
 #include "colors.hh"
 
 namespace rlxos::libpkgupd {
-class Executor : public Object {
+class Executor {
  private:
-  std::string _get_cmd(std::string const &cmd, std::string const &dir,
-                       std::vector<std::string> const &env = {}) {
+  static std::string _get_cmd(std::string const &cmd, std::string const &dir,
+                              std::vector<std::string> const &env = {}) {
     std::string _cmd = "set -e; set -u\n";
 
     for (auto const &i : env) _cmd += "export " + i + "\n";
@@ -28,8 +28,8 @@ class Executor : public Object {
 
  public:
   Executor() {}
-  int execute(std::string const &command, std::string const &dir = ".",
-              std::vector<std::string> const &environ = {}) {
+  static int execute(std::string const &command, std::string const &dir = ".",
+                     std::vector<std::string> const &environ = {}) {
     auto cmd = _get_cmd(command, dir, environ);
     DEBUG("executing: '" << cmd << "'");
     auto exit_status = WEXITSTATUS(system(cmd.c_str()));
@@ -37,11 +37,12 @@ class Executor : public Object {
     return exit_status;
   }
 
-  std::tuple<int, std::string> output(
+  static std::tuple<int, std::string> output(
       std::string const &command, std::string const &dir = ".",
       std::vector<std::string> const &environ = {}) {
     auto cmd = _get_cmd(command, dir, environ);
 
+    DEBUG("cmd: " << cmd);
     std::array<char, 128> buffer;
     std::string result;
     FILE *pipe = popen(cmd.c_str(), "r");
@@ -51,9 +52,9 @@ class Executor : public Object {
     while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
       result += buffer.data();
     }
+    result = result.substr(0, result.size() - 1);
 
     int status = WEXITSTATUS(pclose(pipe));
-    if (status != 0) p_Error = "Failed to execute " + cmd;
 
     return {status, result};
   }

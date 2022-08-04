@@ -6,9 +6,6 @@ project(${PROJECT})
 set(CMAKE_CXX_STANDARD 17) # using std::filesystem
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-option(INSTALL_GTEST "Enable installation of googletest. (Projects embedding googletest may want to turn this OFF.)" OFF)
-
-
 find_package(YAML-CPP REQUIRED)
 include_directories(${YAML_CPP_INCLUDE_DIRS})
 
@@ -19,23 +16,41 @@ find_library(LIBCURL curl REQUIRED)
 file(GLOB_RECURSE LIBPKGUPD_Src "libpkgupd/*.cc" "libpkgupd/*.hh")
 add_library(libpkgupd ${LIBPKGUPD_Src})
 target_link_libraries(libpkgupd ${LIBCURL} ${YAML_CPP_LIBRARIES})
+set_target_properties(libpkgupd PROPERTIES OUTPUT_NAME "pkgupd")
 
 file(GLOB PKGUPD_Src "pkgupd/*.cc" "pkgupd/*.hh")
 add_executable(pkgupd ${PKGUPD_Src})
 add_dependencies(pkgupd libpkgupd)
 target_link_libraries(pkgupd libpkgupd)
 
-file(GLOB PKGUPD_BUILD_Src "pkgupd-build/*.cc" "pkgupd/*.hh")
-add_executable(pkgupd-build ${PKGUPD_BUILD_Src})
-add_dependencies(pkgupd-build libpkgupd)
-target_link_libraries(pkgupd-build libpkgupd)
+# find_package(PkgConfig REQUIRED)
+# pkg_check_modules(SQUASHFUSE squashfuse REQUIRED)
+# include_directories(${SQUASHFUSE_INCLUDE_DIRS})
+# file(GLOB RUNTIME_Src "runtime/*.cc" "runtime/*.hh")
+# add_executable(runtime ${RUNTIME_Src})
+# target_link_libraries(runtime ${SQUASHFUSE_LIBRARIES})
 
-option(BUILD_TESTS "Build Test programs" ON)
+install(TARGETS pkgupd libpkgupd
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib)
 
-if (BUILD_TESTS)
-  enable_testing()
-  add_subdirectory("tests")
-endif (BUILD_TESTS)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/libpkgupd/
+        DESTINATION "include/libpkgupd"
+        FILES_MATCHING
+            PATTERN "*.hh")
 
-install(TARGETS pkgupd
+install(FILES services/pkgupd-watchdog.service
+    DESTINATION "lib/systemd/user")
+
+install(FILES scripts/pkgupd-app-remove
+    PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+                GROUP_EXECUTE GROUP_READ
+                WORLD_EXECUTE WORLD_READ
+
     DESTINATION bin)
+
+set(INSTALL_GTEST OFF)
+if (BUILD_TEST)
+enable_testing()
+add_subdirectory(tests)
+endif()

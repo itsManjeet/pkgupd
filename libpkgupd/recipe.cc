@@ -8,7 +8,7 @@ using std::string;
 
 namespace rlxos::libpkgupd {
 Recipe::Recipe(YAML::Node data, std::string file, std::string const& repo)
-    : m_Repository(repo) {
+    : m_Repository(repo), mFilePath(file) {
   m_Node = data;
 
   READ_VALUE(string, "id", m_ID);
@@ -31,8 +31,11 @@ Recipe::Recipe(YAML::Node data, std::string file, std::string const& repo)
   READ_LIST(string, "environ", m_Environ);
 
   READ_LIST(string, "skip-strip", m_SkipStrip);
+  READ_LIST(string, "backup", m_Backup);
 
-  OPTIONAL_VALUE(bool, "strip", m_DoStrip, false);
+  READ_LIST(string, "include", m_Include);
+
+  OPTIONAL_VALUE(bool, "strip", m_DoStrip, true);
 
   std::string packageType;
   std::string buildType;
@@ -103,7 +106,8 @@ Recipe::Recipe(YAML::Node data, std::string file, std::string const& repo)
 
     auto configurator = getFlag("configurator");
     if (configurator.length()) {
-      buildType = buildTypeToString(buildTypeFromFile(configurator));
+      buildType = BUILD_TYPE_NAME[BUILD_TYPE_INT(
+          BUILD_TYPE_FROM_FILE(configurator.c_str()))];
       DEBUG("got build type '" + buildType + "'")
     }
 
@@ -134,8 +138,11 @@ Recipe::Recipe(YAML::Node data, std::string file, std::string const& repo)
         splitPackage.into = i["into"].as<std::string>();
         splitPackage.about = i["about"].as<std::string>();
 
-        for (auto const& file : i["files"]) {
-          splitPackage.files.push_back(file.as<std::string>());
+        _R(splitPackage.about);
+        for (auto f : i["files"]) {
+          auto file = f.as<std::string>();
+          _R(file);
+          splitPackage.files.push_back(file);
         }
 
         if (i["depends"]) {
@@ -148,23 +155,35 @@ Recipe::Recipe(YAML::Node data, std::string file, std::string const& repo)
     }
   }
 
-  m_PackageType = stringToPackageType(packageType);
+  m_PackageType = PACKAGE_TYPE_FROM_STR(packageType.c_str());
 
   if (buildType.length()) {
-    m_BuildType = stringToBuildType(buildType);
+    m_BuildType = BUILD_TYPE_FROM_STR(buildType.c_str());
   } else {
-    m_BuildType = BuildType::INVALID;
+    m_BuildType = BuildType::N_BUILD_TYPE;
   }
+
+  _R(m_About);
+  _RL(m_Environ);
+  _RL(m_Sources);
+  _R(m_BuildDir);
+  _R(m_Configure);
+  _R(m_Compile);
+  _R(m_Install);
+  _R(m_PreScript);
+  _R(m_PostScript);
+  _RL(m_SkipStrip);
+  _R(m_InstallScript);
+  _R(m_Script);
 }
 
-std::optional<Package> Recipe::operator[](std::string const& name) const {
+std::shared_ptr<PackageInfo> Recipe::operator[](std::string const& name) const {
   for (auto i : packages()) {
-    if (i.id() == name) {
+    if (i->id() == name) {
       return i;
     }
   }
-
-  return {};
+  return nullptr;
 }
 
 void Recipe::dump(std::ostream& os, bool as_meta) {
@@ -183,22 +202,17 @@ void Recipe::dump(std::ostream& os, bool as_meta) {
   }
 }
 
-std::vector<Package> Recipe::packages() const {
-  std::vector<Package> packagesList;
-  packagesList.push_back(Package(m_ID, m_Version, m_About, m_PackageType,
-                                 m_Depends, m_Users, m_Groups, m_Repository,
-                                 m_InstallScript, m_Node));
+std::vector<std::shared_ptr<PackageInfo>> Recipe::packages() const {
+  std::vector<std::shared_ptr<PackageInfo>> packagesList;
+  packagesList.push_back(std::make_shared<PackageInfo>(
+      m_ID, m_Version, m_About, m_Depends, m_PackageType, m_Users, m_Groups,
+      m_Backup, m_InstallScript, m_Repository, m_Node));
 
   for (auto const& i : m_SplitPackages) {
-    std::string id = i.into;
-    if (id == "lib") {
-      id += m_ID;
-    }
-
-    packagesList.push_back(
-        Package(id, m_Version, i.about.size() ? i.about : m_About,
-                m_PackageType, i.depends.size() ? i.depends : m_Depends,
-                m_Users, m_Groups, m_Repository, m_InstallScript, m_Node));
+    packagesList.push_back(std::make_shared<PackageInfo>(
+        i.into, m_Version, i.about.size() ? i.about : m_About,
+        i.depends.size() ? i.depends : m_Depends, m_PackageType, m_Users,
+        m_Groups, m_Backup, m_InstallScript, m_Repository, m_Node));
   }
 
   return packagesList;
