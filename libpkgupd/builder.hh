@@ -5,10 +5,10 @@
 #include <system_error>
 
 #include "archive-manager/archive-manager.hh"
-#include "system-database.hh"
-#include "repository.hh"
 #include "configuration.hh"
 #include "defines.hh"
+#include "repository.hh"
+#include "system-database.hh"
 #include "utils/utils.hh"
 
 namespace rlxos::libpkgupd {
@@ -21,7 +21,8 @@ namespace rlxos::libpkgupd {
   X(PySetup, pysetup, "setup.py")    \
   X(Go, go, "go.mod")                \
   X(Cargo, cargo, "cargo.toml")      \
-  X(Makefile, makefile, "Makefile")
+  X(Makefile, makefile, "Makefile")  \
+  X(System, system, "")
 
 enum class BuildType : int {
 #define X(ID, name, file) ID,
@@ -141,7 +142,8 @@ class Builder : public Object {
   bool compile(Recipe *recipe, std::string dir, std::string destdir,
                std::vector<std::string> &environ);
 
-  bool build(Recipe *recipe, SystemDatabase* systemDatabase, Repository* repository);
+  bool build(Recipe *recipe, SystemDatabase *systemDatabase,
+             Repository *repository);
 };
 }  // namespace rlxos::libpkgupd
 
