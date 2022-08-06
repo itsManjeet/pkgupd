@@ -17,6 +17,7 @@
 #include "compilers/meson.hh"
 #include "compilers/pysetup.hh"
 #include "compilers/script.hh"
+#include "compilers/system.hh"
 #include "downloader.hh"
 #include "exec.hh"
 #include "installer/installer.hh"
