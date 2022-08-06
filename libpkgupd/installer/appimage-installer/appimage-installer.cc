@@ -151,8 +151,9 @@ bool AppImageInstaller::intergrate(
 
   // install icon
   std::string _path;
-  std::filesystem::path icon_file_path =
-      app_data_path / ("pixmaps/" + package_info->id() + ".png");
+  std::filesystem::path icon_file_path = app_data_path / "icons" / "hicolor" /
+                                         "apps" / "256x256" /
+                                         (package_info->id() + ".png");
   if (!extract(archive_manager.get(), path,
                package_info->id() + ".png:" + icon_file_path.string(), root_dir,
                _path)) {
@@ -194,8 +195,7 @@ bool AppImageInstaller::intergrate(
                   << std::endl;
         }
       } else if (line.find("Icon=", 0) == 0) {
-        outfile << "Icon="
-                << "/" + (icon_file_path).string() << std::endl;
+        outfile << "Icon=" << package_info->id() << std::endl;
       } else if (line.find("TryExec=", 0) == 0) {
         continue;
       } else {
@@ -206,7 +206,7 @@ bool AppImageInstaller::intergrate(
 
   if (!patch(_path, {
                         {"@@exec@@", app_file},
-                        {"@@icon@@", "/" + (icon_file_path).string()},
+                        {"@@icon@@", package_info->id()},
                     })) {
     return false;
   }
