@@ -12,7 +12,7 @@ class Container : public Object {
 
  public:
   Container(Configuration* config) : mConfig{config} {}
-  
+
   bool run(std::vector<std::string> args, bool debug = false);
 };
 }  // namespace rlxos::libpkgupd
