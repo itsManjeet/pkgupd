@@ -42,6 +42,8 @@ PKGUPD_MODULE(update) {
     return status;
   }
 
+  repository->init();
+
   PROCESS("checking system updates");
   for (auto const& i : system_database->get()) {
     if (std::find(excludedPackages.begin(), excludedPackages.end(), i.first) !=
@@ -51,7 +53,7 @@ PKGUPD_MODULE(update) {
     auto installed_info = i.second.get();
     auto repository_info = repository->get(i.first.c_str());
     if (repository_info == nullptr) {
-      ERROR("missing repository information for " << i.first << ", skipping");
+      INFO("missing repository information for " << i.first << ", skipping");
       continue;
     }
 
