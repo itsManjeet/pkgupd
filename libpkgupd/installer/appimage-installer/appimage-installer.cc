@@ -152,7 +152,7 @@ bool AppImageInstaller::intergrate(
   // install icon
   std::string _path;
   std::filesystem::path icon_file_path = app_data_path / "icons" / "hicolor" /
-                                         "apps" / "256x256" /
+                                         "256x256" / "apps" /
                                          (package_info->id() + ".png");
   if (!extract(archive_manager.get(), path,
                package_info->id() + ".png:" + icon_file_path.string(), root_dir,
