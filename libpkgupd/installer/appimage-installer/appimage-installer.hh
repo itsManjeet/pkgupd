@@ -4,6 +4,7 @@
 #include "../../archive-manager/archive-manager.hh"
 #include "../installer.hh"
 #include "external/ini.h"
+#include <functional>
 
 namespace rlxos::libpkgupd {
 class AppImageInstaller : public Installer::Injector {
