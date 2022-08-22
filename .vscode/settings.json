@@ -110,7 +110,10 @@
         "queue": "cpp",
         "stack": "cpp",
         "version": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "expected": "cpp",
+        "spanstream": "cpp",
+        "stacktrace": "cpp"
     },
     "python.formatting.provider": "yapf",
     "C_Cpp.clang_format_fallbackStyle": "Google"

@@ -9,6 +9,7 @@ using namespace rlxos::libpkgupd;
 
 bool System::compile(Recipe* recipe, Configuration* config, std::string dir,
                      std::string destdir, std::vector<std::string>& environ) {
+  recipe->setStrip(false);
   pid_t pid = fork();
   if (pid == -1) {
     p_Error = "fork() failed: " + ERROR;
@@ -18,29 +19,58 @@ bool System::compile(Recipe* recipe, Configuration* config, std::string dir,
   if (pid == 0) {
     INFO("chrooting into " << destdir);
     if (chroot(destdir.c_str()) == -1) {
-      p_Error = "chroot() failed: " + std::string(strerror(errno));
-      return false;
+      std::cerr << "chroot() failed: " + std::string(strerror(errno))
+                << std::endl;
+      exit(EXIT_FAILURE);
     }
 
-    if (chdir(config->get<std::string>("inside.workdir", "/").c_str()) == -1) {
-      p_Error = "chdir() failed: " + std::string(strerror(errno));
-      return false;
+    auto get_value = [recipe](std::string var, std::string def) -> std::string {
+      return recipe->node()[var] ? recipe->node()[var].as<std::string>() : def;
+    };
+
+    if (chdir(get_value("inside.workdir", "/").c_str()) == -1) {
+      std::cerr << "chdir() failed: " + std::string(strerror(errno))
+                << std::endl;
+      exit(EXIT_FAILURE);
+    }
+
+    if (config->get("inside.pkgupd.trigger", true)) {
+      INFO("triggering pkgupd");
+      if (Executor::execute("pkgupd trigger dir.data=/usr/share/" +
+                            recipe->id() + "/included") != 0) {
+        exit(EXIT_FAILURE);
+      }
+    }
+
+    if (config->get("inside.pwconv.required", true)) {
+      if (Executor::execute("pwconv && grpconv") != 0) {
+        exit(EXIT_FAILURE);
+      }
+    }
+
+    auto root = get_value("inside.root", "");
+    if (root.size()) {
+      INFO("setting root password");
+      if (Executor::execute("echo '" + root + "\n" + root + "' |  passwd") !=
+          0) {
+        exit(EXIT_FAILURE);
+      }
     }
 
     auto pkg = recipe->packages()[0];
     for (auto const& group : pkg->groups()) {
       INFO("creating new group " << group.name());
       if (!group.create()) {
-        p_Error = "failed to create " + group.name() + " group";
-        return false;
+        std::cerr << "failed to create " + group.name() + " group" << std::endl;
+        exit(EXIT_FAILURE);
       }
     }
 
     for (auto const& user : pkg->users()) {
       INFO("creating new user " << user.name());
       if (!user.create()) {
-        p_Error = "failed to create " + user.name() + " user";
-        return false;
+        std::cerr << "failed to create " + user.name() + " user" << std::endl;
+        exit(EXIT_FAILURE);
       }
     }
 
@@ -48,33 +78,25 @@ bool System::compile(Recipe* recipe, Configuration* config, std::string dir,
     config->get("services.system", systemServices);
     for (auto const& service : systemServices) {
       INFO("enabling system service");
-      auto [status, output] = Executor::output("systemctl enable " + service);
-      if (!status) {
-        p_Error = "failed to enable systemctl service " + output;
-        return false;
+      if (Executor::execute("systemctl enable " + service) != 0) {
+        exit(EXIT_FAILURE);
       }
     }
 
     std::vector<std::string> userServices;
     config->get("services.user", userServices);
     for (auto const& service : userServices) {
-      auto [status, output] =
-          Executor::output("systemctl enable --global " + service);
-      if (!status) {
-        p_Error = "failed to enable systemctl service " + output;
-        return false;
+      if (Executor::execute("systemctl enable --global " + service) != 0) {
+        exit(EXIT_FAILURE);
       }
     }
 
-    {
-      auto [status, output] = Executor::output(
-          config->get<std::string>("inside", ""), ".", environ);
-      if (!status) {
-        p_Error = "failed to executed inside script " + output;
-        return false;
+    std::string inside = get_value("inside", "");
+    if (inside.size()) {
+      if (Executor::execute(inside, ".", environ) != 0) {
+        exit(EXIT_FAILURE);
       }
     }
-
     exit(EXIT_SUCCESS);
   }
   int status;
@@ -83,10 +105,10 @@ bool System::compile(Recipe* recipe, Configuration* config, std::string dir,
     return false;
   }
 
-  if (WIFEXITED(status)) {
-    int exitCode = WEXITSTATUS(status);
-    return true;
+  int exitCode = WEXITSTATUS(status);
+  if (exitCode != 0) {
+    p_Error += "\nprocess exit with: " + std::to_string(exitCode);
+    return false;
   }
-
   return true;
 }

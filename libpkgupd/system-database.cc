@@ -15,6 +15,8 @@ InstalledPackageInfo::InstalledPackageInfo(YAML::Node const &data,
                                            char const *file)
     : PackageInfo(data, file) {
   READ_VALUE(std::string, "installed_on", mInstalledon);
+  
+  if (data["files"]) mFiles.reserve(data["files"].size());
   READ_LIST(std::string, "files", mFiles);
   OPTIONAL_VALUE(bool, "is-dependency", m_IsDependency, false);
 }
@@ -35,7 +37,6 @@ bool SystemDatabase::init() {
   }
   return true;
 }
-
 
 InstalledPackageInfo *SystemDatabase::get(char const *pkgid) {
   auto iter = mPackages.find(pkgid);

@@ -86,6 +86,8 @@ class Recipe {
 
   bool dostrip() const { return m_DoStrip; }
 
+  void setStrip(bool s) { m_DoStrip = s; }
+
   std::string const& filePath() const { return mFilePath; }
 
   YAML::Node const& node() const { return m_Node; }
