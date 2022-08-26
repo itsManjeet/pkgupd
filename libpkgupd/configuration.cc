@@ -44,7 +44,7 @@ std::shared_ptr<Configuration> Configuration::create(YAML::Node node) {
                     (std::vector<std::string>{"core", "extra", "apps"}));
   SET_DEFAULT_VALUE(
       "mirrors",
-      (std::vector<std::string>{"https://rlxos.dev/storage/stable"}));
+      (std::vector<std::string>{"https://storage.rlxos.dev/stable"}));
 
   if (node["debug"].as<bool>()) std::cout << "Configuration:\n" << node << std::endl;
 
