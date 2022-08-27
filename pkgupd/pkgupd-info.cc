@@ -109,6 +109,8 @@ PKGUPD_MODULE(info) {
       if (INSTALLED(package) != nullptr) {
         cout << INSTALLED(package)->files().size();
       }
+    } else if (info_value == "package") {
+      cout << config->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR) + "/" + package->repository() + "/" + PACKAGE_FILE(package);
     }
 
     cout << endl;
