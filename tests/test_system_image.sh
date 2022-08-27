@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/bash -e
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 BASEDIR=$(dirname ${SCRIPT_DIR})
@@ -19,7 +19,7 @@ function pkgupd() {
 
 pkgupd sync
 
-pkgupd build ${BASEDIR}/tests/data/rlxos-core.yml
+pkgupd build ${BASEDIR}/tests/rlxos-core.yml
 [ -e ${BASEDIR}/build/pkgs/testing/rlxos-core-2200.pkg ] || {
     exit 1
 }

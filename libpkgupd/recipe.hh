@@ -96,6 +96,11 @@ class Recipe {
 
   bool contains(std::string const& pkgid) { return (*this)[pkgid] != nullptr; }
 
+  template <typename T>
+  T get(std::string key, T def) const {
+    return m_Node[key] ? m_Node[key].as<T>() : def;
+  }
+
   std::shared_ptr<PackageInfo> operator[](std::string const& name) const;
   std::vector<std::shared_ptr<PackageInfo>> packages() const;
 };

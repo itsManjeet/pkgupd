@@ -195,8 +195,8 @@ bool Builder::build(Recipe *recipe, SystemDatabase *systemDatabase,
 
     config.node()[DIR_ROOT] = local_roots;
     config.node()[DIR_DATA] = local_datapath;
-    config.node()["installer.depends"] = mConfig->get("include-depends", true);
-
+    config.node()["installer.depends"] = recipe->get<bool>("include-depends", true);
+    config.node()["installer.triggers"] = recipe->get<bool>("installer.triggers", false);
     for (auto const &i : {local_roots, local_datapath}) {
       if (!std::filesystem::exists(i)) {
         std::error_code error;
@@ -224,7 +224,7 @@ bool Builder::build(Recipe *recipe, SystemDatabase *systemDatabase,
         {"PKG_CONFIG_PATH", "usr/lib/pkgconfig"}};
     if (recipe->node()["include-environments"]) {
       for (auto const &i : recipe->node()["include-environments"]) {
-        environmentPaths[i.first.as<std::string>()] =
+        environmentPaths[i.first.as<std::string>()] = pkgdir.string() + "/" +
             i.second.as<std::string>();
       }
     }
@@ -237,7 +237,7 @@ bool Builder::build(Recipe *recipe, SystemDatabase *systemDatabase,
 
       std::string envData =
           i.second + (env == nullptr ? "" : ":" + std::string(env));
-      if (iter == environ.end()) {
+      if (iter != environ.end()) {
         *iter = envData + ":" + (*iter);
       } else {
         environ.push_back(i.first + "=" + envData);
@@ -377,6 +377,10 @@ bool Builder::compile(Recipe *recipe, std::string dir, std::string destdir,
   } else {
     DEBUG("detecting build type in: " << dir);
     type = DETECT_BUILD_TYPE(dir);
+  }
+  if (type == BuildType::N_BUILD_TYPE) {
+    p_Error = "unable to detect build type inside " + dir;
+    return false;
   }
   compiler = Compiler::create(type);
   if (compiler == nullptr) {

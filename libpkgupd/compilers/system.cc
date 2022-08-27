@@ -24,17 +24,13 @@ bool System::compile(Recipe* recipe, Configuration* config, std::string dir,
       exit(EXIT_FAILURE);
     }
 
-    auto get_value = [recipe](std::string var, std::string def) -> std::string {
-      return recipe->node()[var] ? recipe->node()[var].as<std::string>() : def;
-    };
-
-    if (chdir(get_value("inside.workdir", "/").c_str()) == -1) {
+    if (chdir(recipe->get<std::string>("inside.workdir", "/").c_str()) == -1) {
       std::cerr << "chdir() failed: " + std::string(strerror(errno))
                 << std::endl;
       exit(EXIT_FAILURE);
     }
 
-    if (config->get("inside.pkgupd.trigger", true)) {
+    if (recipe->get<bool>("inside.pkgupd.trigger", true)) {
       INFO("triggering pkgupd");
       if (Executor::execute("pkgupd trigger dir.data=/usr/share/" +
                             recipe->id() + "/included") != 0) {
@@ -42,13 +38,13 @@ bool System::compile(Recipe* recipe, Configuration* config, std::string dir,
       }
     }
 
-    if (config->get("inside.pwconv.required", true)) {
+    if (recipe->get<bool>("inside.pwconv.required", true)) {
       if (Executor::execute("pwconv && grpconv") != 0) {
         exit(EXIT_FAILURE);
       }
     }
 
-    auto root = get_value("inside.root", "");
+    auto root = recipe->get<std::string>("inside.root", "");
     if (root.size()) {
       INFO("setting root password");
       if (Executor::execute("echo '" + root + "\n" + root + "' |  passwd") !=
@@ -74,25 +70,25 @@ bool System::compile(Recipe* recipe, Configuration* config, std::string dir,
       }
     }
 
-    std::vector<std::string> systemServices;
-    config->get("services.system", systemServices);
-    for (auto const& service : systemServices) {
+    for (auto const& service : recipe->node()["service.system"]) {
       INFO("enabling system service");
-      if (Executor::execute("systemctl enable " + service) != 0) {
+      if (Executor::execute("systemctl enable " + service.as<std::string>()) !=
+          0) {
         exit(EXIT_FAILURE);
       }
     }
 
-    std::vector<std::string> userServices;
-    config->get("services.user", userServices);
-    for (auto const& service : userServices) {
-      if (Executor::execute("systemctl enable --global " + service) != 0) {
+    for (auto const& service : recipe->node()["service.system"]) {
+      INFO("enabling user service");
+      if (Executor::execute("systemctl enable --global " +
+                            service.as<std::string>()) != 0) {
         exit(EXIT_FAILURE);
       }
     }
 
-    std::string inside = get_value("inside", "");
+    std::string inside = recipe->get<std::string>("inside", "");
     if (inside.size()) {
+      INFO("executing inside script");
       if (Executor::execute(inside, ".", environ) != 0) {
         exit(EXIT_FAILURE);
       }

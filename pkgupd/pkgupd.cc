@@ -124,11 +124,11 @@ int main(int argc, char** argv) {
   }
 
   auto config = Configuration::create(node);
-  try {
+  // try {
     return iter->second(args, config.get());
-  } catch (std::exception const& err) {
-    cerr << "Error! failed to perfrom task, unhandled exception " << err.what()
-         << endl;
+  // } catch (std::exception const& err) {
+    // cerr << "Error! failed to perfrom task, unhandled exception " << err.what()
+    //      << endl;
     return 1;
-  }
+  // }
 }
