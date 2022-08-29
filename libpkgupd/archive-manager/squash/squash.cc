@@ -119,6 +119,7 @@ bool Squash::compress(char const* input_path, char const* src_dir) {
   cmd += input_path;
   cmd += " -comp zstd ";
   cmd += " -b 256K ";
+  cmd += " -noappend ";
   cmd += " -Xcompression-level 22";
 
   if (Executor::execute(cmd) != 0) {
