@@ -18,9 +18,9 @@ bool Group::create() const {
                            m_Name) == 0;
 }
 
-void Group::dump(std::ostream &os, std::string prefix) const {
-  os << prefix << " - id: " << m_ID << "\n"
-     << prefix << "   name: " << m_Name << std::endl;
+void Group::dump(std::ostream &os) const {
+  os << " - id: " << m_ID << "\n"
+     << "   name: " << m_Name << std::endl;
 }
 
 }  // namespace rlxos::libpkgupd

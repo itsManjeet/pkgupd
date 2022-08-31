@@ -195,8 +195,10 @@ bool Builder::build(Recipe *recipe, SystemDatabase *systemDatabase,
 
     config.node()[DIR_ROOT] = local_roots;
     config.node()[DIR_DATA] = local_datapath;
-    config.node()["installer.depends"] = recipe->get<bool>("include-depends", true);
-    config.node()["installer.triggers"] = recipe->get<bool>("installer.triggers", false);
+    config.node()["installer.depends"] =
+        recipe->get<bool>("include-depends", true);
+    config.node()["installer.triggers"] =
+        recipe->get<bool>("installer.triggers", false);
     for (auto const &i : {local_roots, local_datapath}) {
       if (!std::filesystem::exists(i)) {
         std::error_code error;
@@ -224,8 +226,8 @@ bool Builder::build(Recipe *recipe, SystemDatabase *systemDatabase,
         {"PKG_CONFIG_PATH", "usr/lib/pkgconfig"}};
     if (recipe->node()["include-environments"]) {
       for (auto const &i : recipe->node()["include-environments"]) {
-        environmentPaths[i.first.as<std::string>()] = pkgdir.string() + "/" +
-            i.second.as<std::string>();
+        environmentPaths[i.first.as<std::string>()] =
+            pkgdir.string() + "/" + i.second.as<std::string>();
       }
     }
     for (auto const &i : environmentPaths) {
@@ -427,6 +429,15 @@ bool Builder::pack(
       p_Error = "compression failed " + archive_manager->error();
       return false;
     }
+
+    std::ofstream info_writer(packagefile_Path.parent_path() /
+                              (i.first->id() + ".meta"));
+    if (!info_writer.is_open()) {
+      p_Error = "failed to open info meta file for writing";
+      return false;
+    }
+    i.first->dump(info_writer);
+    info_writer.close();
 
     mPackages.push_back(packagefile_Path);
   }

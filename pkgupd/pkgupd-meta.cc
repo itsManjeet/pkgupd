@@ -29,50 +29,28 @@ PKGUPD_MODULE(meta) {
       ERROR("Error! '" << repo_path << "' not exists for " << i);
       return 1;
     }
-    std::ofstream file(repo_path / "meta");
-    file << "pkgs:" << std::endl;
-    std::map<std::string, std::shared_ptr<PackageInfo>> pkgs;
+    std::ofstream file(repo_path / "info");
+    if (!file.is_open()) {
+      ERROR("failed to open " << repo_path);
+      return 1;
+    }
+    YAML::Node parent;
+    parent["pkgs"] = std::vector<YAML::Node>();
     for (auto const& pkg : filesystem::directory_iterator(repo_path)) {
-      if (pkg.path().filename().string() == "meta") continue;
-
-      if (pkg.is_directory() || !pkg.path().has_extension()) {
+      if (!(pkg.path().has_extension() && pkg.path().extension() == ".meta")) {
         continue;
       }
-
-      auto ext = pkg.path().extension().string().substr(1);
-      auto package_type = PACKAGE_TYPE_FROM_STR(ext.c_str());
-      if (package_type == PackageType::N_PACKAGE_TYPE) {
-        ERROR("unsupported package '" << pkg.path());
+      try {
+        YAML::Node node = YAML::LoadFile(pkg.path());
+        INFO("adding " << node["id"] << " " << node["version"]);
+        parent["pkgs"].push_back(node);
+      } catch (std::exception const& exc) {
+        ERROR("failed to read data for " + pkg.path().string() + ", " +
+              std::string(exc.what()));
         continue;
-      }
-
-      auto archive_manager = ArchiveManager::create(package_type);
-      if (archive_manager == nullptr) {
-        ERROR("Error! no supported archive manager for package type '"
-              << PACKAGE_TYPE_STR[PACKAGE_TYPE_INT(package_type)] << "'");
-        continue;
-      }
-
-      auto package_info = archive_manager->info(pkg.path().c_str());
-      if (package_info == nullptr) {
-        ERROR("Error! failed to read package information from '"
-              << pkg.path() << "', " << archive_manager->error());
-        continue;
-      }
-      auto iter = pkgs.find(package_info->id());
-      if (iter == pkgs.end()) {
-        pkgs[package_info->id()] = package_info;
-      } else {
-        auto u = utils::get_version(package_info->version());
-        auto v = utils::get_version(pkgs[package_info->id()]->version());
-        if (u > v) {
-          pkgs[package_info->id()] = package_info;
-        }
       }
     }
-    for (auto const& i : pkgs) {
-      i.second->dump(file, true);
-    }
+    file << parent;
     file.close();
   }
 

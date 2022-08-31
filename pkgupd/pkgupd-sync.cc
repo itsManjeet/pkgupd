@@ -29,7 +29,7 @@ PKGUPD_MODULE(sync) {
   bool status = true;
   for (auto const& repo : repos) {
     PROCESS("syncing " << repo);
-    if (!downloader->get((repo + "/meta").c_str(), (repo_dir / repo).c_str())) {
+    if (!downloader->get((repo + "/info").c_str(), (repo_dir / repo).c_str())) {
       status = false;
       ERROR(downloader->error());
     }

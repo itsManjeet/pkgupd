@@ -23,9 +23,10 @@ PKGUPD_MODULE(regenerate) {
       }
       files_writer.close();
 
-      package_info->node().remove("files");
+      auto node = package_info->node();
+      node.remove("files");
       std::ofstream info_writer(package_info_file);
-      info_writer << package_info->node() << std::flush;
+      info_writer << node << std::flush;
       info_writer.close();
     }
   }

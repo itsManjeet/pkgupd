@@ -22,7 +22,7 @@ class Group {
 
   bool create() const;
 
-  void dump(std::ostream &os, std::string prefix = "") const;
+  void dump(std::ostream &os) const;
 };
 }  // namespace rlxos::libpkgupd
 

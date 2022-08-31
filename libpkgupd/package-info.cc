@@ -17,50 +17,50 @@ PackageInfo::PackageInfo(YAML::Node const& data, std::string const& file) {
   m_Node = data;
 }
 
-void PackageInfo::dump(std::ostream& os, bool as_meta) const {
-  auto prefix = as_meta ? "    " : "";
-  if (as_meta) {
-    os << "  - id: " << m_ID << "\n";
-  } else {
-    os << "id: " << m_ID << "\n";
-  }
+void PackageInfo::dump(std::ostream& os) const {
+  os << "id: " << m_ID << "\n";
 
-  os << prefix << "version: " << m_Version << "\n"
-     << prefix << "about: " << m_About << "\n";
+  os << "version: " << m_Version << "\n"
+     << "about: " << m_About << "\n";
 
-  os << prefix << "repository: " << m_Repository << "\n";
+  os << "repository: " << m_Repository << "\n";
 
-  os << prefix << "type: " << PACKAGE_TYPE_ID[PACKAGE_TYPE_INT(m_PackageType)]
-     << '\n';
+  os << "type: " << PACKAGE_TYPE_ID[PACKAGE_TYPE_INT(m_PackageType)] << '\n';
 
   if (m_Depends.size()) {
-    os << prefix << "depends:"
+    os << "depends:"
        << "\n";
-    for (auto const& i : m_Depends) os << prefix << " - " << i << "\n";
+    for (auto const& i : m_Depends) os << " - " << i << "\n";
   }
 
   if (m_Backup.size()) {
-    os << prefix << "backup:"
+    os << "backup:"
        << "\n";
-    for (auto const& i : m_Backup) os << prefix << " - " << i << "\n";
+    for (auto const& i : m_Backup) os << " - " << i << "\n";
   }
 
   if (m_Users.size()) {
-    os << prefix << "users: " << std::endl;
+    os << "users: " << std::endl;
     for (auto const& i : m_Users) {
-      i.dump(os, prefix);
+      i.dump(os);
     }
   }
 
   if (m_Groups.size()) {
-    os << prefix << "groups: " << std::endl;
+    os << "groups: " << std::endl;
     for (auto const& i : m_Groups) {
-      i.dump(os, prefix);
+      i.dump(os);
     }
   }
 
   if (m_Script.size()) {
-    os << prefix << "script: \"" << m_Script << "\"" << std::endl;
+    os << "script: |\n";
+    std::stringstream ss(m_Script);
+    std::string line;
+    while (std::getline(ss, line)) {
+      os << "  " << line << '\n';
+    }
+    os << std::endl;
   }
 
   if (m_Node["extra"]) {

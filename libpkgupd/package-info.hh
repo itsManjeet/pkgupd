@@ -130,7 +130,7 @@ class PackageInfo {
   void setDependency() { m_IsDependency = true; }
   void unsetDependency() { m_IsDependency = false; }
 
-  void dump(std::ostream& os, bool as_meta = false) const;
+  void dump(std::ostream& os) const;
 };
 
 }  // namespace rlxos::libpkgupd

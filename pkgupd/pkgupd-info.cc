@@ -3,6 +3,7 @@
 #include "../libpkgupd/system-database.hh"
 using namespace rlxos::libpkgupd;
 
+#include <fstream>
 #include <iostream>
 using namespace std;
 
@@ -46,6 +47,17 @@ PKGUPD_MODULE(info) {
       return 2;
     }
     package = archive_pkg.get();
+    std::string output_file = config->get<std::string>("info.dump", "");
+    if (output_file.size()) {
+      std::ofstream output_writer(output_file);
+      if (!output_writer.is_open()) {
+        ERROR("failed to open dump file for writing");
+        return 2;
+      }
+      package->dump(output_writer);
+      output_writer.close();
+      return 0;
+    }
   } else {
     package = system_database->get(package_id.c_str());
   }
