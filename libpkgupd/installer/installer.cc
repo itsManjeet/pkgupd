@@ -24,7 +24,8 @@ std::shared_ptr<Installer::Injector> Installer::Injector::create(
 bool Installer::install(
     std::vector<std::pair<std::string, PackageInfo*>> const& pkgs,
     SystemDatabase* sys_db) {
-  std::vector<InstalledPackageInfo*> packages;
+  std::vector<std::pair<InstalledPackageInfo*, std::vector<std::string>>>
+      packages;
 
   std::filesystem::path root_dir =
       mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
@@ -115,25 +116,31 @@ bool Installer::install(
     auto old_package_info = sys_db->get(package_info->id().c_str());
     if (old_package_info != nullptr) {
       is_dependency = old_package_info->isDependency();
-      PROCESS("cleaning old packages")
-      auto old_files = old_package_info->files();
-      for (auto i = old_files.rbegin(); i != old_files.rend(); ++i) {
-        std::string file = *i;
-        if (file.length()) {
-          file = file.substr(2);
-        }
-        if (std::filesystem::exists(root_dir / file) &&
-            std::find(files.begin(), files.end(), "./" + file) == files.end()) {
-          if (file.find("./bin", 0) == 0 || file.find("./lib", 0) == 0 ||
-              file.find("./sbin", 0) == 0) {
-            continue;
+
+      std::vector<std::string> old_files;
+      if (sys_db->get_files(
+              dynamic_cast<InstalledPackageInfo*>(package_info.get()),
+              old_files)) {
+        PROCESS("cleaning old packages")
+        for (auto i = old_files.rbegin(); i != old_files.rend(); ++i) {
+          std::string file = *i;
+          if (file.length()) {
+            file = file.substr(2);
           }
+          if (std::filesystem::exists(root_dir / file) &&
+              std::find(files.begin(), files.end(), "./" + file) ==
+                  files.end()) {
+            if (file.find("./bin", 0) == 0 || file.find("./lib", 0) == 0 ||
+                file.find("./sbin", 0) == 0) {
+              continue;
+            }
 
-          std::error_code error;
+            std::error_code error;
 
-          DEBUG("removing " << root_dir / file)
-          std::filesystem::remove(root_dir / file, error);
-          if (error) ERROR("failed to remove " << file);
+            DEBUG("removing " << root_dir / file)
+            std::filesystem::remove(root_dir / file, error);
+            if (error) ERROR("failed to remove " << file);
+          }
         }
       }
     }
@@ -143,12 +150,11 @@ bool Installer::install(
                     mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR),
                     false, is_dependency);
     if (installed_package_info == nullptr) {
-      p_Error = "failed to register '" + package_info->id() + "', " +
-                sys_db->error();
+      p_Error =
+          "failed to register '" + package_info->id() + "', " + sys_db->error();
       return false;
     }
-    packages.push_back(installed_package_info);
-
+    packages.push_back({installed_package_info, files});
   }
 
   if (!mConfig->get("installer.triggers", true)) {

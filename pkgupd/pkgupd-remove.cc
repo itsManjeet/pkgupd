@@ -55,7 +55,12 @@ PKGUPD_MODULE(remove) {
 
   if (!config->get(SKIP_TRIGGERS, false)) {
     auto triggerer = std::make_shared<Triggerer>();
-    if (!triggerer->trigger({pkg_info})) {
+    std::vector<std::string> files;
+    system_database.get_files(pkg_info, files);
+    if (!triggerer->trigger(
+            std::vector<
+                std::pair<InstalledPackageInfo*, std::vector<std::string>>>{
+                {pkg_info, files}})) {
       ERROR("failed to execute post removal triggers '" << triggerer->error());
       return 1;
     }

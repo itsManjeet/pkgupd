@@ -39,7 +39,8 @@ class Triggerer : public Object {
  public:
   Triggerer() {}
 
-  bool trigger(std::vector<InstalledPackageInfo *> const& infos);
+  bool trigger(std::vector<std::pair<InstalledPackageInfo *,
+                                     std::vector<std::string>>> const &infos);
 
   bool trigger();
 };

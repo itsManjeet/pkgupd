@@ -15,9 +15,6 @@ InstalledPackageInfo::InstalledPackageInfo(YAML::Node const &data,
                                            char const *file)
     : PackageInfo(data, file) {
   READ_VALUE(std::string, "installed_on", mInstalledon);
-  
-  if (data["files"]) mFiles.reserve(data["files"].size());
-  READ_LIST(std::string, "files", mFiles);
   OPTIONAL_VALUE(bool, "is-dependency", m_IsDependency, false);
 }
 
@@ -35,6 +32,30 @@ bool SystemDatabase::init() {
       std::cerr << "failed to load: " << exception.what() << std::endl;
     }
   }
+  return true;
+}
+
+bool SystemDatabase::get_files(InstalledPackageInfo *packageInfo,
+                               std::vector<std::string> &files) {
+  auto files_path =
+      std::filesystem::path(data_dir) / (packageInfo->id() + ".files");
+  if (!std::filesystem::exists(files_path)) {
+    p_Error = "no files data exists for " + packageInfo->id() + " at " +
+              files_path.string();
+    return false;
+  }
+
+  std::ifstream reader(files_path.string());
+  if (!reader.good()) {
+    p_Error = "failed to read files data " + files_path.string();
+    return false;
+  }
+
+  std::string filepath;
+  while (std::getline(reader, filepath)) {
+    files.push_back(filepath);
+  }
+
   return true;
 }
 
@@ -85,8 +106,12 @@ InstalledPackageInfo *SystemDatabase::add(PackageInfo *pkginfo,
 
   file.close();
 
-  mPackages[pkginfo->id()] =
-      std::make_unique<InstalledPackageInfo>(pkginfo, files);
+  mPackages[pkginfo->id()] = std::make_unique<InstalledPackageInfo>(pkginfo);
+  std::ofstream files_writer(data_file.string() + ".files");
+  for (auto const &i : files) {
+    files_writer << i << std::endl;
+  }
+  files_writer.close();
 
   return mPackages[pkginfo->id()].get();
 }

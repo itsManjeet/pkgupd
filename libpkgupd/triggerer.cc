@@ -231,11 +231,13 @@ std::vector<Triggerer::type> Triggerer::_get(
   return requiredTriggers;
 }
 
-bool Triggerer::trigger(std::vector<InstalledPackageInfo *> const &infos) {
+bool Triggerer::trigger(
+    std::vector<std::pair<InstalledPackageInfo *,
+                          std::vector<std::string>>> const &infos) {
   bool status = true;
   std::vector<Triggerer::type> triggers;
   for (auto const &info : infos) {
-    for (auto const &grp : info->groups()) {
+    for (auto const &grp : info.first->groups()) {
       if (!grp.exists()) {
         PROCESS("creating group " + grp.name());
         if (!grp.create()) {
@@ -243,7 +245,7 @@ bool Triggerer::trigger(std::vector<InstalledPackageInfo *> const &infos) {
         }
       }
     }
-    for (auto const &usr : info->users()) {
+    for (auto const &usr : info.first->users()) {
       if (!usr.exists()) {
         PROCESS("creating user " + usr.name());
         if (!usr.create()) {
@@ -252,14 +254,14 @@ bool Triggerer::trigger(std::vector<InstalledPackageInfo *> const &infos) {
       }
     }
 
-    if (info->script().length()) {
-      int status = Executor::execute(info->script(), ".",
-                                     {"VERSION=" + info->version()});
+    if (info.first->script().length()) {
+      int status = Executor::execute(info.first->script(), ".",
+                                     {"VERSION=" + info.first->version()});
       if (status != 0) {
         ERROR("failed to execute script");
       }
     }
-    auto requiredTriggers = _get(info->files());
+    auto requiredTriggers = _get(info.second);
     for (auto i : requiredTriggers) {
       if (std::find(triggers.begin(), triggers.end(), i) == triggers.end()) {
         triggers.push_back(i);

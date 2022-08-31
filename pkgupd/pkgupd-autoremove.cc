@@ -28,13 +28,16 @@ PKGUPD_MODULE(autoremove) {
   };
 
   PROCESS("checking for unneeded packages");
-  std::vector<InstalledPackageInfo*> packages_to_remove;
+  std::vector<std::pair<InstalledPackageInfo*, std::vector<std::string>>>
+      packages_to_remove;
   for (auto const& i : system_database.get()) {
     if (!i.second->isDependency()) {
       continue;
     }
     if (!is_required(i.first)) {
-      packages_to_remove.push_back(i.second.get());
+      std::vector<std::string> files;
+      system_database.get_files(i.second.get(), files);
+      packages_to_remove.push_back({i.second.get(), files});
     }
   }
 
@@ -46,7 +49,7 @@ PKGUPD_MODULE(autoremove) {
   INFO("Found " << BLUE(to_string(packages_to_remove.size()))
                 << " unneeded packages");
   for (auto const& i : packages_to_remove) {
-    std::cout << "- " << i->id() << std::endl;
+    std::cout << "- " << i.first->id() << std::endl;
   }
 
   if (!ask_user("You you want to remove the above unneeded packages", config)) {
@@ -56,9 +59,10 @@ PKGUPD_MODULE(autoremove) {
 
   auto uninstaller = Uninstaller(config);
   for (auto const& i : packages_to_remove) {
-    PROCESS("uninstalling " << BLUE(i->id()));
-    if (!uninstaller.uninstall(i, &system_database)) {
-      ERROR("failed to remove " << i->id() << ", " << uninstaller.error());
+    PROCESS("uninstalling " << BLUE(i.first->id()));
+    if (!uninstaller.uninstall(i.first, &system_database)) {
+      ERROR("failed to remove " << i.first->id() << ", "
+                                << uninstaller.error());
     }
   }
 

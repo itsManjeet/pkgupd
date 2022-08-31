@@ -9,19 +9,13 @@ namespace rlxos::libpkgupd {
 
 class InstalledPackageInfo : public PackageInfo {
  private:
-  std::vector<std::string> mFiles;
   std::string mInstalledon;
 
  public:
-  InstalledPackageInfo(PackageInfo *pkginfo,
-                       std::vector<std::string> const &files)
-      : PackageInfo{*pkginfo}, mFiles{files} {}
+  InstalledPackageInfo(PackageInfo *pkginfo) : PackageInfo{*pkginfo} {}
 
   InstalledPackageInfo(YAML::Node const &node, char const *file);
 
-  std::vector<std::string> const &files() const {
-    return mFiles;
-  };
   std::string const &installed_on() const { return mInstalledon; }
 };
 
@@ -45,6 +39,9 @@ class SystemDatabase : public Object {
     return mPackages;
   }
 
+  bool get_files(InstalledPackageInfo *packageInfo,
+                 std::vector<std::string> &files);
+
   InstalledPackageInfo *get(char const *id);
 
   InstalledPackageInfo *add(PackageInfo *pkginfo,
@@ -52,7 +49,7 @@ class SystemDatabase : public Object {
                             std::string root, bool update = false,
                             bool is_dependency = false);
 
-  bool remove(char const* id);
+  bool remove(char const *id);
 };
 }  // namespace rlxos::libpkgupd
 

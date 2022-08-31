@@ -123,6 +123,8 @@ class PackageInfo {
 
   YAML::Node const& node() const { return m_Node; }
 
+  YAML::Node& node() { return m_Node; }
+
   bool isDependency() const { return m_IsDependency; }
 
   void setDependency() { m_IsDependency = true; }

@@ -11,9 +11,12 @@ PKGUPD_MODULE_HELP(trigger) {
 PKGUPD_MODULE(trigger) {
   auto triggerer = std::make_shared<Triggerer>();
   auto system_database = std::make_shared<SystemDatabase>(config);
-  std::vector<InstalledPackageInfo*> packages;
+  std::vector<std::pair<InstalledPackageInfo*, std::vector<std::string>>>
+      packages;
   for (auto const& i : system_database->get()) {
-    packages.push_back(i.second.get());
+    std::vector<std::string> files;
+    system_database->get_files(i.second.get(), files);
+    packages.push_back({i.second.get(), files});
   }
   if (!triggerer->trigger(packages)) {
     cerr << "Error! " << triggerer->error() << endl;

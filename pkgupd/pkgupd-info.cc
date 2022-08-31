@@ -58,7 +58,7 @@ PKGUPD_MODULE(info) {
     ERROR("Error! no package found with id '" + package_id + "'");
     return 2;
   }
-
+  std::vector<std::string> files;
   string info_value = config->get<string>("info.value", "");
   if (info_value.length() == 0) {
     cout << BLUE("Name") << "         :   " << GREEN(package->id()) << '\n'
@@ -71,13 +71,14 @@ PKGUPD_MODULE(info) {
 
 #define INSTALLED(in) dynamic_cast<InstalledPackageInfo*>(in)
 
-    auto installed_info =
-        dynamic_cast<InstalledPackageInfo*>(package);
+    auto installed_info = dynamic_cast<InstalledPackageInfo*>(package);
+
     if (installed_info != nullptr) {
+      system_database->get_files(installed_info, files);
       cout << BLUE("Installed") << "    :   "
            << GREEN(installed_info->installed_on()) << '\n'
-           << BLUE("Files") << "        :   "
-           << BOLD(to_string(installed_info->files().size())) << endl;
+           << BLUE("Files") << "        :   " << BOLD(to_string(files.size()))
+           << endl;
       cout << BLUE("Dependency") << "   :   "
            << BOLD((installed_info->isDependency() ? "true" : "false"))
            << std::endl;
@@ -101,16 +102,17 @@ PKGUPD_MODULE(info) {
                    : INSTALLED(package)->installed_on());
     } else if (info_value == "files") {
       if (INSTALLED(package) != nullptr) {
-        for (auto const& i : INSTALLED(package)->files()) {
+        for (auto const& i : files) {
           cout << i << endl;
         }
       }
     } else if (info_value == "files.count") {
       if (INSTALLED(package) != nullptr) {
-        cout << INSTALLED(package)->files().size();
+        cout << files.size();
       }
     } else if (info_value == "package") {
-      cout << config->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR) + "/" + package->repository() + "/" + PACKAGE_FILE(package);
+      cout << config->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR) + "/" +
+                  package->repository() + "/" + PACKAGE_FILE(package);
     }
 
     cout << endl;
