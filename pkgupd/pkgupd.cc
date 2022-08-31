@@ -21,7 +21,8 @@ using namespace rlxos::libpkgupd;
   X(run)                    \
   X(cleanup)                \
   X(watchdog)               \
-  X(autoremove)
+  X(autoremove)             \
+  X(regenerate)
 
 #include <functional>
 #include <iostream>
@@ -125,10 +126,10 @@ int main(int argc, char** argv) {
 
   auto config = Configuration::create(node);
   // try {
-    return iter->second(args, config.get());
+  return iter->second(args, config.get());
   // } catch (std::exception const& err) {
-    // cerr << "Error! failed to perfrom task, unhandled exception " << err.what()
-    //      << endl;
-    return 1;
+  // cerr << "Error! failed to perfrom task, unhandled exception " << err.what()
+  //      << endl;
+  return 1;
   // }
 }
