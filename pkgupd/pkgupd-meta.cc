@@ -40,12 +40,13 @@ PKGUPD_MODULE(meta) {
       if (!(pkg.path().has_extension() && pkg.path().extension() == ".meta")) {
         continue;
       }
+      std::string packagePath = pkg.path().string();
       try {
-        YAML::Node node = YAML::LoadFile(pkg.path());
+        YAML::Node node = YAML::LoadFile(packagePath);
         INFO("adding " << node["id"] << " " << node["version"]);
         parent["pkgs"].push_back(node);
       } catch (std::exception const& exc) {
-        ERROR("failed to read data for " + pkg.path().string() + ", " +
+        ERROR("failed to read data for " + packagePath + ", " +
               std::string(exc.what()));
         continue;
       }

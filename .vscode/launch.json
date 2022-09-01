@@ -5,19 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "System Image Debug",
+            "name": "DEBUG",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/pkgupd",
             "args": [
-                "build", "${workspaceFolder}/tests/rlxos-core.yml",
-                "dir.root=${workspaceFolder}/build/root/",
-                "dir.data=${workspaceFolder}/build/data/",
-                "dir.pkgs=${workspaceFolder}/build/pkgs/",
-                "dir.cache=${workspaceFolder}/build/cache",
-                "dir.repo=${workspaceFolder}/build/repo/",
-                "mirors=https://storage.rlxos.dev/testing",
-                "force=true"
+                "info", "/storage/testing/2200/pkgs/system/barebone-2200-3.pkg"
+                // "dir.root=${workspaceFolder}/build/root/",
+                // "dir.data=${workspaceFolder}/build/data/",
+                // "dir.pkgs=${workspaceFolder}/build/pkgs/",
+                // "dir.cache=${workspaceFolder}/build/cache",
+                // "dir.repo=${workspaceFolder}/build/repo/",
+                // "mirors=https://storage.rlxos.dev/testing",
+                // "force=true"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
