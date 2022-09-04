@@ -78,7 +78,7 @@ bool System::compile(Recipe* recipe, Configuration* config, std::string dir,
       }
     }
 
-    for (auto const& service : recipe->node()["service.system"]) {
+    for (auto const& service : recipe->node()["service.user"]) {
       INFO("enabling user service");
       if (Executor::execute("systemctl enable --global " +
                             service.as<std::string>()) != 0) {
