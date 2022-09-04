@@ -190,9 +190,10 @@ bool Builder::build(Recipe *recipe, SystemDatabase *systemDatabase,
     }
     auto config = Configuration(*mConfig);
     std::string local_roots = pkgdir;
-    std::string local_datapath = recipe->get<std::string>(
-        "include.path",
-        (pkgdir / "usr" / "share" / recipe->id() / "included").string());
+    std::string local_datapath =
+        pkgdir / recipe->get<std::string>(
+                     "include.path",
+                     std::string("usr/share/") + recipe->id() + "/included");
 
     config.node()[DIR_ROOT] = local_roots;
     config.node()[DIR_DATA] = local_datapath;
