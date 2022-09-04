@@ -118,9 +118,7 @@ bool Installer::install(
       is_dependency = old_package_info->isDependency();
 
       std::vector<std::string> old_files;
-      if (sys_db->get_files(
-              dynamic_cast<InstalledPackageInfo*>(package_info.get()),
-              old_files)) {
+      if (sys_db->get_files(old_package_info, old_files)) {
         PROCESS("cleaning old packages")
         for (auto i = old_files.rbegin(); i != old_files.rend(); ++i) {
           std::string file = *i;
