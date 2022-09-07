@@ -34,7 +34,7 @@ PKGUPD_MODULE(info) {
   if (filesystem::exists(package_id) &&
       filesystem::path(package_id).has_extension()) {
     auto ext = filesystem::path(package_id).extension().string().substr(1);
-    if (ext == ".yml") {
+    if (ext == "yml") {
       recipe = std::make_unique<Recipe>(
           YAML::LoadFile(package_id), package_id,
           config->get<std::string>("set-repository", ""));
