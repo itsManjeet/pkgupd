@@ -1,4 +1,5 @@
 #include "../libpkgupd/archive-manager/archive-manager.hh"
+#include "../libpkgupd/recipe.hh"
 #include "../libpkgupd/repository.hh"
 #include "../libpkgupd/system-database.hh"
 using namespace rlxos::libpkgupd;
@@ -27,36 +28,33 @@ PKGUPD_MODULE(info) {
 
   auto package_id = args[0];
   PackageInfo* package;
+  std::unique_ptr<Recipe> recipe;
   std::shared_ptr<PackageInfo> archive_pkg;
 
   if (filesystem::exists(package_id) &&
       filesystem::path(package_id).has_extension()) {
     auto ext = filesystem::path(package_id).extension().string().substr(1);
-    auto archive_manager =
-        ArchiveManager::create(PACKAGE_TYPE_FROM_STR(ext.c_str()));
-    if (archive_manager == nullptr) {
-      ERROR("Invalid package format, no supported archive manager for '" + ext +
-            "'");
-      return 1;
-    }
-    archive_pkg = archive_manager->info(package_id.c_str());
+    if (ext == ".yml") {
+      recipe = std::make_unique<Recipe>(
+          YAML::LoadFile(package_id), package_id,
+          config->get<std::string>("set-repository", ""));
+      package = recipe->packages()[0].get();
+    } else {
+      auto archive_manager =
+          ArchiveManager::create(PACKAGE_TYPE_FROM_STR(ext.c_str()));
+      if (archive_manager == nullptr) {
+        ERROR("Invalid package format, no supported archive manager for '" +
+              ext + "'");
+        return 1;
+      }
+      archive_pkg = archive_manager->info(package_id.c_str());
 
-    if (package == nullptr) {
-      ERROR("failed to read information file from '" + package_id + "', "
-            << archive_manager->error());
-      return 2;
-    }
-    package = archive_pkg.get();
-    std::string output_file = config->get<std::string>("info.dump", "");
-    if (output_file.size()) {
-      std::ofstream output_writer(output_file);
-      if (!output_writer.is_open()) {
-        ERROR("failed to open dump file for writing");
+      if (package == nullptr) {
+        ERROR("failed to read information file from '" + package_id + "', "
+              << archive_manager->error());
         return 2;
       }
-      package->dump(output_writer);
-      output_writer.close();
-      return 0;
+      package = archive_pkg.get();
     }
   } else {
     package = system_database->get(package_id.c_str());
@@ -65,11 +63,23 @@ PKGUPD_MODULE(info) {
   if (package == nullptr) {
     package = repository->get(package_id.c_str());
   }
-
   if (package == nullptr) {
     ERROR("Error! no package found with id '" + package_id + "'");
     return 2;
   }
+
+  std::string output_file = config->get<std::string>("info.dump", "");
+  if (output_file.size()) {
+    std::ofstream output_writer(output_file);
+    if (!output_writer.is_open()) {
+      ERROR("failed to open dump file for writing");
+      return 2;
+    }
+    package->dump(output_writer);
+    output_writer.close();
+    return 0;
+  }
+
   std::vector<std::string> files;
   string info_value = config->get<string>("info.value", "");
   if (info_value.length() == 0) {
