@@ -32,7 +32,9 @@ bool System::compile(Recipe* recipe, Configuration* config, std::string dir,
 
     if (recipe->get<bool>("inside.pkgupd.trigger", true)) {
       INFO("triggering pkgupd");
-      if (Executor::execute("pkgupd trigger dir.data=/usr/share/" +
+      if (Executor::execute("pkgupd trigger dir.data=" +
+                            recipe->get<std::string>("inside.pkgupd.data",
+                                                     "/var/lib/pkgupd/data") +
                             recipe->id() + "/included") != 0) {
         exit(EXIT_FAILURE);
       }
