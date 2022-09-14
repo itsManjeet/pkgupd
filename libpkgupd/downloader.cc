@@ -85,6 +85,7 @@ bool Downloader::download(char const *url, char const *outfile) {
   }
   curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1000);
   curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 10);
+  
 
   res = curl_easy_perform(curl);
 
@@ -124,6 +125,7 @@ bool Downloader::valid(char const *url) {
   curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
   curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1000);
   curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 10);
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, mConfig->get<bool>("downloader.ssl.verify", true) ? 1L : 0L);
 
   resp = curl_easy_perform(curl);
 
