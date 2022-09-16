@@ -29,11 +29,11 @@ int progress_func(void *ptr, double TotalToDownload, double NowDownloaded,
   printf("%3.0f%% ", fractiondownloaded * 100);
   // part  that's full already
   for (; ii < dotz; ii++) {
-    printf("\033[32;1m▰\033[0m");
+    printf("\033[32;1m▬\033[0m");
   }
   // remaining part (spaces)
   for (; ii < totaldotz; ii++) {
-    printf("\033[1m▱\033[0m");
+    printf("\033[1m▬\033[0m");
   }
   // and back to line begin - do not forget the fflush to avoid output buffering
   // problems!
@@ -49,7 +49,7 @@ bool Downloader::download(char const *url, char const *outfile) {
   CURLcode res;
   FILE *fptr;
 
-  DEBUG("download " << url);
+  DEBUG("GET      " << url);
 
   curl = curl_easy_init();
   if (!curl) {
@@ -85,8 +85,8 @@ bool Downloader::download(char const *url, char const *outfile) {
   }
   curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1000);
   curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 10);
-  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, mConfig->get<bool>("downloader.ssl.verify", true) ? 1L : 0L);
-  
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER,
+                   mConfig->get<bool>("downloader.ssl.verify", true) ? 1L : 0L);
 
   res = curl_easy_perform(curl);
 
@@ -112,6 +112,8 @@ bool Downloader::valid(char const *url) {
   CURL *curl;
   CURLcode resp;
 
+  DEBUG("CHECKING " << url);
+
   curl = curl_easy_init();
   if (!curl) {
     p_Error = "failed to initialize curl";
@@ -126,7 +128,8 @@ bool Downloader::valid(char const *url) {
   curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
   curl_easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, 1000);
   curl_easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, 10);
-  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, mConfig->get<bool>("downloader.ssl.verify", true) ? 1L : 0L);
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER,
+                   mConfig->get<bool>("downloader.ssl.verify", true) ? 1L : 0L);
 
   resp = curl_easy_perform(curl);
 
@@ -154,13 +157,15 @@ bool Downloader::get(char const *file, char const *outdir) {
   for (auto const &mirror : mirrors) {
     std::string fileurl = mirror + version_part + "/pkgs/" + file;
 
-    DEBUG("GET " << fileurl)
-    if (!getenv("NO_CURL_CHECK"))
-      if (!valid(fileurl.c_str())) continue;
+    if (mConfig->get("downloader.check", true)) {
+      if (!valid(fileurl.c_str())) {
+        DEBUG("VERIFICATION FAILED " << p_Error);
+        continue;
+      }
+    }
 
     return download(fileurl.c_str(), outdir);
   }
-
   p_Error = string(file) + " is missing on server";
 
   return false;

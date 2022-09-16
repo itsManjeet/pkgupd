@@ -23,13 +23,15 @@ PKGUPD_MODULE(meta) {
   }
 
   for (auto const& i : repos) {
-    PROCESS("generating meta information for " << GREEN(i));
+    PROCESS("Generating meta information for " << GREEN(i));
     auto repo_path = pkgs_dir / i;
     if (!filesystem::exists(repo_path)) {
       ERROR("Error! '" << repo_path << "' not exists for " << i);
       return 1;
     }
-    std::ofstream file(repo_path / "info");
+    std::string datafile = config->get<std::string>("server.stability", "stable");
+    DEBUG("STABILITY " << datafile);
+    std::ofstream file(repo_path / datafile);
     if (!file.is_open()) {
       ERROR("failed to open " << repo_path);
       return 1;

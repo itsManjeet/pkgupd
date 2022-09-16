@@ -42,11 +42,11 @@ std::shared_ptr<Configuration> Configuration::create(YAML::Node node) {
 
   SET_DEFAULT_VALUE("repos",
                     (std::vector<std::string>{"core", "extra", "apps"}));
-  SET_DEFAULT_VALUE(
-      "mirrors",
-      (std::vector<std::string>{"https://storage.rlxos.dev/stable"}));
+  SET_DEFAULT_VALUE("mirrors",
+                    (std::vector<std::string>{"https://storage.rlxos.dev/"}));
 
-  if (node["debug"].as<bool>()) std::cout << "Configuration:\n" << node << std::endl;
+  if (node["debug"].as<bool>())
+    std::cout << "Configuration:\n" << node << std::endl;
 
   return std::make_shared<Configuration>(node);
 }

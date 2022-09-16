@@ -28,8 +28,12 @@ PKGUPD_MODULE(sync) {
   }
   bool status = true;
   for (auto const& repo : repos) {
-    PROCESS("syncing " << repo);
-    if (!downloader->get((repo + "/info").c_str(), (repo_dir / repo).c_str())) {
+    PROCESS("SYCING " << repo);
+    std::string datafile =
+        config->get<std::string>("server.stability", "stable");
+    DEBUG("STABILITY " << datafile);
+    if (!downloader->get((repo + "/" + datafile).c_str(),
+                         (repo_dir / repo).c_str())) {
       status = false;
       ERROR(downloader->error());
     }

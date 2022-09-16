@@ -21,7 +21,17 @@ InstalledPackageInfo::InstalledPackageInfo(YAML::Node const &data,
 bool SystemDatabase::init() {
   mPackages.clear();
 
-  PROCESS("reading system database");
+  PROCESS("Reading System Database");
+  DEBUG("LOCATION " << data_dir);
+
+  if (!std::filesystem::exists(data_dir)) {
+    std::error_code error;
+    std::filesystem::create_directories(data_dir, error);
+    if (error) {
+      p_Error = "Failed to create missing database directory " + data_dir;
+      return false;
+    }
+  }
   for (auto const &file : std::filesystem::directory_iterator(data_dir)) {
     if (file.path().has_extension()) continue;
     try {
@@ -32,6 +42,7 @@ bool SystemDatabase::init() {
       std::cerr << "failed to load: " << exception.what() << std::endl;
     }
   }
+  DEBUG("DATABASE SIZE " << mPackages.size());
   return true;
 }
 
