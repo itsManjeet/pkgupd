@@ -329,7 +329,7 @@ bool Builder::build(Recipe *recipe, SystemDatabase *systemDatabase,
         return false;
       }
 
-      fs::copy(srcfile_Path, destfile_Path, fs::copy_options::copy_symlinks,
+      fs::copy(srcfile_Path, destfile_Path, fs::copy_options::copy_symlinks | fs::copy_options::overwrite_existing | fs::copy_options::recursive,
                err);
       if (err) {
         p_Error = "failed to copy file " + file + " " + err.message();
