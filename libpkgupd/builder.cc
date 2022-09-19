@@ -336,7 +336,7 @@ bool Builder::build(Recipe *recipe, SystemDatabase *systemDatabase,
         return false;
       }
 
-      fs::remove(srcfile_Path, err);
+      fs::remove_all(srcfile_Path, err);
       if (err) {
         p_Error = "failed to clean split file " + file + " " + err.message();
         return false;
