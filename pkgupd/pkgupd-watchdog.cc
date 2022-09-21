@@ -1,3 +1,5 @@
+#include <appimage/appimage++.h>
+
 #include "../libpkgupd/common.hh"
 #include "../libpkgupd/configuration.hh"
 #include "../libpkgupd/installer/appimage-installer/appimage-installer.hh"
@@ -56,7 +58,9 @@ class Watcher {
 
       for (auto& file : std::filesystem::directory_iterator(mPath)) {
         if (!(file.is_regular_file() && file.path().has_extension() &&
-              file.path().extension() == ".app")) {
+                  file.path().extension() == ".app" ||
+              file.path().extension() == ".AppImage") ||
+            file.path().extension() == ".appimage") {
           continue;
         }
         auto curfileWriteTime = std::filesystem::last_write_time(file);
@@ -101,6 +105,7 @@ PKGUPD_MODULE(watchdog) {
   }
 
   AppImageInstaller installer(config);
+  appimage::desktop_integration::IntegrationManager legacyAppImageInstaller;
 
   Watcher watcher(path, std::chrono::milliseconds(1000));
   watcher.start([&](std::string path, Status status) -> void {
@@ -152,21 +157,38 @@ PKGUPD_MODULE(watchdog) {
             "Installing " + std::filesystem::path(path).filename().string(),
             "integrating " + path + " into " + app_data.string());
         INFO("intergrating " << path);
-        std::vector<std::string> files;
-        if (!installer.intergrate(
-                path.c_str(), files,
-                [&](mINI::INIStructure& desktopFile) -> void {
-                  auto oldAction = desktopFile["Desktop Entry"]["Actions"];
 
-                  desktopFile["Desktop Entry"]["Actions"] += "Uninstall;";
-                  desktopFile["Desktop Action Uninstall"]["Name"] = "Uninstall";
-                  desktopFile["Desktop Action Uninstall"]["Exec"] = "pkgupd-app-remove " + path;
-                })) {
-          push_notification("Integration failed for " +
-                                std::filesystem::path(path).filename().string(),
-                            "Got error " + installer.error());
-          ERROR("failed to integrate " << path);
-          return;
+        std::vector<std::string> files;
+        auto ext = std::filesystem::path(path).extension();
+        if (ext == ".app") {
+          if (!installer.intergrate(
+                  path.c_str(), files,
+                  [&](mINI::INIStructure& desktopFile) -> void {
+                    auto oldAction = desktopFile["Desktop Entry"]["Actions"];
+
+                    desktopFile["Desktop Entry"]["Actions"] += "Uninstall;";
+                    desktopFile["Desktop Action Uninstall"]["Name"] =
+                        "Uninstall";
+                    desktopFile["Desktop Action Uninstall"]["Exec"] =
+                        "pkgupd-app-remove " + path;
+                  })) {
+            push_notification(
+                "Integration failed for " +
+                    std::filesystem::path(path).filename().string(),
+                "Got error " + installer.error());
+            ERROR("failed to integrate " << path);
+            return;
+          }
+        } else {
+          try {
+            appimage::core::AppImage appImage(path);
+            legacyAppImageInstaller.registerAppImage(appImage);
+          } catch (std::exception const& exception) {
+            push_notification(
+                "Integration failed for LEGACY AppImage " +
+                    std::filesystem::path(path).filename().string(),
+                "Got error " + std::string(exception.what()));
+          }
         }
 
         std::ofstream outfile(file_datapath);
@@ -191,12 +213,21 @@ PKGUPD_MODULE(watchdog) {
         push_notification(
             "removing " + std::filesystem::path(path).filename().string(),
             "clearing data from " + app_data.string());
-        INFO("removing " << path);
-        if (std::filesystem::exists(file_datapath)) {
-          cleanup(file_datapath);
+        if (std::filesystem::path(path).extension() == ".app") {
+          INFO("removing " << path);
+          if (std::filesystem::exists(file_datapath)) {
+            cleanup(file_datapath);
+          }
+          Executor::execute("update-desktop-database " +
+                            (app_data / "applications").string());
+        } else {
+          try {
+            legacyAppImageInstaller.unregisterAppImage(path);
+          } catch (std::exception const& exc) {
+            push_notification("LEGCAY appimage unregisterating failed",
+                              std::string(exc.what()));
+          }
         }
-        Executor::execute("update-desktop-database " +
-                          (app_data / "applications").string());
       }
     }
   });
