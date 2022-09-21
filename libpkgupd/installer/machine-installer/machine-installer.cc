@@ -27,7 +27,7 @@ std::shared_ptr<PackageInfo> MachineInstaller::inject(
 
   std::filesystem::path machine_path =
       mConfig->get<std::string>("machine.path", "/var/lib/machines/") +
-      (package_info->id() + "-" + package_info->version());
+      (package_info->id());
 
   if (!archive_manager->extract(path, machine_path.c_str(), files)) {
     p_Error = " : failed to extract machine : " + archive_manager->error();
