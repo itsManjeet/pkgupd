@@ -99,13 +99,6 @@ InstalledPackageInfo *SystemDatabase::add(PackageInfo *pkginfo,
 
   pkginfo->dump(file);
 
-  if (files.size()) {
-    file << "files:\n";
-    for (auto const &f : files) {
-      file << " - " << f << '\n';
-    }
-  }
-
   file << "is-dependency: " << (is_dependency ? "true" : "false") << "\n";
 
   std::time_t t = std::time(0);
