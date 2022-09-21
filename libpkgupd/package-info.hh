@@ -16,6 +16,7 @@ namespace rlxos::libpkgupd {
 #define PACKAGE_TYPE_LIST \
   X(APPIMAGE, "app")      \
   X(PACKAGE, "pkg")       \
+  X(MACHINE, "machine")   \
   X(THEME, "theme")       \
   X(ICON, "icon")         \
   X(FONT, "font")         \

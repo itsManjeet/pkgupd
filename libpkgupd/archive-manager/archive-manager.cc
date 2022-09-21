@@ -27,6 +27,7 @@ std::shared_ptr<ArchiveManager> ArchiveManager::create(PackageType type) {
     case PackageType::FONT:
     case PackageType::ICON:
     case PackageType::THEME:
+    case PackageType::MACHINE:
       return std::make_shared<TarBall>();
     case PackageType::APPIMAGE:
       return std::make_shared<AppImage>();

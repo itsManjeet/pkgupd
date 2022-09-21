@@ -11,12 +11,14 @@ bool Uninstaller::uninstall(InstalledPackageInfo* pkginfo,
     p_Error = sys_db->error();
     return false;
   }
-  for (auto file : package_files) {
+
+  for (auto file = package_files.rbegin(); file != package_files.rend();
+       ++file) {
     auto filepath = std::filesystem::path(root_dir);
-    if (file.find("./", 0) == 0) {
-      filepath /= file.substr(2, file.length() - 2);
+    if (file->find("./", 0) == 0) {
+      filepath /= file->substr(2, file->length() - 2);
     } else {
-      filepath /= file;
+      filepath /= *file;
     }
 
     std::error_code error;

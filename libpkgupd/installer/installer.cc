@@ -7,6 +7,7 @@ using namespace rlxos::libpkgupd;
 #include "../resolver.hh"
 #include "../triggerer.hh"
 #include "appimage-installer/appimage-installer.hh"
+#include "machine-installer/machine-installer.hh"
 #include "package-installer/package-installer.hh"
 
 std::shared_ptr<Installer::Injector> Installer::Injector::create(
@@ -14,6 +15,8 @@ std::shared_ptr<Installer::Injector> Installer::Injector::create(
   switch (package_type) {
     case PackageType::APPIMAGE:
       return std::make_shared<AppImageInstaller>(config);
+    case PackageType::MACHINE:
+      return std::make_shared<MachineInstaller>(config);
     case PackageType::RLXOS:
     case PackageType::PACKAGE:
       return std::make_shared<PackageInstaller>(config);
