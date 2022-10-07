@@ -22,12 +22,12 @@ PKGUPD_MODULE(revdep) {
   }
   for (auto const& i : repository.get()) {
     if (find_if(i.second->depends().begin(), i.second->depends().end(),
-                [&](std::string id) -> bool {
-                  return id == package->id();
-                }) != i.second->depends().end()) {
-      std::cout << i.first << std::endl;
+                [&](std::string id) -> bool { return id == package->id(); }) !=
+        i.second->depends().end()) {
+      std::cout << i.second->id() << std::endl;
     }
   }
+
 
   return 0;
 }
