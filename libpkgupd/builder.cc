@@ -22,6 +22,7 @@
 #include "exec.hh"
 #include "installer/installer.hh"
 #include "recipe.hh"
+#include "resolver.hh"
 #include "stripper.hh"
 
 namespace fs = std::filesystem;
@@ -329,7 +330,10 @@ bool Builder::build(Recipe *recipe, SystemDatabase *systemDatabase,
         return false;
       }
 
-      fs::copy(srcfile_Path, destfile_Path, fs::copy_options::copy_symlinks | fs::copy_options::overwrite_existing | fs::copy_options::recursive,
+      fs::copy(srcfile_Path, destfile_Path,
+               fs::copy_options::copy_symlinks |
+                   fs::copy_options::overwrite_existing |
+                   fs::copy_options::recursive,
                err);
       if (err) {
         p_Error = "failed to copy file " + file + " " + err.message();
@@ -440,6 +444,27 @@ bool Builder::pack(
     }
     i.first->dump(info_writer);
     info_writer.close();
+
+    std::ofstream env_writer(packagefile_Path.parent_path() /
+                             (i.first->id() + ".env"));
+    if (!env_writer.is_open()) {
+      p_Error = "failed to open env writer";
+      return false;
+    }
+
+    auto repository = std::make_shared<Repository>(mConfig);
+    auto resolver =
+        Resolver(DEFAULT_GET_PACKAE_FUNCTION,
+                 [](PackageInfo *package_info) -> bool { return false; });
+    std::vector<PackageInfo *> packages;
+    if (!resolver.depends(i.first.get(), packages)) {
+      p_Error = "failed to write dev environment " + resolver.error();
+      return false;
+    }
+    for (auto const &i : packages) {
+      env_writer << i->id() << " " << i->version() << std::endl;
+    }
+    env_writer.close();
 
     mPackages.push_back(packagefile_Path);
   }
