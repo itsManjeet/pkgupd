@@ -453,9 +453,10 @@ bool Builder::pack(
     }
 
     auto repository = std::make_shared<Repository>(mConfig);
-    auto resolver =
-        Resolver(DEFAULT_GET_PACKAE_FUNCTION,
-                 [](PackageInfo *package_info) -> bool { return false; });
+    auto resolver = Resolver(
+        DEFAULT_GET_PACKAE_FUNCTION,
+        [](PackageInfo *package_info) -> bool { return false; },
+        DEFAULT_DEPENDS_FUNCTION);
     std::vector<PackageInfo *> packages;
     if (!resolver.depends(i.first.get(), packages)) {
       p_Error = "failed to write dev environment " + resolver.error();

@@ -20,14 +20,9 @@ PKGUPD_MODULE(depends) {
   auto system_database = std::make_shared<SystemDatabase>(config);
 
   bool list_all = config->get("depends.all", false);
-  auto resolver = Resolver(
-      [&](char const* id) -> PackageInfo* { return repository->get(id); },
-      [&](PackageInfo* pkginfo) -> bool {
-        if (!list_all) {
-          return system_database->get(pkginfo->id().c_str()) != nullptr;
-        }
-        return false;
-      });
+  auto resolver =
+      Resolver(DEFAULT_GET_PACKAE_FUNCTION, DEFAULT_SKIP_PACKAGE_FUNCTION,
+               DEFAULT_DEPENDS_FUNCTION);
 
   std::vector<PackageInfo*> packagesList;
   for (auto const& i : args) {

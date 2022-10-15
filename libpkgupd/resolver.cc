@@ -11,7 +11,7 @@ bool Resolver::depends(std::string id, std::vector<PackageInfo *> &list) {
 }
 
 bool Resolver::depends(PackageInfo *info, std::vector<PackageInfo *> &list) {
-  for (auto const &depid : info->depends()) {
+  for (auto const &depid : mPackageDependsFunction(info)) {
     auto dep = mGetPackageFunction(depid.c_str());
     if (dep == nullptr) {
       p_Error = "\n Missing required dependency " + depid;
@@ -33,7 +33,7 @@ bool Resolver::resolve(PackageInfo *info, std::vector<PackageInfo *> &list) {
   if (mSkipPackageFunction(info)) return true;
   info->setDependency();
 
-  for (auto const &i : info->depends()) {
+  for (auto const &i : mPackageDependsFunction(info)) {
     auto dep_info = mGetPackageFunction(i.c_str());
     if (dep_info == nullptr) {
       p_Error = "Failed to get required package " + i;

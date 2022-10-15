@@ -53,7 +53,7 @@ PKGUPD_MODULE(build) {
   if (config->get("build.depends", true)) {
     PROCESS("generating dependency tree");
     std::shared_ptr<Resolver> resolver = std::make_shared<Resolver>(
-        DEFAULT_GET_PACKAE_FUNCTION, DEFAULT_SKIP_PACKAGE_FUNCTION);
+        DEFAULT_GET_PACKAE_FUNCTION, DEFAULT_SKIP_PACKAGE_FUNCTION, DEFAULT_DEPENDS_FUNCTION);
     std::vector<std::string> packages = required_recipe->depends();
     packages.insert(packages.end(), required_recipe->buildTime().begin(),
                     required_recipe->buildTime().end());

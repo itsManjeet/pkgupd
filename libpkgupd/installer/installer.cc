@@ -210,7 +210,8 @@ bool Installer::install(std::vector<PackageInfo*> pkgs, Repository* repository,
 
   if (mConfig->get("installer.depends", true) == true) {
     auto resolver =
-        Resolver(DEFAULT_GET_PACKAE_FUNCTION, DEFAULT_SKIP_PACKAGE_FUNCTION);
+        Resolver(DEFAULT_GET_PACKAE_FUNCTION, DEFAULT_SKIP_PACKAGE_FUNCTION,
+                 DEFAULT_DEPENDS_FUNCTION);
     PROCESS("generating dependency graph");
     std::vector<PackageInfo*> dependencies;
     for (auto p : required_packages) {
