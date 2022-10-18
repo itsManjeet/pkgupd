@@ -49,7 +49,7 @@ PKGUPD_MODULE(info) {
       }
       archive_pkg = archive_manager->info(package_id.c_str());
 
-      if (package == nullptr) {
+      if (archive_pkg == nullptr) {
         ERROR("failed to read information file from '" + package_id + "', "
               << archive_manager->error());
         return 2;
