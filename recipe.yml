@@ -1,0 +1,31 @@
+id: core
+version: 2200
+about: rlxos core package
+
+modules:
+  - sources:
+      - https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.0.2.tar.xz
+    dir: linux-6.0.2
+    script: |
+      make mrproper
+      make headers
+      find usr/include -type f ! -name '*.h' -delete
+      mkdir -p ${pkgupd_pkgdir}/usr/
+      cp -rv usr/include ${pkgupd_pkgdir}/usr
+
+  - sources:
+      - https://ftp.gnu.org/gnu/glibc/glibc-2.36.tar.xz
+      - https://www.linuxfromscratch.org/patches/lfs/development/glibc-2.36-fhs-1.patch
+    dir: glibc-2.36
+    build-dir: true
+    build-system: autoconf
+    pre-script: patch -Np1 -i ../glibc-2.36-fhs-1.patch
+    configure: >
+      --disable-werror
+      --enable-kernel=3.6
+      --enable-stack-protector=strong
+      --with-headers=${pkgupd_pkgdir}/usr/include
+      libc_cv_slibdir=/usr/lib
+
+    post-script: |
+      sed '/RTLDLIST=/s@/usr@@g' -i ${pkgupd_pkgdir}/usr/bin/ldd

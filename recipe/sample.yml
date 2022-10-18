@@ -1,0 +1,21 @@
+id: sample-project
+version: 2295
+about: Sample project for testing
+
+modules:
+  - sources:
+      - https://url.com/first
+      - https://url.com/second
+    build-system: autoconf
+    configure: >
+      --prefix=/usr
+      --sysconfdir=/etc
+
+    install: >
+      DESTDIR=${pkgupd_pkgdir}
+
+  - sources:
+      - https://url2.com/first
+    build-system: meson
+    configure: >
+      -Denable_feature=false

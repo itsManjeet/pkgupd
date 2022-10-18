@@ -1,0 +1,400 @@
+id: bootstrap
+version: 2300
+about: rlxos bootstrap
+skip-pack: true
+environ:
+  - TARGET=x86_64-rlx-linux-gnu
+  - BUILD=x86_64-pc-linux-gnu
+  - CONFIG_SITE=${pkgupd_pkgdir}/usr/share/config.site
+  - RLXOS=/rlxos
+  - PATH=${RLXOS}/tools/bin:$PATH
+  - DESTDIR=${RLXOS}
+
+modules:
+  - sources:
+      - https://ftp.gnu.org/gnu/binutils/binutils-2.39.tar.xz
+    dir: binutils-2.39
+    build-system: autoconf
+    build-dir: true
+    skip-if-exists: /tools/bin/${TARGET}-ld
+    configure: >
+      --prefix=${RLXOS}/tools
+      --with-sysroot=${RLXOS}
+      --target=${TARGET}
+      --disable-nls
+      --enable-gprofng=no
+      --disable-werror
+    install: install DESTDIR=/
+  
+  - sources:
+      - https://ftp.gnu.org/gnu/gcc/gcc-12.2.0/gcc-12.2.0.tar.xz
+      - https://ftp.gnu.org/gnu/mpfr/mpfr-4.1.0.tar.xz
+      - https://ftp.gnu.org/gnu/mpc/mpc-1.2.1.tar.gz
+      - https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.xz
+
+    skip-if-exists: /tools/bin/${TARGET}-gcc
+    dir: gcc-12.2.0
+    pre-script: |
+      mv ../mpfr-4.1.0 mpfr
+      mv ../mpc-1.2.1 mpc
+      mv ../gmp-6.2.1 gmp
+      case $(uname -m) in
+        x86_64)
+          sed -e '/m64=/s/lib64/lib/' \
+              -i.orig gcc/config/i386/t-linux64
+      ;;
+      esac
+
+    build-system: autoconf
+    build-dir: true
+    configure: >
+      --target=${TARGET}
+      --prefix=${RLXOS}/tools
+      --with-glibc-version=2.36
+      --with-sysroot=${RLXOS}
+      --with-newlib
+      --without-headers
+      --enable-default-pie
+      --enable-default-ssp
+      --disable-nls
+      --disable-shared
+      --disable-multilib
+      --disable-decimal-float
+      --disable-threads
+      --disable-libatomic
+      --disable-libgomp
+      --disable-libquadmath
+      --disable-libssp
+      --disable-libvtv
+      --disable-libstdcxx
+      --enable-languages=c,c++
+
+    install: install DESTDIR=/
+
+    post-script: |
+      cat gcc/limitx.h gcc/glimits.h gcc/limity.h > \
+        `dirname $($TARGET-gcc -print-libgcc-file-name)`/install-tools/include/limits.h
+
+
+  - sources:
+      - https://www.kernel.org/pub/linux/kernel/v6.x/linux-6.0.2.tar.xz
+    dir: linux-6.0.2
+    skip-if-exists: ${RLXOS}/usr/include/linux/version.h
+    script: |
+      make mrproper
+      make headers
+      mkdir -p ${RLXOS}/usr/
+      find usr/include -type f ! -name '*.h' -delete
+      cp -rv usr/include $RLXOS/usr
+
+  - sources:
+      - https://ftp.gnu.org/gnu/glibc/glibc-2.36.tar.xz
+      - https://www.linuxfromscratch.org/patches/lfs/development/glibc-2.36-fhs-1.patch
+    dir: glibc-2.36
+    build-dir: true
+    build-system: autoconf
+    skip-if-exists: ${RLXOS}/usr/lib/libc.so
+    pre-script: |
+      mkdir -p ${RLXOS}/lib
+      case $(uname -m) in
+          i?86)   ln -sfv ld-linux.so.2 ${RLXOS}/lib/ld-lsb.so.3
+          ;;
+          x86_64) 
+                  mkdir -p ${RLXOS}/lib64
+                  ln -sfv ../lib/ld-linux-x86-64.so.2 ${RLXOS}/lib64
+                  ln -sfv ../lib/ld-linux-x86-64.so.2 ${RLXOS}/lib64/ld-lsb-x86-64.so.3
+          ;;
+      esac
+
+      patch -Np1 -i ../glibc-2.36-fhs-1.patch
+
+    configure: >
+      --prefix=/usr
+      --host=$TARGET
+      --build=$BUILD
+      --enable-kernel=3.2
+      --with-headers=${RLXOS}/usr/include
+      libc_cv_slibdir=/usr/lib
+
+    install: DESTDIR=${RLXOS} install
+
+    post-script: |
+      sed '/RTLDLIST=/s@/usr@@g' -i ${RLXOS}/usr/bin/ldd
+  
+  - script: |
+      ${RLXOS}/tools/libexec/gcc/${TARGET}/12.2.0/install-tools/mkheaders
+
+  - sources:
+      - https://ftp.gnu.org/gnu/gcc/gcc-12.2.0/gcc-12.2.0.tar.xz
+    build-dir: true
+    dir: gcc-12.2.0
+    skip-if-exists: ${RLXOS}/usr/lib/libstdc++.so.6
+    script: |
+      mkdir -p build && cd build
+      ../libstdc++-v3/configure         \
+        --host=${TARGET}                \
+        --build=${BUILD}                \
+        --prefix=/usr                   \
+        --disable-multilib              \
+        --disable-nls                   \
+        --disable-libstdcxx-pch         \
+        --with-gxx-include-dir=/tools/${TARGET}/include/c++/12.2.0
+      
+      make
+      make DESTDIR=${RLXOS} install
+  
+  - sources:
+      - https://ftp.gnu.org/gnu/m4/m4-1.4.19.tar.xz
+    dir: m4-1.4.19
+    build-system: autoconf
+    skip-if-exists: ${RLXOS}/usr/bin/m4
+    configure: >
+      --prefix=/usr
+      --host=${TARGET}
+      --build=${BUILD}
+
+    install: DESTDIR=${RLXOS} install
+
+  - sources:
+      - https://invisible-mirror.net/archives/ncurses/ncurses-6.3.tar.gz
+    dir: ncurses-6.3
+    skip-if-exists: ${RLXOS}/usr/lib/libncurses.so
+    build-system: autoconf
+    pre-script: |
+      sed -i s/mawk// configure
+
+      mkdir -p build && cd build
+      ../configure
+      make -C include
+      make -C progs tic
+    
+    configure: >
+      --prefix=/usr
+      --host=${TARGET}
+      --build=${BUILD}
+      --mandir=/usr/share/man
+      --with-manpage-format=normal
+      --with-shared
+      --without-normal
+      --with-cxx-shared
+      --without-debug
+      --without-ada
+      --disable-stripping
+      --enable-widec
+
+    install: DESTDIR=${RLXOS} TIC_PATH=$(pwd)/build/progs/tic install
+
+    post-script: |
+      echo "INPUT(-lncursesw)" > ${RLXOS}/usr/lib/libncurses.so
+    
+
+  - sources:
+      - https://ftp.gnu.org/gnu/bash/bash-5.2.tar.gz
+    dir: bash-5.2
+    build-system: autoconf
+    skip-if-exists: ${RLXOS}/usr/bin/bash
+    configure: >
+      --prefix=/usr
+      --build=${BUILD}
+      --host=${TARGET}
+      --without-bash-malloc
+    install: DESTDIR=${RLXOS} install
+    post-script: |
+      ln -sv bash ${RLXOS}/usr/bin/sh
+
+  - sources:
+      - https://ftp.gnu.org/gnu/coreutils/coreutils-9.1.tar.xz
+    dir: coreutils-9.1
+    build-system: autoconf
+    skip-if-exists: ${RLXOS}/usr/bin/hostname
+    configure: >
+      --prefix=/usr
+      --build=${BUILD}
+      --host=${TARGET}
+      --enable-install-program=hostname
+      --enable-no-install-program=kill,uptime
+
+    install: DESTDIR=${RLXOS} install
+
+  - sources:
+      - https://ftp.gnu.org/gnu/diffutils/diffutils-3.8.tar.xz
+    dir: diffutils-3.8
+    skip-if-exists: ${RLXOS}/usr/bin/diff
+    build-system: autoconf
+    configure: >
+      --prefix=/usr
+      --host=${TARGET}
+
+    install: DESTDIR=${RLXOS} install
+
+  - sources:
+      - https://ftp.gnu.org/gnu/findutils/findutils-4.9.0.tar.xz
+    dir: findutils-4.9.0
+    skip-if-exists: ${RLXOS}/usr/bin/find
+    build-system: autoconf
+    configure: >
+      --prefix=/usr
+      --localstatedir=/var/lib/locate
+      --host=${TARGET}
+      --build=${BUILD}
+
+  - sources:
+      - https://ftp.gnu.org/gnu/gawk/gawk-5.2.0.tar.xz
+    dir: gawk-5.2.0
+    skip-if-exists: ${RLXOS}/usr/bin/gawk
+    build-system: autoconf
+    pre-script: sed -i 's/extras//' Makefile.in
+    configure: >
+      --prefix=/usr
+      --host=${TARGET}
+      --build=${BUILD}
+
+  - sources:
+      - https://ftp.gnu.org/gnu/grep/grep-3.8.tar.xz
+    dir: grep-3.8
+    skip-if-exists: ${RLXOS}/usr/bin/grep
+    build-system: autoconf
+    configure: >
+      --prefix=/usr
+      --host=${TARGET}
+
+  - sources:
+      - https://ftp.gnu.org/gnu/gzip/gzip-1.12.tar.xz
+    dir: gzip-1.12
+    skip-if-exists: ${RLXOS}/usr/bin/gzip
+    build-system: autoconf
+    configure: >
+      --prefix=/usr
+      --host=${TARGET}
+
+  - sources:
+      - https://ftp.gnu.org/gnu/make/make-4.3.tar.gz
+    dir: make-4.3
+    skip-if-exists: ${RLXOS}/usr/bin/make
+    build-system: autoconf
+    configure: >
+      --prefix=/usr
+      --host=${TARGET}
+      --build=${BUILD}
+      --without-guile
+
+  - sources:
+      - https://ftp.gnu.org/gnu/patch/patch-2.7.6.tar.xz
+    dir: patch-2.7.6
+    skip-if-exists: ${RLXOS}/usr/bin/patch
+    build-system: autoconf
+    configure: >
+      --prefix=/usr
+      --host=${TARGET}
+      --build=${BUILD}
+
+  - sources:
+      - https://ftp.gnu.org/gnu/sed/sed-4.8.tar.xz
+    dir: sed-4.8
+    skip-if-exists: ${RLXOS}/usr/bin/sed
+    build-system: autoconf
+    configure: >
+      --prefix=/usr
+      --host=${TARGET}
+
+  - sources:
+      - https://ftp.gnu.org/gnu/tar/tar-1.34.tar.xz
+    dir: tar-1.34
+    skip-if-exists: ${RLXOS}/usr/bin/tar
+    build-system: autoconf
+    configure: >
+      --prefix=/usr
+      --host=${TARGET}
+      --build=${BUILD}
+  
+  - sources:
+      - https://tukaani.org/xz/xz-5.2.7.tar.gz
+    dir: xz-5.2.7
+    skip-if-exists: ${RLXOS}/usr/bin/xz
+    build-system: autoconf
+    configure: >
+      --prefix=/usr
+      --host=${TARGET}
+      --build=${BUILD}
+      --docdir=/usr/share/doc/xz-5.2.7
+    
+    post-script: |
+      rm -v ${RLXOS}/usr/lib/liblzma.la
+
+  - sources:
+      - https://ftp.gnu.org/gnu/binutils/binutils-2.39.tar.xz
+    dir: binutils-2.39
+    build-dir: true
+    build-system: autoconf
+    skip-if-exists: ${RLXOS}/tools/binutils-second
+    pre-script: |
+      sed '6009s/$add_dir//' -i ltmain.sh
+    configure: >
+      --prefix=/usr
+      --build=${BUILD}
+      --host=${TARGET}
+      --disable-nls
+      --enable-shared
+      --enable-gprofng=no
+      --disable-werror
+      --enable-64-bit-bfd
+
+    post-script: |
+      rm -v $RLXOS/usr/lib/lib{bfd,ctf,ctf-nobfd,opcodes}.{a,la}
+      touch ${RLXOS}/tools/binutils-second
+
+  
+  - sources:
+      - https://ftp.gnu.org/gnu/gcc/gcc-12.2.0/gcc-12.2.0.tar.xz
+      - https://ftp.gnu.org/gnu/mpfr/mpfr-4.1.0.tar.xz
+      - https://ftp.gnu.org/gnu/mpc/mpc-1.2.1.tar.gz
+      - https://ftp.gnu.org/gnu/gmp/gmp-6.2.1.tar.xz
+
+    skip-if-exists: ${RLXOS}/tools/gcc-second
+    dir: gcc-12.2.0
+    pre-script: |
+      mv ../mpfr-4.1.0 mpfr
+      mv ../mpc-1.2.1 mpc
+      mv ../gmp-6.2.1 gmp
+      case $(uname -m) in
+        x86_64)
+          sed -e '/m64=/s/lib64/lib/' \
+              -i.orig gcc/config/i386/t-linux64
+      ;;
+      esac
+      
+      sed '/thread_header =/s/@.*@/gthr-posix.h/' \
+          -i libgcc/Makefile.in libstdc++-v3/include/Makefile.in
+
+    build-system: autoconf
+    build-dir: true
+    configure: >
+      --build=${BUILD}
+      --host=${TARGET}
+      --target=${TARGET}
+      LDFLAGS_FOR_TARGET=-L${PWD}/${TARGET}/libgcc
+      -prefix=/usr
+      --with-build-sysroot=${RLXOS}
+      --enable-default-pie
+      --enable-default-ssp
+      --disable-nls
+      --disable-multilib
+      --disable-decimal-float
+      --disable-libatomic
+      --disable-libgomp
+      --disable-libquadmath
+      --disable-libssp
+      --disable-libvtv
+      --enable-languages=c,c++
+
+    install: install DESTDIR=/
+    post-script: |
+      ln -sv gcc ${RLXOS}/usr/bin/cc
+      touch ${RLXOS}/tools/gcc-second
+      
+
+  - script: |
+      chown -R root:root ${RLXOS}/{usr,lib,var,etc,bin,sbin,tools}
+      case $(uname -m) in
+        x86_64) chown -R root:root $LFS/lib64 ;;
+      esac
