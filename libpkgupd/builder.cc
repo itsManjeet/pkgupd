@@ -445,27 +445,29 @@ bool Builder::pack(
     i.first->dump(info_writer);
     info_writer.close();
 
-    std::ofstream env_writer(packagefile_Path.parent_path() /
-                             (i.first->id() + ".env"));
-    if (!env_writer.is_open()) {
-      p_Error = "failed to open env writer";
-      return false;
-    }
+    if (mConfig->get<bool>("build.env", true)) {
+        std::ofstream env_writer(packagefile_Path.parent_path() /
+                                 (i.first->id() + ".env"));
+        if (!env_writer.is_open()) {
+          p_Error = "failed to open env writer";
+          return false;
+        }
 
-    auto repository = std::make_shared<Repository>(mConfig);
-    auto resolver = Resolver(
-        DEFAULT_GET_PACKAE_FUNCTION,
-        [](PackageInfo *package_info) -> bool { return false; },
-        DEFAULT_DEPENDS_FUNCTION);
-    std::vector<PackageInfo *> packages;
-    if (!resolver.depends(i.first.get(), packages)) {
-      p_Error = "failed to write dev environment " + resolver.error();
-      return false;
+        auto repository = std::make_shared<Repository>(mConfig);
+        auto resolver = Resolver(
+            DEFAULT_GET_PACKAE_FUNCTION,
+            [](PackageInfo *package_info) -> bool { return false; },
+            DEFAULT_DEPENDS_FUNCTION);
+        std::vector<PackageInfo *> packages;
+        if (!resolver.depends(i.first.get(), packages)) {
+          p_Error = "failed to write dev environment " + resolver.error();
+          return false;
+        }
+        for (auto const &i : packages) {
+          env_writer << i->id() << " " << i->version() << std::endl;
+        }
+        env_writer.close();
     }
-    for (auto const &i : packages) {
-      env_writer << i->id() << " " << i->version() << std::endl;
-    }
-    env_writer.close();
 
     mPackages.push_back(packagefile_Path);
   }
