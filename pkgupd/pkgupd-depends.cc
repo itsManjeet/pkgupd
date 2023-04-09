@@ -21,7 +21,7 @@ PKGUPD_MODULE(depends) {
 
   bool list_all = config->get("depends.all", false);
   auto resolver =
-      Resolver(DEFAULT_GET_PACKAE_FUNCTION, DEFAULT_SKIP_PACKAGE_FUNCTION,
+      Resolver<PackageInfo *>(DEFAULT_GET_PACKAE_FUNCTION, DEFAULT_SKIP_PACKAGE_FUNCTION,
                DEFAULT_DEPENDS_FUNCTION);
 
   std::vector<PackageInfo*> packagesList;

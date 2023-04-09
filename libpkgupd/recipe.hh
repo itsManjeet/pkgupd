@@ -77,6 +77,8 @@ class Recipe {
 
   std::string const& installScript() const { return m_InstallScript; }
 
+  void setDependency() {}
+
   std::vector<std::string> const& environ() const { return m_Environ; }
   std::vector<std::string> const& sources() const { return m_Sources; }
 
