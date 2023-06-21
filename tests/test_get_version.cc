@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "../libpkgupd/utils/utils.hh"
+#include "../utils/utils.hh"
 using namespace rlxos::libpkgupd;
 
 TEST(UtilsTest, GetVersionTest) {

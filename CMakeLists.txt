@@ -10,19 +10,11 @@ find_package(YAML-CPP REQUIRED)
 include_directories(${YAML_CPP_INCLUDE_DIRS})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-find_library(LIBCURL curl REQUIRED)
-find_library(LIBAPPIMAGE appimage REQUIRED)
-
-file(GLOB_RECURSE LIBPKGUPD_Src "libpkgupd/*.cc" "libpkgupd/*.hh")
-add_library(libpkgupd ${LIBPKGUPD_Src})
-target_link_libraries(libpkgupd ${LIBCURL} ${LIBAPPIMAGE} ${YAML_CPP_LIBRARIES})
-set_target_properties(libpkgupd PROPERTIES OUTPUT_NAME "pkgupd")
-
-file(GLOB PKGUPD_Src "pkgupd/*.cc" "pkgupd/*.hh")
+add_compile_options(-ggdb)
+file(GLOB_RECURSE PKGUPD_Src "pkgupd/*.cc" "pkgupd/*.hh")
 add_executable(pkgupd ${PKGUPD_Src})
-add_dependencies(pkgupd libpkgupd)
-target_link_libraries(pkgupd libpkgupd)
+target_link_libraries(pkgupd ${YAML_CPP_LIBRARIES})
+
 
 # find_package(PkgConfig REQUIRED)
 # pkg_check_modules(SQUASHFUSE squashfuse REQUIRED)
@@ -31,7 +23,7 @@ target_link_libraries(pkgupd libpkgupd)
 # add_executable(runtime ${RUNTIME_Src})
 # target_link_libraries(runtime ${SQUASHFUSE_LIBRARIES})
 
-install(TARGETS pkgupd libpkgupd
+install(TARGETS pkgupd
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib)
 
