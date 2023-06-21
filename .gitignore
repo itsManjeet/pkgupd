@@ -9,3 +9,5 @@ tests/root
 tests/pkgs
 tests/src
 tests/repo
+cmake-build-debug
+/.idea

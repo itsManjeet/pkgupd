@@ -1,0 +1,44 @@
+#include "stripper.hxx"
+
+#include "exec.hxx"
+
+namespace rlxos::libpkgupd {
+    Stripper::Stripper(std::vector<std::string> const &skips) {
+        // Thanks to (VenomLinux - scratchpkg) https://github.com/emmeett1
+        // https://github.com/venomlinux/scratchpkg/blob/master/pkgbuild#L215
+
+        if (skips.size()) {
+            _filter = "grep -v";
+            for (auto const &i: skips) _filter += " -e " + i.substr(0, i.length() - 1);
+        }
+
+        _script =
+                "find . -type f -printf \"%P\\n\" 2>/dev/null | " + _filter +
+                " | while read -r binary ; do \n"
+                " case \"$(file -bi \"$binary\")\" in \n"
+                " *application/x-sharedlib*)      strip --strip-unneeded \"$binary\" ;; "
+                "\n"
+                " *application/x-pie-executable*) strip --strip-unneeded \"$binary\" ;; "
+                "\n"
+                " *application/x-archive*)        strip --strip-debug    \"$binary\" ;; "
+                "\n"
+                " *application/x-object*) \n"
+                "    case \"$binary\" in \n"
+                "     *.ko)                       strip --strip-unneeded \"$binary\" ;; "
+                "\n"
+                "     *)                          continue ;; \n"
+                "    esac;; \n"
+                " *application/x-executable*)     strip --strip-all \"$binary\" ;; \n"
+                " *)                              continue ;; \n"
+                " esac\n"
+                " done\n";
+    }
+
+    bool Stripper::strip(std::string const &dir) {
+        if (int status = Executor().execute(_script, dir); status != 0) {
+            p_Error = "strip script failed with exit code: " + std::to_string(status);
+            return false;
+        }
+        return true;
+    }
+}  // namespace rlxos::libpkgupd
