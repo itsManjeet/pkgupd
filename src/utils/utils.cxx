@@ -20,6 +20,15 @@ std::string rlxos::libpkgupd::utils::random(size_t size) {
     return tmp_s;
 }
 
+static std::string replace_all(std::string str, const std::string &from, const std::string &to) {
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length();  // Handles case where 'to' is a substring of 'from'
+    }
+    return str;
+}
+
 void rlxos::libpkgupd::utils::resolve_variable(YAML::Node node,
                                                std::string &value) {
     std::vector<std::string> variables = {"id", "version", "release", "commit"};
@@ -37,10 +46,6 @@ void rlxos::libpkgupd::utils::resolve_variable(YAML::Node node,
     }
 
     for (auto const &i : variables) {
-        const std::regex re("\\{\\{\\s*" + i + "\\s*\\}\\}");
-        while (std::regex_search(value, re)) {
-            value =
-                std::regex_replace(value, re, node["variables"][i].as<std::string>());
-        }
+        value = replace_all(value, "%{"+i+"}", node["variables"][i].as<std::string>());
     }
 }

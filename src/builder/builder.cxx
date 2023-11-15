@@ -51,6 +51,7 @@ namespace rlxos::libpkgupd {
 
             auto downloader = Downloader(mConfig);
             if (!fs::exists(sourcefile_Path)) {
+                PROCESS("GET " << url);
                 if (!downloader.download(url.c_str(), sourcefile_Path.c_str())) {
                     p_Error =
                             "failed to download '" + sourcefile + "' " + downloader.error();
@@ -151,7 +152,8 @@ namespace rlxos::libpkgupd {
                 auto [status, output] = Executor().output(
                         "tar -taf " +
                         std::filesystem::path(recipe->sources()[0]).filename().string() +
-                        " | head -n1",
+                        " | head -n1"
+                        " | cut -d '/' -f1",
                         mSourceDir);
                 if (status != 0 || output.length() == 0) {
                 } else {

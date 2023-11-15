@@ -44,6 +44,9 @@ namespace rlxos::libpkgupd {
     }
 
     bool Downloader::download(char const *url, char const *outfile) {
+        if (!std::filesystem::exists(std::filesystem::path(outfile).parent_path())) {
+            std::filesystem::create_directories(std::filesystem::path(outfile).parent_path());
+        }
         std::stringstream ss;
         auto backend = mConfig->get<std::string>("downloader.backend", "curl");
         auto backend_output_flag = (backend == "curl") ? "-o" : "-O";
