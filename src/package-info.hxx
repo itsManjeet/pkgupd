@@ -9,65 +9,15 @@
 
 #include "defines.hxx"
 #include "exec.hxx"
-#include "group.hxx"
-#include "user.hxx"
 
 namespace rlxos::libpkgupd {
-#define PACKAGE_TYPE_LIST \
-    X(APPIMAGE, "app")    \
-    X(PACKAGE, "pkg")     \
-    X(MACHINE, "machine") \
-    X(THEME, "theme")     \
-    X(ICON, "icon")       \
-    X(FONT, "font")       \
-    X(RLXOS, "rlx")       \
-    X(IMAGE, "img")
-
-/**
- * @brief Package type helps to determine the type of packaging and
- * installation methods use for that package
- *
- */
-    enum class PackageType : int {
-#define X(ID, type) ID,
-        PACKAGE_TYPE_LIST
-#undef X
-        N_PACKAGE_TYPE
-    };
-
-#define PACKAGE_TYPE_INT(pkgtype) static_cast<int>(pkgtype)
-
-    static char const *
-            PACKAGE_TYPE_STR[PACKAGE_TYPE_INT(PackageType::N_PACKAGE_TYPE)] = {
-#define X(ID, type) #ID,
-                    PACKAGE_TYPE_LIST
-#undef X
-            };
-
-    static char const *
-            PACKAGE_TYPE_ID[PACKAGE_TYPE_INT(PackageType::N_PACKAGE_TYPE)] = {
-#define X(ID, type) type,
-                    PACKAGE_TYPE_LIST
-#undef X
-            };
-
-    static inline const PackageType PACKAGE_TYPE_FROM_STR(std::string s) {
-        for (int i = 0; i < int(PackageType::N_PACKAGE_TYPE); ++i) {
-            if (s == PACKAGE_TYPE_ID[i]) {
-                return PackageType(i);
-            }
-        }
-        return PackageType::N_PACKAGE_TYPE;
-    }
-
 #define PACKAGE_FILE(pkg)                    \
-    pkg->id() + "-" + pkg->version() + "." + \
-        std::string(PACKAGE_TYPE_ID[PACKAGE_TYPE_INT(pkg->type())])
+    pkg->id() + "-" + pkg->version() + ".pkg"
 
-/**
- * @brief PackageInfo holds all the information of rlxos packages
- * their dependencies and required user groups
- */
+    /**
+     * @brief PackageInfo holds all the information of rlxos packages
+     * their dependencies and required user groups
+     */
     class PackageInfo {
     protected:
         std::string m_ID;
@@ -76,13 +26,7 @@ namespace rlxos::libpkgupd {
 
         std::vector<std::string> m_Depends;
 
-        PackageType m_PackageType;
-
-        std::vector<User> m_Users;
-        std::vector<Group> m_Groups;
-
         std::string m_Script;
-        std::string m_Repository;
 
         std::vector<std::string> m_Backup;
 
@@ -94,19 +38,13 @@ namespace rlxos::libpkgupd {
         PackageInfo(YAML::Node const &data, std::string const &file);
 
         PackageInfo(std::string id, std::string version, std::string about,
-                    std::vector<std::string> depends, PackageType packageType,
-                    std::vector<User> users, std::vector<Group> groups,
-                    std::vector<std::string> backup, std::string script,
-                    std::string repo, YAML::Node node)
+                    std::vector<std::string> depends,
+                    std::vector<std::string> backup, std::string script, YAML::Node node)
                 : m_ID{id},
                   m_Version{version},
                   m_About{about},
                   m_Depends{depends},
-                  m_PackageType{packageType},
-                  m_Users{users},
-                  m_Groups{groups},
                   m_Script{script},
-                  m_Repository{repo},
                   m_Backup{backup},
                   m_Node{node} {}
 
@@ -118,17 +56,9 @@ namespace rlxos::libpkgupd {
 
         std::string const &about() const { return m_About; }
 
-        std::string const &repository() const { return m_Repository; }
-
-        PackageType type() const { return m_PackageType; }
-
         std::vector<std::string> const &depends() const { return m_Depends; }
 
         std::vector<std::string> const &backups() const { return m_Backup; }
-
-        std::vector<User> const &users() const { return m_Users; }
-
-        std::vector<Group> const &groups() const { return m_Groups; }
 
         std::string const &script() const { return m_Script; };
 

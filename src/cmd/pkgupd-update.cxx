@@ -54,10 +54,6 @@ PKGUPD_MODULE(update) {
             continue;
         }
         auto installed_info = i.second.get();
-        // skip machine
-        if (installed_info->repository() == "machine") {
-            continue;
-        }
 
         auto repository_info = repository->get(i.first.c_str());
         if (repository_info == nullptr) {

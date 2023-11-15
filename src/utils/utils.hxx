@@ -9,7 +9,7 @@
 
 #define _R(var) rlxos::libpkgupd::utils::resolve_variable(data, var)
 #define _RL(var) \
-  for (auto& i : var) _R(i)
+    for (auto &i : var) _R(i)
 
 using defer = std::shared_ptr<void>;
 
@@ -19,9 +19,9 @@ namespace rlxos::libpkgupd::utils {
 
     static inline int get_version(std::string version) {
         version.erase(
-                std::remove_if(version.begin(), version.end(),
-                               [](auto const &c) -> bool { return !std::isdigit(c); }),
-                version.end());
+            std::remove_if(version.begin(), version.end(),
+                           [](auto const &c) -> bool { return !std::isdigit(c); }),
+            version.end());
         if (version.length() == 0) {
             return 0;
         }

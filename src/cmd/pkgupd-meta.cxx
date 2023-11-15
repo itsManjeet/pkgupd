@@ -1,5 +1,4 @@
 #include "../archive-manager/archive-manager.hxx"
-#include "../archive-manager/tarball/tarball.hxx"
 #include "../configuration.hxx"
 #include "../utils/utils.hxx"
 
@@ -15,7 +14,7 @@ PKGUPD_MODULE_HELP(meta) {
 
 PKGUPD_MODULE(meta) {
     auto pkgs_dir = std::filesystem::path(
-            config->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR));
+        config->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR));
     std::vector<std::string> repos;
     config->get(REPOS, repos);
 
@@ -24,7 +23,7 @@ PKGUPD_MODULE(meta) {
         return 1;
     }
 
-    for (auto const &i: repos) {
+    for (auto const &i : repos) {
         PROCESS("Generating meta information for " << GREEN(i));
         auto repo_path = pkgs_dir / i;
         if (!filesystem::exists(repo_path)) {
@@ -40,7 +39,7 @@ PKGUPD_MODULE(meta) {
         }
         YAML::Node parent;
         parent["pkgs"] = std::vector<YAML::Node>();
-        for (auto const &pkg: filesystem::directory_iterator(repo_path)) {
+        for (auto const &pkg : filesystem::directory_iterator(repo_path)) {
             if (!(pkg.path().has_extension() && pkg.path().extension() == ".meta")) {
                 continue;
             }

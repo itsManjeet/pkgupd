@@ -7,12 +7,12 @@ using namespace rlxos::libpkgupd;
 #include <filesystem>
 
 #define SET_DEFAULT_VALUE(id, value) \
-  if (!node[id]) node[id] = (value);
+    if (!node[id]) node[id] = (value);
 
 void mergeConfig(YAML::Node &node, std::string const &file) {
     try {
         YAML::Node n = YAML::LoadFile(file);
-        for (auto const &i: n) {
+        for (auto const &i : n) {
             node[i.first] = i.second;
         }
     } catch (std::exception const &exc) {
@@ -32,8 +32,8 @@ std::shared_ptr<Configuration> Configuration::create(YAML::Node node) {
     }
 
     if (std::filesystem::exists(PKGUPD_CONFIG_PATH + ".d")) {
-        for (auto const &i:
-                std::filesystem::directory_iterator(PKGUPD_CONFIG_PATH + ".d")) {
+        for (auto const &i :
+             std::filesystem::directory_iterator(PKGUPD_CONFIG_PATH + ".d")) {
             if (i.is_regular_file() && i.path().has_extension() &&
                 i.path().extension() == ".yml") {
                 mergeConfig(node, i.path().string());
@@ -47,7 +47,8 @@ std::shared_ptr<Configuration> Configuration::create(YAML::Node node) {
                       (std::vector<std::string>{"https://storage.rlxos.dev/"}));
 
     if (node["debug"].as<bool>())
-        std::cout << "Configuration:\n" << node << std::endl;
+        std::cout << "Configuration:\n"
+                  << node << std::endl;
 
     return std::make_shared<Configuration>(node);
 }

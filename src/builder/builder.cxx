@@ -6,23 +6,22 @@
 #include <fstream>
 #include <vector>
 
-#include "archive-manager/archive-manager.hxx"
+#include "../archive-manager/archive-manager.hxx"
 #include "bundler.hxx"
-#include "colors.hxx"
-#include "compilers/autoconf.hxx"
-#include "compilers/cargo.hxx"
-#include "compilers/cmake.hxx"
-#include "compilers/go.hxx"
-#include "compilers/makefile.hxx"
-#include "compilers/meson.hxx"
-#include "compilers/pysetup.hxx"
-#include "compilers/script.hxx"
-#include "compilers/system.hxx"
-#include "downloader.hxx"
-#include "exec.hxx"
-#include "installer/installer.hxx"
-#include "recipe.hxx"
-#include "resolver.hxx"
+#include "../colors.hxx"
+#include "../compilers/autoconf.hxx"
+#include "../compilers/cargo.hxx"
+#include "../compilers/cmake.hxx"
+#include "../compilers/go.hxx"
+#include "../compilers/makefile.hxx"
+#include "../compilers/meson.hxx"
+#include "../compilers/pysetup.hxx"
+#include "../compilers/script.hxx"
+#include "../downloader.hxx"
+#include "../exec.hxx"
+#include "../installer/installer.hxx"
+#include "../recipe.hxx"
+#include "../resolver.hxx"
 #include "stripper.hxx"
 
 namespace fs = std::filesystem;
@@ -281,7 +280,7 @@ namespace rlxos::libpkgupd {
         }
 
         std::ofstream file(pkgdir / "info");
-        (*recipe)[recipe->id()]->dump(file);
+        recipe->package()->dump(file);
         file.close();
 
         for (auto const &file: recipe->node()["files"]) {
@@ -309,53 +308,53 @@ namespace rlxos::libpkgupd {
         }
 
         std::vector<std::pair<std::shared_ptr<PackageInfo>, std::string>> packagesdir;
-        packagesdir.push_back({(*recipe)[recipe->id()], pkgdir});
+        packagesdir.push_back({recipe->package(), pkgdir});
 
-        for (auto const &split: recipe->splits()) {
-            std::error_code err;
-            auto splitdir_Path = path(mBuildDir) / "pkg" / split.into;
-            fs::create_directories(splitdir_Path, err);
-            if (err) {
-                p_Error = "failed to create split dir " + err.message();
-                return false;
-            }
-
-            for (auto const &file: split.files) {
-                auto srcfile_Path = pkgdir / file;
-                auto destfile_Path = splitdir_Path / file;
-                PROCESS("creating " << destfile_Path);
-                fs::create_directories(destfile_Path.parent_path(), err);
-                if (err) {
-                    p_Error = "failed to create required dir " + err.message();
-                    return false;
-                }
-
-                fs::copy(srcfile_Path, destfile_Path,
-                         fs::copy_options::copy_symlinks |
-                         fs::copy_options::overwrite_existing |
-                         fs::copy_options::recursive,
-                         err);
-                if (err) {
-                    p_Error = "failed to copy file " + file + " " + err.message();
-                    return false;
-                }
-
-                fs::remove_all(srcfile_Path, err);
-                if (err) {
-                    p_Error = "failed to clean split file " + file + " " + err.message();
-                    return false;
-                }
-            }
-
-            std::ofstream file(splitdir_Path / "info");
-            auto id = split.into;
-
-            auto splitPackageInfo = (*recipe)[id];
-            splitPackageInfo->dump(file);
-            file.close();
-
-            packagesdir.push_back({splitPackageInfo, splitdir_Path});
-        }
+//        for (auto const &split: recipe->splits()) {
+//            std::error_code err;
+//            auto splitdir_Path = path(mBuildDir) / "pkg" / split.into;
+//            fs::create_directories(splitdir_Path, err);
+//            if (err) {
+//                p_Error = "failed to create split dir " + err.message();
+//                return false;
+//            }
+//
+//            for (auto const &file: split.files) {
+//                auto srcfile_Path = pkgdir / file;
+//                auto destfile_Path = splitdir_Path / file;
+//                PROCESS("creating " << destfile_Path);
+//                fs::create_directories(destfile_Path.parent_path(), err);
+//                if (err) {
+//                    p_Error = "failed to create required dir " + err.message();
+//                    return false;
+//                }
+//
+//                fs::copy(srcfile_Path, destfile_Path,
+//                         fs::copy_options::copy_symlinks |
+//                         fs::copy_options::overwrite_existing |
+//                         fs::copy_options::recursive,
+//                         err);
+//                if (err) {
+//                    p_Error = "failed to copy file " + file + " " + err.message();
+//                    return false;
+//                }
+//
+//                fs::remove_all(srcfile_Path, err);
+//                if (err) {
+//                    p_Error = "failed to clean split file " + file + " " + err.message();
+//                    return false;
+//                }
+//            }
+//
+//            std::ofstream file(splitdir_Path / "info");
+//            auto id = split.into;
+//
+//            auto splitPackageInfo = (*recipe)[id];
+//            splitPackageInfo->dump(file);
+//            file.close();
+//
+//            packagesdir.push_back({splitPackageInfo, splitdir_Path});
+//        }
 
         if (!pack(packagesdir)) {
             return false;
@@ -425,15 +424,9 @@ namespace rlxos::libpkgupd {
             &dirs) {
         mPackages.clear();
         for (auto const &i: dirs) {
-            auto packagefile_Path = std::filesystem::proximate(mPackageDir) /
-                                    i.first->repository() / (PACKAGE_FILE(i.first));
+            auto packagefile_Path = std::filesystem::proximate(mPackageDir) / (PACKAGE_FILE(i.first));
 
-            auto archive_manager = ArchiveManager::create(i.first->type());
-            if (archive_manager == nullptr) {
-                p_Error = "no suitable archive manager found for type '" +
-                          std::string(PACKAGE_TYPE_STR[int(i.first->type())]) + "'";
-                return false;
-            }
+            auto archive_manager = ArchiveManager();
 
             if (!std::filesystem::exists(packagefile_Path.parent_path())) {
                 std::error_code error;
@@ -445,9 +438,9 @@ namespace rlxos::libpkgupd {
                     return false;
                 }
             }
-            if (!archive_manager->compress(packagefile_Path.c_str(),
-                                           i.second.c_str())) {
-                p_Error = "compression failed " + archive_manager->error();
+            if (!archive_manager.compress(packagefile_Path.c_str(),
+                                          i.second.c_str())) {
+                p_Error = "compression failed " + archive_manager.error();
                 return false;
             }
 

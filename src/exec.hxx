@@ -12,12 +12,12 @@
 
 namespace rlxos::libpkgupd {
     class Executor {
-    private:
+       private:
         static std::string _get_cmd(std::string const &cmd, std::string const &dir,
                                     std::vector<std::string> const &env = {}) {
             std::string _cmd = "set -e; set -u\n";
 
-            for (auto const &i: env) _cmd += "export " + i + "\n";
+            for (auto const &i : env) _cmd += "export " + i + "\n";
 
             if (dir != ".") _cmd += "cd " + dir + "\n";
 
@@ -26,7 +26,7 @@ namespace rlxos::libpkgupd {
             return _cmd;
         }
 
-    public:
+       public:
         Executor() {}
 
         static int execute(std::string const &command, std::string const &dir = ".",
@@ -39,8 +39,8 @@ namespace rlxos::libpkgupd {
         }
 
         static std::tuple<int, std::string> output(
-                std::string const &command, std::string const &dir = ".",
-                std::vector<std::string> const &environ = {}) {
+            std::string const &command, std::string const &dir = ".",
+            std::vector<std::string> const &environ = {}) {
             auto cmd = _get_cmd(command, dir, environ);
 
             DEBUG("cmd: " << cmd);

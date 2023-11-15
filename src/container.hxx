@@ -5,13 +5,13 @@
 #include "defines.hxx"
 
 namespace rlxos::libpkgupd {
-// Container wrapper around bubble wrap
+    // Container wrapper around bubble wrap
     class Container : public Object {
-    private:
+       private:
         // mConfig holds the configuration
         Configuration *mConfig;
 
-    public:
+       public:
         Container(Configuration *config) : mConfig{config} {}
 
         bool run(std::vector<std::string> args, bool debug = false);

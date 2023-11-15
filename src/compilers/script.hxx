@@ -1,7 +1,7 @@
 #ifndef LIBPKGUPD_SCRIPT
 #define LIBPKGUPD_SCRIPT
 
-#include "../builder.hxx"
+#include "../builder/builder.hxx"
 
 namespace rlxos::libpkgupd {
     class Script : public Compiler {

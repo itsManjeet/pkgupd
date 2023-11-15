@@ -5,15 +5,15 @@
 
 namespace rlxos::libpkgupd {
     class Configuration {
-    private:
+       private:
         YAML::Node mNode;
 
-    public:
+       public:
         Configuration(YAML::Node const &node) : mNode{node} {}
 
         static std::shared_ptr<Configuration> create(YAML::Node node);
 
-        template<typename T>
+        template <typename T>
         T get(char const *key, T t) {
             if (mNode[key]) {
                 return mNode[key].as<T>();
@@ -24,7 +24,7 @@ namespace rlxos::libpkgupd {
         YAML::Node &node() { return mNode; }
 
         void get(char const *key, std::vector<std::string> &list) {
-            for (auto const &i: mNode[key]) {
+            for (auto const &i : mNode[key]) {
                 list.push_back(i.as<std::string>());
             }
         }

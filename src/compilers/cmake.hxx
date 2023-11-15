@@ -1,7 +1,7 @@
 #ifndef LIBPKGUPD_CMAKE
 #define LIBPKGUPD_CMAKE
 
-#include "../builder.hxx"
+#include "../builder/builder.hxx"
 
 namespace rlxos::libpkgupd {
     class CMake : public Compiler {

@@ -1,7 +1,7 @@
 #ifndef LIBPKGUPD_MESON
 #define LIBPKGUPD_MESON
 
-#include "../builder.hxx"
+#include "../builder/builder.hxx"
 
 namespace rlxos::libpkgupd {
     class Meson : public Compiler {

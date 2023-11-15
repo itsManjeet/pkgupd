@@ -1,7 +1,7 @@
 #ifndef LIBPKGUPD_PYSETUP
 #define LIBPKGUPD_PYSETUP
 
-#include "../builder.hxx"
+#include "../builder/builder.hxx"
 
 namespace rlxos::libpkgupd {
     class PySetup : public Compiler {

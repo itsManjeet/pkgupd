@@ -19,24 +19,24 @@
     [&](std::shared_ptr<PackageInfo> pkg) -> std::vector<std::string> { return pkg->depends(); }
 
 namespace rlxos::libpkgupd {
-    template<typename Information>
+    template <typename Information>
     class Resolver : public Object {
-    public:
+       public:
         std::vector<std::string> visited{};
         using GetPackageFunctionType = std::function<Information(char const *id)>;
         using SkipPackageFunctionType = std::function<bool(Information pkg)>;
         using PackageDependsFunctionType =
-                std::function<std::vector<std::string>(Information pkg)>;
+            std::function<std::vector<std::string>(Information pkg)>;
 
-    private:
+       private:
         GetPackageFunctionType mGetPackageFunction;
         SkipPackageFunctionType mSkipPackageFunction;
         PackageDependsFunctionType mPackageDependsFunction;
 
         bool resolve(Information info, std::vector<Information> &list) {
             if (std::find_if(list.begin(), list.end(), [&](Information pkginfo) -> bool {
-                return pkginfo->id() == info->id();
-            }) != list.end()) {
+                    return pkginfo->id() == info->id();
+                }) != list.end()) {
                 return true;
             }
             if (mSkipPackageFunction(info)) return true;
@@ -46,7 +46,7 @@ namespace rlxos::libpkgupd {
 
             DEBUG("CHECKING " << info->id());
 
-            for (auto const &i: mPackageDependsFunction(info)) {
+            for (auto const &i : mPackageDependsFunction(info)) {
                 auto dep_info = mGetPackageFunction(i.c_str());
                 if (dep_info == nullptr) {
                     p_Error = "Failed to get required package " + i;
@@ -65,12 +65,12 @@ namespace rlxos::libpkgupd {
             return true;
         }
 
-    public:
+       public:
         Resolver(GetPackageFunctionType get_fun, SkipPackageFunctionType skip_fun,
                  PackageDependsFunctionType depends_func)
-                : mGetPackageFunction{get_fun},
-                  mSkipPackageFunction{skip_fun},
-                  mPackageDependsFunction{depends_func} {}
+            : mGetPackageFunction{get_fun},
+              mSkipPackageFunction{skip_fun},
+              mPackageDependsFunction{depends_func} {}
 
         bool depends(std::string id, std::vector<Information> &list) {
             auto packageInfo = mGetPackageFunction(id.c_str());
@@ -82,7 +82,7 @@ namespace rlxos::libpkgupd {
         }
 
         bool depends(Information info, std::vector<Information> &list) {
-            for (auto const &depid: mPackageDependsFunction(info)) {
+            for (auto const &depid : mPackageDependsFunction(info)) {
                 auto dep = mGetPackageFunction(depid.c_str());
                 if (dep == nullptr) {
                     p_Error = "\n Missing required dependency " + depid;

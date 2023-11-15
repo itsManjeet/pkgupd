@@ -15,20 +15,20 @@ using namespace rlxos::libpkgupd;
 #define PROC_GIDMAP "/proc/self/gid_map"
 
 std::map<std::string, int> const clone_flags{
-        {"cgroup", CLONE_NEWCGROUP},
-        {"ipc",    CLONE_NEWIPC},
-        {"ns",     CLONE_NEWNS},
-        {"net",    CLONE_NEWNET},
-        {"pid",    CLONE_NEWPID},
-        {"uts",    CLONE_NEWUTS},
-        {"user",   CLONE_NEWUSER},
+    {"cgroup", CLONE_NEWCGROUP},
+    {"ipc", CLONE_NEWIPC},
+    {"ns", CLONE_NEWNS},
+    {"net", CLONE_NEWNET},
+    {"pid", CLONE_NEWPID},
+    {"uts", CLONE_NEWUTS},
+    {"user", CLONE_NEWUSER},
 };
 
 bool Container::run(std::vector<std::string> data, bool debug) {
     int flags = 0;
     std::vector<std::string> flags_id;
     mConfig->get("clone", flags_id);
-    for (auto const &i: flags_id) {
+    for (auto const &i : flags_id) {
         auto iter = clone_flags.find(i);
         if (iter == clone_flags.end()) {
             p_Error = "invalid clone flag '" + i + "'";
@@ -72,7 +72,7 @@ bool Container::run(std::vector<std::string> data, bool debug) {
 
     std::vector<std::string> mounts;
     mConfig->get("run.mounts", mounts);
-    for (auto const &m: mounts) {
+    for (auto const &m : mounts) {
         std::string source = m;
         std::string dest = roots + "/" + m;
         size_t idx = m.find_first_of(':');
@@ -121,10 +121,10 @@ bool Container::run(std::vector<std::string> data, bool debug) {
 
     std::vector<std::string> environments;
     mConfig->get("environ", environments);
-    for (auto const &i: environments) {
-        putenv((char *) i.c_str());
+    for (auto const &i : environments) {
+        putenv((char *)i.c_str());
     }
 
-    execvp(args[0], (char *const *) args.data());
+    execvp(args[0], (char *const *)args.data());
     exit(1);
 }

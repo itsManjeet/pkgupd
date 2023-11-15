@@ -8,8 +8,8 @@ using namespace rlxos::libpkgupd;
 bool Bundler::resolveLibraries(std::vector<std::string> const &except) {
     std::set<std::string> requiredLibraries;
 
-    for (auto const &d:
-            std::filesystem::recursive_directory_iterator(m_WorkDir)) {
+    for (auto const &d :
+         std::filesystem::recursive_directory_iterator(m_WorkDir)) {
         if (d.is_directory()) {
             continue;
         }
@@ -22,7 +22,7 @@ bool Bundler::resolveLibraries(std::vector<std::string> const &except) {
         }
     }
 
-    for (auto const &i: requiredLibraries) {
+    for (auto const &i : requiredLibraries) {
         auto libname = std::filesystem::path(i).filename().string();
         if (std::find(except.begin(), except.end(), libname) == except.end()) {
             DEBUG("adding " << i);
@@ -48,7 +48,7 @@ std::set<std::string> Bundler::ldd(std::string path) {
     libenv = "LD_LIBRARY_PATH=" + m_WorkDir + ":" + m_WorkDir +
              "/usr/lib:" + m_RootDir + ":" + m_RootDir + "/usr/lib";
     auto [status, output] = Executor().output(
-            "ldd " + path + " 2>&1 | awk '{print $3}'", ".", {libenv});
+        "ldd " + path + " 2>&1 | awk '{print $3}'", ".", {libenv});
 
     std::stringstream ss(output);
     std::set<std::string> libraryList;
@@ -66,7 +66,7 @@ std::set<std::string> Bundler::ldd(std::string path) {
 
 std::string Bundler::mime(std::string path) {
     auto [status, output] =
-            Executor().output("file --mime-type " + path + " | awk '{print $2}'");
+        Executor().output("file --mime-type " + path + " | awk '{print $2}'");
     if (status != 0) {
         throw std::runtime_error("failed to get mime type for " + path + ", " +
                                  output);

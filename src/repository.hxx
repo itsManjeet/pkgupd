@@ -8,13 +8,13 @@
 
 namespace rlxos::libpkgupd {
     class Repository : public Object {
-    private:
+       private:
         Configuration *mConfig;
         std::vector<std::string> repos_list;
         std::string repo_dir;
         std::map<std::string, std::shared_ptr<PackageInfo>> mPackages;
 
-    public:
+       public:
         Repository(Configuration *config);
 
         bool init();

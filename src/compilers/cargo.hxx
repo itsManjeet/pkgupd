@@ -1,7 +1,7 @@
 #ifndef LIBPKGUPD_CARGO
 #define LIBPKGUPD_CARGO
 
-#include "../builder.hxx"
+#include "../builder/builder.hxx"
 
 namespace rlxos::libpkgupd {
     class Cargo : public Compiler {

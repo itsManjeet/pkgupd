@@ -9,10 +9,10 @@
 namespace rlxos::libpkgupd {
 
     class InstalledPackageInfo : public PackageInfo {
-    private:
+       private:
         std::string mInstalledon;
 
-    public:
+       public:
         InstalledPackageInfo(PackageInfo *pkginfo) : PackageInfo{*pkginfo} {}
 
         InstalledPackageInfo(YAML::Node const &node, char const *file);
@@ -21,13 +21,13 @@ namespace rlxos::libpkgupd {
     };
 
     class SystemDatabase : public Object {
-    private:
+       private:
         Configuration *mConfig;
         std::string data_dir;
 
         std::map<std::string, std::shared_ptr<InstalledPackageInfo>> mPackages;
 
-    public:
+       public:
         SystemDatabase(Configuration *config) : mConfig{config} {
             data_dir = mConfig->get<std::string>(DIR_DATA, DEFAULT_DATA_DIR);
             init();
@@ -36,7 +36,7 @@ namespace rlxos::libpkgupd {
         bool init();
 
         std::map<std::string, std::shared_ptr<InstalledPackageInfo>> const &get()
-        const {
+            const {
             return mPackages;
         }
 

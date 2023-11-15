@@ -5,25 +5,16 @@
 
 #include <optional>
 
-#include "builder.hxx"
+#include "builder/builder.hxx"
 #include "defines.hxx"
 #include "package-info.hxx"
 
 namespace rlxos::libpkgupd {
 
-    struct SplitPackage {
-        std::string into;
-        std::string about;
-        std::vector<std::string> depends;
-
-        std::vector<std::string> files;
-    };
-
     class Recipe {
     private:
         std::string mFilePath;
         std::string m_ID, m_Version, m_About;
-        PackageType m_PackageType;
         std::vector<std::string> m_Depends, m_BuildTime;
 
         BuildType m_BuildType;
@@ -32,7 +23,6 @@ namespace rlxos::libpkgupd {
         std::string m_BuildDir;
         std::string m_Configure, m_Compile, m_Install;
         std::string m_PreScript, m_PostScript;
-        std::vector<SplitPackage> m_SplitPackages;
 
         std::vector<std::string> m_SkipStrip;
         bool m_DoStrip;
@@ -40,17 +30,13 @@ namespace rlxos::libpkgupd {
         std::string m_InstallScript;
 
         std::string m_Script;
-        std::string m_Repository;
         std::vector<std::string> m_Backup;
         std::vector<std::string> m_Include;
-
-        std::vector<User> m_Users;
-        std::vector<Group> m_Groups;
 
         YAML::Node m_Node;
 
     public:
-        Recipe(YAML::Node data, std::string file, std::string const &repo);
+        Recipe(YAML::Node data, const std::string &file);
 
         std::string const &id() const { return m_ID; }
 
@@ -58,9 +44,7 @@ namespace rlxos::libpkgupd {
 
         std::string const &about() const { return m_About; }
 
-        PackageType const packageType() const { return m_PackageType; }
-
-        BuildType const buildType() const { return m_BuildType; }
+        BuildType buildType() const { return m_BuildType; }
 
         std::vector<std::string> const &depends() const { return m_Depends; }
 
@@ -92,7 +76,10 @@ namespace rlxos::libpkgupd {
 
         std::vector<std::string> const &skipStrip() const { return m_SkipStrip; }
 
-        std::vector<SplitPackage> const &splits() const { return m_SplitPackages; }
+        std::shared_ptr<PackageInfo> const package() const {
+            return std::make_shared<PackageInfo>(m_ID, m_Version, m_About, m_Depends, m_Backup, m_InstallScript,
+                                                 m_Node);
+        }
 
         bool dostrip() const { return m_DoStrip; }
 
@@ -104,16 +91,11 @@ namespace rlxos::libpkgupd {
 
         void dump(std::ostream &os, bool as_meta = false);
 
-        bool contains(std::string const &pkgid) { return (*this)[pkgid] != nullptr; }
-
         template<typename T>
-        T get(std::string key, T def) const {
+        T get(const std::string &key, T def) const {
             return m_Node[key] ? m_Node[key].as<T>() : def;
         }
 
-        std::shared_ptr<PackageInfo> operator[](std::string name) const;
-
-        std::vector<std::shared_ptr<PackageInfo>> packages() const;
     };
 }  // namespace rlxos::libpkgupd
 

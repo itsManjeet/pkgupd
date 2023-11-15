@@ -38,22 +38,16 @@ PKGUPD_MODULE(info) {
         auto ext = filesystem::path(package_id).extension().string().substr(1);
         if (ext == "yml") {
             recipe = std::make_unique<Recipe>(
-                    YAML::LoadFile(package_id), package_id,
-                    config->get<std::string>("set-repository", ""));
-            package = recipe->packages()[0];
+                    YAML::LoadFile(package_id), package_id);
+            package = recipe->package();
         } else {
             auto archive_manager =
-                    ArchiveManager::create(PACKAGE_TYPE_FROM_STR(ext.c_str()));
-            if (archive_manager == nullptr) {
-                ERROR("Invalid package format, no supported archive manager for '" +
-                      ext + "'");
-                return 1;
-            }
-            archive_pkg = archive_manager->info(package_id.c_str());
+                    ArchiveManager();
+            archive_pkg = archive_manager.info(package_id.c_str());
 
             if (archive_pkg == nullptr) {
                 ERROR("failed to read information file from '" + package_id + "', "
-                              << archive_manager->error());
+                              << archive_manager.error());
                 return 2;
             }
             package = archive_pkg;
@@ -87,11 +81,8 @@ PKGUPD_MODULE(info) {
     if (info_value.length() == 0) {
         cout << BLUE("Name") << "         :   " << GREEN(package->id()) << '\n'
              << BLUE("Version") << "      :   " << BOLD(package->version()) << '\n'
-             << BLUE("About") << "        :   " << BOLD(package->about()) << '\n'
-             << BLUE("Repository") << "   :   " << BOLD(package->repository())
-             << '\n'
-             << BLUE("Type") << "         :   "
-             << GREEN(PACKAGE_TYPE_ID[PACKAGE_TYPE_INT(package->type())]) << endl;
+             << BLUE("About") << "        :   " << BOLD(package->about())
+             << endl;
 
 #define INSTALLED(in) std::dynamic_pointer_cast<InstalledPackageInfo>(in)
 
@@ -114,10 +105,6 @@ PKGUPD_MODULE(info) {
             cout << package->version();
         } else if (info_value == "about") {
             cout << package->about();
-        } else if (info_value == "repository") {
-            cout << package->repository();
-        } else if (info_value == "type") {
-            cout << PACKAGE_TYPE_ID[PACKAGE_TYPE_INT(package->type())];
         } else if (info_value == "installed") {
             cout << (INSTALLED(package) != nullptr ? "true" : "false");
         } else if (info_value == "installed.time") {
@@ -135,8 +122,7 @@ PKGUPD_MODULE(info) {
                 cout << files.size();
             }
         } else if (info_value == "package") {
-            cout << config->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR) + "/" +
-                    package->repository() + "/" + PACKAGE_FILE(package);
+            cout << config->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR) + "/" + PACKAGE_FILE(package);
         }
 
         cout << endl;

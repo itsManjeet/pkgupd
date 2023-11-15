@@ -16,18 +16,18 @@
 
 namespace rlxos::libpkgupd {
     class Object {
-    protected:
+       protected:
         std::string p_Error;
 
-    public:
+       public:
         std::string const &error() const { return p_Error; }
     };
 
     static inline std::string generateRandom(int const len) {
         static const char alnum[] =
-                "0123456789"
-                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                "abcdefghijklmnopqrstuvwxyz";
+            "0123456789"
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "abcdefghijklmnopqrstuvwxyz";
 
         std::string res;
         for (auto i = 0; i < len; i++) {
@@ -50,46 +50,46 @@ namespace rlxos::libpkgupd {
 }  // namespace rlxos::libpkgupd
 
 #define GET_METHOD(type, var) \
-  type const &var() const { return _##var; }
+    type const &var() const { return _##var; }
 
 #define SET_METHOD(type, val) \
-  void val(type val) { _##val = val; }
+    void val(type val) { _##val = val; }
 
 #define METHOD(type, var) \
-  GET_METHOD(type, var)   \
-  SET_METHOD(type, var)
+    GET_METHOD(type, var) \
+    SET_METHOD(type, var)
 
 #define _CHECK_VALUE(type, variableID, variable) \
-  if (data[variableID]) variable = data[variableID].as<type>();
+    if (data[variableID]) variable = data[variableID].as<type>();
 
 #define _CHECK_LIST(type, variableID, variable) \
-  if (data[variableID])                         \
-    for (auto const &i : data[variableID]) variable.push_back(i.as<type>());
+    if (data[variableID])                       \
+        for (auto const &i : data[variableID]) variable.push_back(i.as<type>());
 
-#define _THROW_ERROR(variableID)                               \
-  else throw std::runtime_error(variableID " is missing in " + \
-                                std::string(file));
+#define _THROW_ERROR(variableID)                                 \
+    else throw std::runtime_error(variableID " is missing in " + \
+                                  std::string(file));
 
 #define _USE_FALLBACK(variableID, variable, fallback) else variable = fallback;
 
 #define READ_VALUE(type, variableID, variable) \
-  _CHECK_VALUE(type, variableID, variable)     \
-  _THROW_ERROR(variableID)
+    _CHECK_VALUE(type, variableID, variable)   \
+    _THROW_ERROR(variableID)
 
 #define READ_LIST(type, variableID, variable) \
-  _CHECK_LIST(type, variableID, variable)
+    _CHECK_LIST(type, variableID, variable)
 
 #define READ_OBJECT_LIST(type, variableID, variable) \
-  if (data[variableID])                              \
-    for (auto const &i : data[variableID]) variable.push_back(type(i, file));
+    if (data[variableID])                            \
+        for (auto const &i : data[variableID]) variable.push_back(type(i, file));
 
 #define READ_LIST_FROM(type, variable, from, into) \
-  if (data[#from] && data[#from][#variable])       \
-    for (auto const &i : data[#from][#variable]) into.push_back(i.as<type>());
+    if (data[#from] && data[#from][#variable])     \
+        for (auto const &i : data[#from][#variable]) into.push_back(i.as<type>());
 
 #define OPTIONAL_VALUE(type, variableID, variable, fallback) \
-  _CHECK_VALUE(type, variableID, variable)                   \
-  _USE_FALLBACK(variableID, variable, fallback)
+    _CHECK_VALUE(type, variableID, variable)                 \
+    _USE_FALLBACK(variableID, variable, fallback)
 
 #define DIR_ROOT "dir.root"
 #define DIR_CACHE "dir.cache"
@@ -130,16 +130,16 @@ namespace rlxos::libpkgupd {
 #define DEFAULT_DATADIR DEFAULT_PREFIX "/share"
 #define DEFAULT_LOCALSTATEDIR "/var"
 
-#define PKGUPD_MODULE(id)                                          \
-  extern "C" int PKGUPD_##id(std::vector<std::string> const &args, \
-                             rlxos::libpkgupd::Configuration *config)
+#define PKGUPD_MODULE(id)                                            \
+    extern "C" int PKGUPD_##id(std::vector<std::string> const &args, \
+                               rlxos::libpkgupd::Configuration *config)
 
 #define PKGUPD_MODULE_HELP(id) \
-  extern "C" void PKGUPD_help_##id(std::ostream &os, int padding)
-#define CHECK_ARGS(s)                                     \
-  if (args.size() != s) {                                 \
-    cerr << "need exactly " << s << " arguments" << endl; \
-    return 1;                                             \
-  }
+    extern "C" void PKGUPD_help_##id(std::ostream &os, int padding)
+#define CHECK_ARGS(s)                                         \
+    if (args.size() != s) {                                   \
+        cerr << "need exactly " << s << " arguments" << endl; \
+        return 1;                                             \
+    }
 #define PADDING std::string(padding, ' ')
 #endif

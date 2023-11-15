@@ -40,13 +40,8 @@ PKGUPD_MODULE(inject) {
         uri = filename;
     }
 
-    auto archiveManager = ArchiveManager::create(uri);
-    if (archiveManager == nullptr) {
-        ERROR("failed to get a valid archive manager for " << uri);
-        return 1;
-    }
-
-    auto packageInfo = archiveManager->info(uri.c_str());
+    auto archiveManager = ArchiveManager();
+    auto packageInfo = archiveManager.info(uri.c_str());
     if (packageInfo == nullptr) {
         ERROR("failed to read package information for " << uri);
         return 1;

@@ -21,7 +21,7 @@ namespace rlxos::libpkgupd {
         int totaldotz = 40;
         double fractiondownloaded = NowDownloaded / TotalToDownload;
         // part of the progressmeter that's already "full"
-        int dotz = (int) round(fractiondownloaded * totaldotz);
+        int dotz = (int)round(fractiondownloaded * totaldotz);
 
         // create the "meter"
         int ii = 0;
@@ -68,7 +68,7 @@ namespace rlxos::libpkgupd {
 
         std::string version_part = "/" + mConfig->get<std::string>("version", "2200");
 
-        for (auto const &mirror: mirrors) {
+        for (auto const &mirror : mirrors) {
             std::string fileurl = mirror + version_part + "/pkgs/" + file;
 
             if (mConfig->get("downloader.check", true)) {

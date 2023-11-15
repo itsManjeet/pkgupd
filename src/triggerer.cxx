@@ -237,23 +237,6 @@ namespace rlxos::libpkgupd {
         bool status = true;
         std::vector<Triggerer::type> triggers;
         for (auto const &info: infos) {
-            for (auto const &grp: info.first->groups()) {
-                if (!grp.exists()) {
-                    PROCESS("creating group " + grp.name());
-                    if (!grp.create()) {
-                        ERROR("failed to create " + grp.name() + " group");
-                    }
-                }
-            }
-            for (auto const &usr: info.first->users()) {
-                if (!usr.exists()) {
-                    PROCESS("creating user " + usr.name());
-                    if (!usr.create()) {
-                        ERROR("failed to create " + usr.name() + " user");
-                    }
-                }
-            }
-
             if (info.first->script().length()) {
                 int status = Executor::execute(info.first->script(), ".",
                                                {"VERSION=" + info.first->version()});

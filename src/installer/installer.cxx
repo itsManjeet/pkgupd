@@ -2,45 +2,33 @@
 
 using namespace rlxos::libpkgupd;
 
+#include "../archive-manager/archive-manager.hxx"
 #include "../common.hxx"
 #include "../downloader.hxx"
 #include "../repository.hxx"
 #include "../resolver.hxx"
 #include "../triggerer.hxx"
-#include "appimage-installer/appimage-installer.hxx"
-#include "machine-installer/machine-installer.hxx"
-#include "package-installer/package-installer.hxx"
-
-std::shared_ptr<Installer::Injector> Installer::Injector::create(
-        PackageType package_type, Configuration *config) {
-    switch (package_type) {
-        case PackageType::APPIMAGE:
-            return std::make_shared<AppImageInstaller>(config);
-        case PackageType::MACHINE:
-            return std::make_shared<MachineInstaller>(config);
-        case PackageType::RLXOS:
-        case PackageType::PACKAGE:
-            return std::make_shared<PackageInstaller>(config);
-    }
-    return nullptr;
-}
 
 bool Installer::install(
-        std::vector<std::pair<std::string, std::shared_ptr<PackageInfo>>> const &pkgs,
-        SystemDatabase *sys_db) {
+    std::vector<std::pair<std::string, std::shared_ptr<PackageInfo>>> const &pkgs,
+    SystemDatabase *sys_db) {
     std::vector<std::pair<std::shared_ptr<InstalledPackageInfo>, std::vector<std::string>>>
-            packages;
+        packages;
 
     std::filesystem::path root_dir =
-            mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
+        mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
 
     if (access(root_dir.c_str(), W_OK) != 0) {
         p_Error = "no write permission on root directory = '" + root_dir.string() +
                   "', " + std::string(strerror(errno));
         return false;
     }
-    for (auto pkg: pkgs) {
+    for (auto pkg : pkgs) {
         std::filesystem::path package_path(pkg.first);
+        ArchiveManager archive_manager;
+        std::shared_ptr<PackageInfo> package_info;
+        std::filesystem::path root_dir;
+
         if (!std::filesystem::exists(package_path)) {
             p_Error = "package file '" + package_path.string() + "' not exists";
             return false;
@@ -49,15 +37,8 @@ bool Installer::install(
         std::cout << "=>> " << pkg.first << ":" << (pkg.second == nullptr) << std::endl;
 
         PROCESS(
-                "installing " << pkg.second->id() << " " << pkg.second->version()
-                              << (pkg.second->isDependency() ? " as dependency" : ""));
-
-        auto injector = Injector::create(pkg.second->type(), mConfig);
-        if (injector == nullptr) {
-            p_Error = "no supported injector configured for '" +
-                      std::string(PACKAGE_TYPE_STR[int(pkg.second->type())]) + "'";
-            return false;
-        }
+            "installing " << pkg.second->id() << " " << pkg.second->version()
+                          << (pkg.second->isDependency() ? " as dependency" : ""));
 
         std::vector<std::string> backups;
         mConfig->get("backup", backups);
@@ -66,15 +47,15 @@ bool Installer::install(
                        pkg.second->backups().end());
 
         if (!mConfig->get("no-backup", false)) {
-            for (auto const &i: backups) {
+            for (auto const &i : backups) {
                 std::filesystem::path backup_path = root_dir / i;
                 if (std::filesystem::exists(backup_path)) {
                     std::error_code error;
                     std::filesystem::copy(
-                            backup_path, (backup_path.string() + ".old"),
-                            std::filesystem::copy_options::recursive |
+                        backup_path, (backup_path.string() + ".old"),
+                        std::filesystem::copy_options::recursive |
                             std::filesystem::copy_options::overwrite_existing,
-                            error);
+                        error);
                     if (error) {
                         p_Error = "failed to backup file " + backup_path.string();
                         return false;
@@ -83,24 +64,36 @@ bool Installer::install(
             }
         }
 
-        std::vector<std::string> files;
-        auto package_info = injector->inject(package_path.c_str(), files);
+        package_info = archive_manager.info(package_path.c_str());
         if (package_info == nullptr) {
-            p_Error = injector->error();
+            p_Error = archive_manager.error();
+            return false;
+        }
+
+        std::vector<std::string> files;
+        if (!archive_manager.list(package_path.c_str(), files)) {
+            p_Error = archive_manager.error();
+            return false;
+        }
+
+        root_dir = mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
+
+        if (!archive_manager.extract(package_path.c_str(), root_dir.c_str(), files)) {
+            p_Error = archive_manager.error();
             return false;
         }
 
         if (!mConfig->get("no-backup", false)) {
-            for (auto const &i: backups) {
+            for (auto const &i : backups) {
                 std::filesystem::path backup_path = root_dir / i;
                 if (std::filesystem::exists(backup_path) &&
                     std::filesystem::exists((backup_path.string() + ".old"))) {
                     std::error_code error;
                     std::filesystem::copy(
-                            backup_path, (backup_path.string() + ".new"),
-                            std::filesystem::copy_options::recursive |
+                        backup_path, (backup_path.string() + ".new"),
+                        std::filesystem::copy_options::recursive |
                             std::filesystem::copy_options::overwrite_existing,
-                            error);
+                        error);
                     if (error) {
                         p_Error = "failed to add new backup file " + backup_path.string();
                         return false;
@@ -133,7 +126,7 @@ bool Installer::install(
                     }
                     if (std::filesystem::exists(root_dir / file) &&
                         std::find(files.begin(), files.end(), "./" + file) ==
-                        files.end()) {
+                            files.end()) {
                         if (file.find("./bin", 0) == 0 || file.find("./lib", 0) == 0 ||
                             file.find("./sbin", 0) == 0) {
                             continue;
@@ -150,12 +143,12 @@ bool Installer::install(
         }
 
         auto installed_package_info =
-                sys_db->add(package_info, files,
-                            mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR),
-                            false, is_dependency);
+            sys_db->add(package_info, files,
+                        mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR),
+                        false, is_dependency);
         if (installed_package_info == nullptr) {
             p_Error =
-                    "failed to register '" + package_info->id() + "', " + sys_db->error();
+                "failed to register '" + package_info->id() + "', " + sys_db->error();
             return false;
         }
         packages.push_back({installed_package_info, files});
@@ -191,14 +184,14 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs, Reposito
     Downloader downloader(mConfig);
 
     std::filesystem::path root_dir =
-            mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
+        mConfig->get<std::string>(DIR_ROOT, DEFAULT_ROOT_DIR);
     std::filesystem::path pkgs_dir =
-            mConfig->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR);
+        mConfig->get<std::string>(DIR_PKGS, DEFAULT_PKGS_DIR);
 
     std::vector<std::shared_ptr<PackageInfo>> required_packages, packages_to_install;
 
     if (mConfig->get("force", false) == false) {
-        for (auto const &p: pkgs) {
+        for (auto const &p : pkgs) {
             auto system_package = system_database->get(p->id().c_str());
             if (system_package != nullptr &&
                 system_package->version() == p->version()) {
@@ -213,11 +206,11 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs, Reposito
 
     if (mConfig->get("installer.depends", true) == true) {
         auto resolver =
-                Resolver<std::shared_ptr<PackageInfo>>(DEFAULT_GET_PACKAE_FUNCTION, DEFAULT_SKIP_PACKAGE_FUNCTION,
-                                                       DEFAULT_DEPENDS_FUNCTION);
+            Resolver<std::shared_ptr<PackageInfo>>(DEFAULT_GET_PACKAE_FUNCTION, DEFAULT_SKIP_PACKAGE_FUNCTION,
+                                                   DEFAULT_DEPENDS_FUNCTION);
         PROCESS("generating dependency graph");
         std::vector<std::shared_ptr<PackageInfo>> dependencies;
-        for (auto const &p: required_packages) {
+        for (auto const &p : required_packages) {
             if (!resolver.depends(p, dependencies)) {
                 p_Error = resolver.error();
                 return false;
@@ -226,7 +219,7 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs, Reposito
 
         auto skip_fun = DEFAULT_SKIP_PACKAGE_FUNCTION;
 
-        for (auto const &p: required_packages) {
+        for (auto const &p : required_packages) {
             auto iter = std::find_if(dependencies.begin(), dependencies.end(),
                                      [&p](std::shared_ptr<PackageInfo> pkginfo) -> bool {
                                          return p->id() == pkginfo->id();
@@ -244,7 +237,7 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs, Reposito
 
         if (dependencies.size()) {
             MESSAGE(BLUE("::"), "required " << dependencies.size() << " package(s)");
-            for (auto const &i: dependencies) {
+            for (auto const &i : dependencies) {
                 std::cout << "- " << i->id() << ":" << i->version() << std::endl;
             }
             if (!ask_user("Do you want to continue", mConfig)) {
@@ -255,7 +248,7 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs, Reposito
 
         packages_to_install = dependencies;
     } else {
-        for (auto const &i: required_packages) {
+        for (auto const &i : required_packages) {
             packages_to_install.push_back(i);
         }
     }
@@ -265,16 +258,16 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs, Reposito
         return true;
     }
 
-    for (auto i: packages_to_install) {
+    for (auto i : packages_to_install) {
         std::filesystem::path package_path =
-                pkgs_dir / i->repository() / (PACKAGE_FILE(i));
+            pkgs_dir / (PACKAGE_FILE(i));
 
         if (!std::filesystem::exists(package_path.parent_path())) {
             std::error_code err;
             std::filesystem::create_directories(package_path.parent_path(), err);
             if (err) {
                 p_Error =
-                        "failed to create required directories '" + err.message() + "'";
+                    "failed to create required directories '" + err.message() + "'";
                 return false;
             }
         }
@@ -284,7 +277,7 @@ bool Installer::install(std::vector<std::shared_ptr<PackageInfo>> pkgs, Reposito
             INFO(i->id() << " found in cache");
         } else {
             PROCESS("downloading " << i->id());
-            if (!downloader.get((i->repository() + "/" + (PACKAGE_FILE(i))).c_str(),
+            if (!downloader.get(("cache/" + (PACKAGE_FILE(i))).c_str(),
                                 package_path.c_str())) {
                 p_Error = "failed to get required file '" + PACKAGE_FILE(i);
                 return false;

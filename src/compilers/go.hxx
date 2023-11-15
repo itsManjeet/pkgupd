@@ -1,7 +1,7 @@
 #ifndef LIBPKGUPD_GO
 #define LIBPKGUPD_GO
 
-#include "../builder.hxx"
+#include "../builder/builder.hxx"
 
 namespace rlxos::libpkgupd {
     class Go : public Compiler {

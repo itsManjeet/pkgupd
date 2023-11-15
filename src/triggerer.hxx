@@ -7,7 +7,7 @@
 
 namespace rlxos::libpkgupd {
     class Triggerer : public Object {
-    public:
+       public:
         enum class type : int {
             INVALID,
             MIME,
@@ -25,7 +25,7 @@ namespace rlxos::libpkgupd {
             LIBRARY_CACHE,
         };
 
-    protected:
+       protected:
         std::string _mesg(type t);
 
         std::string _regex(type t);
@@ -36,11 +36,11 @@ namespace rlxos::libpkgupd {
 
         std::vector<type> _get(std::vector<std::string> const &fileslist);
 
-    public:
+       public:
         Triggerer() {}
 
         bool trigger(std::vector<std::pair<std::shared_ptr<InstalledPackageInfo>,
-                std::vector<std::string>>> const &infos);
+                                           std::vector<std::string>>> const &infos);
 
         bool trigger();
     };

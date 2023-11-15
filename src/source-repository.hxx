@@ -6,11 +6,11 @@
 
 namespace rlxos::libpkgupd {
     class SourceRepository : public Object {
-    private:
+       private:
         Configuration *mConfig;
         std::string mRecipeDir;
 
-    public:
+       public:
         SourceRepository(Configuration *config);
 
         std::shared_ptr<Recipe> get(char const *id);

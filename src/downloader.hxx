@@ -6,14 +6,14 @@
 
 namespace rlxos::libpkgupd {
     class Downloader : public Object {
-    private:
+       private:
         Configuration *mConfig;
 
         bool valid(char const *url);
 
         static size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *fstream);
 
-    public:
+       public:
         Downloader(Configuration *config) : mConfig{config} {}
 
         bool get(char const *file, char const *output);

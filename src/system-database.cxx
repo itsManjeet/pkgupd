@@ -13,7 +13,7 @@ namespace rlxos::libpkgupd {
 
     InstalledPackageInfo::InstalledPackageInfo(YAML::Node const &data,
                                                char const *file)
-            : PackageInfo(data, file) {
+        : PackageInfo(data, file) {
         READ_VALUE(std::string, "installed_on", mInstalledon);
         OPTIONAL_VALUE(bool, "is-dependency", m_IsDependency, false);
     }
@@ -32,12 +32,12 @@ namespace rlxos::libpkgupd {
                 return false;
             }
         }
-        for (auto const &file: std::filesystem::directory_iterator(data_dir)) {
+        for (auto const &file : std::filesystem::directory_iterator(data_dir)) {
             if (file.path().has_extension()) continue;
             try {
                 mPackages[file.path().filename().string()] =
-                        std::make_shared<InstalledPackageInfo>(
-                                YAML::LoadFile(file.path().string()), file.path().c_str());
+                    std::make_shared<InstalledPackageInfo>(
+                        YAML::LoadFile(file.path().string()), file.path().c_str());
             } catch (std::exception const &exception) {
                 std::cerr << "failed to load: " << exception.what() << std::endl;
             }
@@ -49,7 +49,7 @@ namespace rlxos::libpkgupd {
     bool SystemDatabase::get_files(std::shared_ptr<InstalledPackageInfo> packageInfo,
                                    std::vector<std::string> &files) {
         auto files_path =
-                std::filesystem::path(data_dir) / (packageInfo->id() + ".files");
+            std::filesystem::path(data_dir) / (packageInfo->id() + ".files");
         if (!std::filesystem::exists(files_path)) {
             p_Error = "no files data exists for " + packageInfo->id() + " at " +
                       files_path.string();
@@ -113,7 +113,7 @@ namespace rlxos::libpkgupd {
 
         mPackages[pkginfo->id()] = std::make_shared<InstalledPackageInfo>(pkginfo.get());
         std::ofstream files_writer(data_file.string() + ".files");
-        for (auto const &i: files) {
+        for (auto const &i : files) {
             files_writer << i << std::endl;
         }
         files_writer.close();

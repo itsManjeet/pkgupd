@@ -1,7 +1,7 @@
 #ifndef LIBPKGUPD_AUTOCONF
 #define LIBPKGUPD_AUTOCONF
 
-#include "../builder.hxx"
+#include "../builder/builder.hxx"
 
 namespace rlxos::libpkgupd {
     class AutoConf : public Compiler {

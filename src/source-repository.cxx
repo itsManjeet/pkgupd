@@ -16,19 +16,14 @@ SourceRepository::SourceRepository(Configuration *config) : mConfig(config) {
 
 std::shared_ptr<Recipe> SourceRepository::get(char const *id) {
     std::vector<std::string> repos;
-    mConfig->get(REPOS, repos);
 
     std::filesystem::path required_path = (std::string(id) + ".yml");
 
-    for (auto const &i: repos) {
-        std::filesystem::path repo_path = std::filesystem::path(mRecipeDir) / i;
-        if (!std::filesystem::exists(repo_path)) continue;
-
-        auto recipefile = repo_path / id / (std::string(id) + ".yml");
-        if (std::filesystem::exists(recipefile)) {
-            YAML::Node node = YAML::LoadFile(recipefile.string());
-            return std::make_shared<Recipe>(node, recipefile.string(), i);
-        }
+    auto recipefile = std::filesystem::path(mRecipeDir) / (std::string(id) + ".yml");
+    if (std::filesystem::exists(recipefile)) {
+        YAML::Node node = YAML::LoadFile(recipefile.string());
+        return std::make_shared<Recipe>(node, recipefile.string());
     }
+
     return nullptr;
 }

@@ -1,4 +1,4 @@
-#include "../builder.hxx"
+#include "../builder/builder.hxx"
 #include "../installer/installer.hxx"
 #include "../recipe.hxx"
 #include "../repository.hxx"
@@ -39,8 +39,7 @@ PKGUPD_MODULE(build) {
     if (filesystem::exists(recipe_file)) {
         auto node = YAML::LoadFile(recipe_file);
         required_recipe = std::make_shared<Recipe>(
-                node, recipe_file,
-                config->get<std::string>("build.repository", "testing"));
+                node, recipe_file);
     } else {
         PROCESS("searching required recipe file '" << recipe_file << "'");
         required_recipe = sourceRepository->get(recipe_file.c_str());
@@ -88,13 +87,9 @@ PKGUPD_MODULE(build) {
         for (auto const &i: recipesList) {
             bool to_build = false;
             std::vector<std::shared_ptr<PackageInfo>> toInstall;
-            for (auto const &sub: i->packages()) {
-                auto subPackage = repository->get(i->id().c_str());
-                if (subPackage == nullptr) {
-                    to_build = true;
-                    break;
-                }
-                toInstall.push_back(subPackage);
+            if (repository->get(i->id().c_str())) {
+                to_build = true;
+                toInstall.push_back(i->package());
             }
             if (to_build) {
                 // build this recipe

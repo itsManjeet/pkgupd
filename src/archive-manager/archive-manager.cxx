@@ -1,57 +1,119 @@
 #include "archive-manager.hxx"
 
-#include "appimage/appimage.hxx"
-#include "squash/squash.hxx"
-#include "tarball/tarball.hxx"
+using namespace rlxos::libpkgupd;
 
-namespace rlxos::libpkgupd {
-    std::shared_ptr<ArchiveManager> ArchiveManager::create(
-            ArchiveManagerType type) {
-        switch (type) {
-#define X(ID, Object)          \
-  case ArchiveManagerType::ID: \
-    return std::make_shared<Object>();
+bool ArchiveManager::get(char const *tarfile, char const *input_path,
+                         std::string &output) {
+    std::string cmd = "/bin/tar";
+    cmd += " --zstd -O -xPf";
+    cmd += tarfile;
+    cmd += " ";
+    cmd += input_path;
 
-            ARCHIVE_TYPE_LIST
-        }
+    auto [status, out] = Executor::output(cmd);
+    if (status != 0) {
+        p_Error = "failed to get data from " + std::string(input_path);
+        return false;
+    }
+    output = out;
+    return true;
+}
 
-#undef X
+bool ArchiveManager::extract_file(char const *tarfile, char const *input_path,
+                                  char const *output_path) {
+    std::string cmd = "/bin/tar";
+    cmd += " --zstd -O -xPf";
+    cmd += tarfile;
+    cmd += " ";
+    cmd += " ";
+    cmd += input_path;
+    cmd += " >";
+    cmd += output_path;
 
+    auto [status, out] = Executor::output(cmd);
+    if (status != 0) {
+        p_Error = "failed to get data from " + std::string(input_path) + ", " + out;
+        return false;
+    }
+    return true;
+}
+
+std::shared_ptr<PackageInfo> ArchiveManager::info(char const *input_path) {
+    std::string content;
+    if (!get(input_path, "./info", content)) {
         return nullptr;
     }
 
-    std::shared_ptr<ArchiveManager> ArchiveManager::create(PackageType type) {
-        switch (type) {
-            case PackageType::PACKAGE:
-            case PackageType::RLXOS:
-            case PackageType::FONT:
-            case PackageType::ICON:
-            case PackageType::THEME:
-            case PackageType::MACHINE:
-                return std::make_shared<TarBall>();
-            case PackageType::APPIMAGE:
-                return std::make_shared<AppImage>();
-            case PackageType::IMAGE:
-                return std::make_shared<Squash>();
-        }
+    std::shared_ptr<PackageInfo> pkginfo = nullptr;
+    try {
+        auto node = YAML::Load(content);
+        pkginfo = std::make_shared<PackageInfo>(node, input_path);
+    } catch (const std::exception &exc) {
+        p_Error = exc.what();
+    }
+    return pkginfo;
+}
 
-        return nullptr;
+bool ArchiveManager::list(char const *input_path, std::vector<std::string> &files) {
+    std::string cmd = "/bin/tar";
+    cmd += " --zstd -tPf ";
+    cmd += input_path;
+
+    auto [status, output] = Executor::output(cmd);
+    if (status != 0) {
+        p_Error = output;
+        return false;
     }
 
-    std::shared_ptr<ArchiveManager> ArchiveManager::create(
-            std::string packagePath) {
-        std::filesystem::path package(packagePath);
-        if (!package.has_extension()) {
-            return nullptr;
-        }
+    std::stringstream ss(output);
+    std::string file;
 
-        std::string ext = package.extension().string();
-        ext = ext.substr(1, ext.length() - 1);
-        auto packageType = PACKAGE_TYPE_FROM_STR(ext.c_str());
-        if (packageType == PackageType::N_PACKAGE_TYPE) {
-            ERROR("invalid package type for extension: " << ext);
-            return nullptr;
+    while (std::getline(ss, file, '\n')) {
+        files.push_back(file);
+    };
+    return true;
+}
+
+bool ArchiveManager::extract(char const *input_path, char const *output_path,
+                             std::vector<std::string> &) {
+    std::string cmd = "/bin/tar";
+    cmd += " --zstd";
+    cmd += " --exclude './info'";
+    cmd += " -xPhpf ";
+    cmd += input_path;
+    cmd += " -C ";
+    cmd += output_path;
+
+    if (!std::filesystem::exists(output_path)) {
+        std::error_code code;
+        std::filesystem::create_directories(output_path, code);
+        if (code) {
+            p_Error = "failed to create required directory '" +
+                      std::string(output_path) + "'";
+            return false;
         }
-        return ArchiveManager::create(packageType);
     }
-}  // namespace rlxos::libpkgupd
+
+    if (Executor::execute(cmd) != 0) {
+        p_Error = "failed to execute extraction command";
+        return false;
+    }
+
+    return true;
+}
+
+bool ArchiveManager::compress(char const *input_path, char const *src_dir) {
+    std::string cmd = "/bin/tar";
+    cmd += " --zstd -cPf ";
+    cmd += input_path;
+    cmd += " -C ";
+    cmd += src_dir;
+    cmd += " . ";
+
+    if (Executor::execute(cmd) != 0) {
+        p_Error = "failed to execute command for compression '" + cmd + "'";
+        return false;
+    }
+
+    return true;
+}

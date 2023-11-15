@@ -1,7 +1,7 @@
 #ifndef LIBPKGUPD_MAKEFILE
 #define LIBPKGUPD_MAKEFILE
 
-#include "../builder.hxx"
+#include "../builder/builder.hxx"
 
 namespace rlxos::libpkgupd {
     class Makefile : public Compiler {

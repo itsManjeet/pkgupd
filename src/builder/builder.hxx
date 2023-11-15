@@ -4,12 +4,12 @@
 #include <filesystem>
 #include <system_error>
 
-#include "archive-manager/archive-manager.hxx"
-#include "configuration.hxx"
-#include "defines.hxx"
-#include "repository.hxx"
-#include "system-database.hxx"
-#include "utils/utils.hxx"
+#include "../archive-manager/archive-manager.hxx"
+#include "../configuration.hxx"
+#include "../defines.hxx"
+#include "../repository.hxx"
+#include "../system-database.hxx"
+#include "../utils/utils.hxx"
 
 namespace rlxos::libpkgupd {
 
@@ -21,8 +21,7 @@ namespace rlxos::libpkgupd {
     X(PySetup, pysetup, "setup.py")    \
     X(Go, go, "go.mod")                \
     X(Cargo, cargo, "cargo.toml")      \
-    X(Makefile, makefile, "Makefile")  \
-    X(System, system, "")
+    X(Makefile, makefile, "Makefile")
 
     enum class BuildType : int {
 #define X(ID, name, file) ID,

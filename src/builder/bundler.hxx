@@ -1,25 +1,25 @@
 #ifndef LIBPKGUPD_BUNDLER_HH
 #define LIBPKGUPD_BUNDLER_HH
 
-#include "configuration.hxx"
-#include "recipe.hxx"
+#include "../configuration.hxx"
+#include "../recipe.hxx"
 
 namespace rlxos::libpkgupd {
-/**
- * @brief Bundler helps to bundle all the required files and libraries
- * needed to generate a self contained bundled
- *
- */
+    /**
+     * @brief Bundler helps to bundle all the required files and libraries
+     * needed to generate a self contained bundled
+     *
+     */
     class Bundler : public Object {
-    private:
+       private:
         std::string m_WorkDir;  //!< Holds the path of working directory which holds
         //!< the bundled files
         std::string m_RootDir;  //<! Holds the path to roots from where libraries and
         // files will be taken
 
-    public:
+       public:
         Bundler(std::string workdir, std::string rootdir)
-                : m_WorkDir(workdir), m_RootDir(rootdir) {}
+            : m_WorkDir(workdir), m_RootDir(rootdir) {}
 
         /**
          * @brief wrapper for ldd to list required libraries

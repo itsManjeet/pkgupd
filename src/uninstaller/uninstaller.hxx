@@ -10,7 +10,7 @@ namespace rlxos::libpkgupd {
         Configuration *mConfig;
 
     public:
-        Uninstaller(Configuration *config) : mConfig{config} {}
+        explicit Uninstaller(Configuration *config) : mConfig{config} {}
 
         bool uninstall(std::shared_ptr<InstalledPackageInfo> pkginfo,
                        SystemDatabase *sys_db);
