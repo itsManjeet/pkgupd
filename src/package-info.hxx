@@ -11,20 +11,21 @@
 #include "exec.hxx"
 
 namespace rlxos::libpkgupd {
-#define PACKAGE_FILE(pkg)                    \
-    pkg->id() + "-" + pkg->version() + ".pkg"
+#define PACKAGE_FILE(pkg) \
+    pkg->id() + "-" + pkg->version() + "-" + pkg->cache() + ".pkg"
 
     /**
      * @brief PackageInfo holds all the information of rlxos packages
      * their dependencies and required user groups
      */
     class PackageInfo {
-    protected:
+       protected:
         std::string m_ID;
         std::string m_Version;
         std::string m_About;
 
         std::vector<std::string> m_Depends;
+        std::string m_Cache;
 
         std::string m_Script;
 
@@ -34,19 +35,21 @@ namespace rlxos::libpkgupd {
 
         YAML::Node m_Node;
 
-    public:
+       public:
         PackageInfo(YAML::Node const &data, std::string const &file);
 
         PackageInfo(std::string id, std::string version, std::string about,
                     std::vector<std::string> depends,
-                    std::vector<std::string> backup, std::string script, YAML::Node node)
-                : m_ID{id},
-                  m_Version{version},
-                  m_About{about},
-                  m_Depends{depends},
-                  m_Script{script},
-                  m_Backup{backup},
-                  m_Node{node} {}
+                    std::vector<std::string> backup, std::string script,
+                    std::string cache, YAML::Node node)
+            : m_ID{id},
+              m_Version{version},
+              m_About{about},
+              m_Depends{depends},
+              m_Script{script},
+              m_Backup{backup},
+              m_Cache{cache},
+              m_Node{node} {}
 
         virtual ~PackageInfo() = default;
 
@@ -59,6 +62,8 @@ namespace rlxos::libpkgupd {
         std::vector<std::string> const &depends() const { return m_Depends; }
 
         std::vector<std::string> const &backups() const { return m_Backup; }
+
+        std::string const &cache() const { return m_Cache; }
 
         std::string const &script() const { return m_Script; };
 

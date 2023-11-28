@@ -12,7 +12,7 @@
 namespace rlxos::libpkgupd {
 
     class Recipe {
-    private:
+       private:
         std::string mFilePath;
         std::string m_ID, m_Version, m_About;
         std::vector<std::string> m_Depends, m_BuildTime;
@@ -35,7 +35,7 @@ namespace rlxos::libpkgupd {
 
         YAML::Node m_Node;
 
-    public:
+       public:
         Recipe(YAML::Node data, const std::string &file);
 
         std::string const &id() const { return m_ID; }
@@ -78,6 +78,7 @@ namespace rlxos::libpkgupd {
 
         std::shared_ptr<PackageInfo> const package() const {
             return std::make_shared<PackageInfo>(m_ID, m_Version, m_About, m_Depends, m_Backup, m_InstallScript,
+                                                 hash(),
                                                  m_Node);
         }
 
@@ -89,13 +90,14 @@ namespace rlxos::libpkgupd {
 
         YAML::Node const &node() const { return m_Node; }
 
-        void dump(std::ostream &os, bool as_meta = false);
+        void dump(std::ostream &os, bool as_meta = false) const;
 
-        template<typename T>
+        template <typename T>
         T get(const std::string &key, T def) const {
             return m_Node[key] ? m_Node[key].as<T>() : def;
         }
 
+        std::string hash() const;
     };
 }  // namespace rlxos::libpkgupd
 

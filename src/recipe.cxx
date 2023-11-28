@@ -68,7 +68,7 @@ namespace rlxos::libpkgupd {
         _R(m_Script);
     }
 
-    void Recipe::dump(std::ostream &os, bool as_meta) {
+    void Recipe::dump(std::ostream &os, bool as_meta) const {
         if (!as_meta) {
             os << as_meta;
             return;
@@ -82,5 +82,19 @@ namespace rlxos::libpkgupd {
         while (std::getline(ss, line, '\n')) {
             os << "    " << line << std::endl;
         }
+    }
+
+    std::string Recipe::hash() const {
+        std::stringstream ss;
+        dump(ss);
+
+        unsigned h = 37;
+        auto const str = ss.str();
+        for (auto c : str)
+            h = (h * 54059) ^ (str[0] * 76963);
+
+        std::stringstream hex;
+        hex << std::hex << h;
+        return hex.str();
     }
 }  // namespace rlxos::libpkgupd

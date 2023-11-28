@@ -8,6 +8,7 @@ PackageInfo::PackageInfo(YAML::Node const &data, std::string const &file) {
     READ_VALUE(std::string, "about", m_About);
     READ_LIST(std::string, "depends", m_Depends);
     READ_LIST(std::string, "backup", m_Backup);
+    READ_VALUE(std::string, "cache", m_Cache);
 
     OPTIONAL_VALUE(std::string, "script", m_Script, "");
 
@@ -18,18 +19,19 @@ void PackageInfo::dump(std::ostream &os) const {
     os << "id: " << m_ID << "\n";
 
     os << "version: " << m_Version << "\n"
-       << "about: " << m_About << "\n";
+       << "about: " << m_About << "\n"
+       << "cache: " << m_Cache << "\n";
 
     if (m_Depends.size()) {
         os << "depends:"
            << "\n";
-        for (auto const &i: m_Depends) os << " - " << i << "\n";
+        for (auto const &i : m_Depends) os << " - " << i << "\n";
     }
 
     if (m_Backup.size()) {
         os << "backup:"
            << "\n";
-        for (auto const &i: m_Backup) os << " - " << i << "\n";
+        for (auto const &i : m_Backup) os << " - " << i << "\n";
     }
 
     if (m_Script.size()) {
