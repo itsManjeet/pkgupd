@@ -1,19 +1,20 @@
-#include "triggerer.hxx"
+#include "Trigger.hxx"
 
 #include <algorithm>
 #include <iostream>
 #include <regex>
 
-#include "exec.hxx"
+#include "../exec.hxx"
 
 namespace rlxos::libpkgupd {
-
-    Triggerer::type Triggerer::_get(std::string const &path) {
-        for (auto const &i:
-                {type::MIME, type::DESKTOP, type::FONTS_SCALE, type::UDEV, type::ICONS,
+    Triggerer::type Triggerer::_get(std::string const& path) {
+        for (auto const& i:
+             {
+                 type::MIME, type::DESKTOP, type::FONTS_SCALE, type::UDEV, type::ICONS,
                  type::GTK3_INPUT_MODULES, type::GTK2_INPUT_MODULES, type::GLIB_SCHEMAS,
                  type::GIO_MODULES, type::GDK_PIXBUF, type::FONTS_CACHE,
-                 type::LIBRARY_CACHE}) {
+                 type::LIBRARY_CACHE
+             }) {
             std::string pattern = _regex(i);
             if (path.find(pattern) != std::string::npos) {
                 return i;
@@ -69,8 +70,8 @@ namespace rlxos::libpkgupd {
 
             case type::FONTS_SCALE: {
                 bool status = true;
-                for (auto const &i:
-                        std::filesystem::directory_iterator("/usr/share/fonts")) {
+                for (auto const& i:
+                     std::filesystem::directory_iterator("/usr/share/fonts")) {
                     std::error_code ee;
                     std::filesystem::remove(i.path() / "fonts.scale", ee);
                     std::filesystem::remove(i.path() / "fonts.dir", ee);
@@ -80,14 +81,14 @@ namespace rlxos::libpkgupd {
                         std::filesystem::remove(i.path(), ee);
 
                     if (int status = Executor().execute("mkfontdir " + i.path().string());
-                            status != 0) {
+                        status != 0) {
                         p_Error +=
                                 "\nmkfontdir failed with exit code: " + std::to_string(status);
                         status = false;
                     }
 
                     if (int status = Executor().execute("mkfontscale " + i.path().string());
-                            status != 0) {
+                        status != 0) {
                         p_Error +=
                                 "\nmkfontscale failed with exit code: " + std::to_string(status);
                         status = false;
@@ -99,13 +100,13 @@ namespace rlxos::libpkgupd {
 
             case type::ICONS: {
                 bool status = true;
-                for (auto const &i:
-                        std::filesystem::directory_iterator("/usr/share/icons")) {
+                for (auto const& i:
+                     std::filesystem::directory_iterator("/usr/share/icons")) {
                     if (int status = Executor().execute("gtk-update-icon-cache -q " +
                                                         i.path().string());
-                            status != 0) {
+                        status != 0) {
                         p_Error += "\ngtk-update-icon-cahce failed with exit code: " +
-                                   std::to_string(status);
+                                std::to_string(status);
                         status = false;
                     }
                 }
@@ -118,7 +119,7 @@ namespace rlxos::libpkgupd {
 
         if (int status = Executor().execute(cmd); status != 0) {
             p_Error += "\nFailed to '" + _mesg(t) +
-                       "' command failed with exit code: " + std::to_string(status);
+                    "' command failed with exit code: " + std::to_string(status);
             return false;
         }
 
@@ -126,7 +127,8 @@ namespace rlxos::libpkgupd {
     }
 
     std::string Triggerer::_regex(
-            type t) {  // Thanks to venomLinux scratch package manager
+        type t) {
+        // Thanks to venomLinux scratch package manager
         // https://github.com/venomlinux/scratchpkg/blob/master/scratch#L284
         switch (t) {
             case type::MIME:
@@ -167,7 +169,7 @@ namespace rlxos::libpkgupd {
         }
 
         throw std::runtime_error(
-                "unimplemented trigger found in triggerer::triggerRegex()");
+            "unimplemented trigger found in triggerer::triggerRegex()");
     }
 
     std::string Triggerer::_mesg(type t) {
@@ -201,15 +203,15 @@ namespace rlxos::libpkgupd {
         }
 
         throw std::runtime_error(
-                "unimplemented trigger found in triggerer::getMessage()");
+            "unimplemented trigger found in triggerer::getMessage()");
     }
 
     std::vector<Triggerer::type> Triggerer::_get(
-            std::vector<std::string> const &fileslist) {
+        std::vector<std::string> const& fileslist) {
         std::vector<Triggerer::type> requiredTriggers;
 
         auto checkTrigger = [&](Triggerer::type type) -> bool {
-            for (auto const &i: fileslist) {
+            for (auto const& i: fileslist) {
                 auto trigger = this->_get(i);
                 if (trigger == type) {
                     return true;
@@ -219,10 +221,12 @@ namespace rlxos::libpkgupd {
             return false;
         };
         for (auto i:
-                {type::MIME, type::DESKTOP, type::FONTS_SCALE, type::UDEV, type::ICONS,
+             {
+                 type::MIME, type::DESKTOP, type::FONTS_SCALE, type::UDEV, type::ICONS,
                  type::GTK3_INPUT_MODULES, type::GTK2_INPUT_MODULES, type::GLIB_SCHEMAS,
                  type::GIO_MODULES, type::GDK_PIXBUF, type::FONTS_CACHE,
-                 type::LIBRARY_CACHE}) {
+                 type::LIBRARY_CACHE
+             }) {
             if (checkTrigger(i)) {
                 requiredTriggers.push_back(i);
             }
@@ -232,19 +236,17 @@ namespace rlxos::libpkgupd {
     }
 
     bool Triggerer::trigger(
-            std::vector<std::pair<std::shared_ptr<InstalledPackageInfo>,
-                    std::vector<std::string>>> const &infos) {
-        bool status = true;
-        std::vector<Triggerer::type> triggers;
-        for (auto const &info: infos) {
-            if (info.first->script().length()) {
-                int status = Executor::execute(info.first->script(), ".",
-                                               {"VERSION=" + info.first->version()});
-                if (status != 0) {
+        std::vector<std::pair<InstalledMetaInfo, std::vector<std::string>>> const& infos) {
+        std::vector<type> triggers;
+        for (auto const& [info, files_list]: infos) {
+            if (!info.integration.empty()) {
+                if (int const status = Executor::execute(info.integration, ".",
+                                                         {"VERSION=" + info.version});
+                    status != 0) {
                     ERROR("failed to execute script");
                 }
             }
-            auto requiredTriggers = _get(info.second);
+            auto requiredTriggers = _get(files_list);
             for (auto i: requiredTriggers) {
                 if (std::find(triggers.begin(), triggers.end(), i) == triggers.end()) {
                     triggers.push_back(i);
@@ -252,7 +254,7 @@ namespace rlxos::libpkgupd {
             }
         }
 
-        for (auto const &i: triggers) {
+        for (auto const& i: triggers) {
             PROCESS(_mesg(i))
 
             if (!_exec(i)) {
@@ -260,34 +262,34 @@ namespace rlxos::libpkgupd {
             }
         }
 
-        return status;
+        return true;
     }
 
     bool Triggerer::trigger() {
         for (auto i: {
-                type::MIME,
-                type::DESKTOP,
-                type::FONTS_SCALE,
-                type::UDEV,
-                type::ICONS,
-                type::GTK3_INPUT_MODULES,
-                type::GTK2_INPUT_MODULES,
-                type::GLIB_SCHEMAS,
-                type::GIO_MODULES,
-                type::GDK_PIXBUF,
-                type::FONTS_CACHE,
-                type::LIBRARY_CACHE,
-        }) {
+                 type::MIME,
+                 type::DESKTOP,
+                 type::FONTS_SCALE,
+                 type::UDEV,
+                 type::ICONS,
+                 type::GTK3_INPUT_MODULES,
+                 type::GTK2_INPUT_MODULES,
+                 type::GLIB_SCHEMAS,
+                 type::GIO_MODULES,
+                 type::GDK_PIXBUF,
+                 type::FONTS_CACHE,
+                 type::LIBRARY_CACHE,
+             }) {
             PROCESS(_mesg(i));
             try {
                 if (!_exec(i)) {
                     ERROR(p_Error);
                 }
-            } catch (std::exception &e) {
+            } catch (std::exception& e) {
                 ERROR(e.what());
             }
         }
 
         return true;
     }
-}  // namespace rlxos::libpkgupd
+} // namespace rlxos::libpkgupd

@@ -1,4 +1,4 @@
-#include "stripper.hxx"
+#include "Stripper.hxx"
 
 #include "../exec.hxx"
 

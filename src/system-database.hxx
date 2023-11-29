@@ -3,55 +3,60 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include <utility>
+
 #include "configuration.hxx"
-#include "package-info.hxx"
+#include "MetaInfo.hxx"
 
 namespace rlxos::libpkgupd {
+    struct InstalledMetaInfo : MetaInfo {
+        std::string timestamp;
+        bool dependency{false};
 
-    class InstalledPackageInfo : public PackageInfo {
-       private:
-        std::string mInstalledon;
+        InstalledMetaInfo() = default;
 
-       public:
-        InstalledPackageInfo(PackageInfo *pkginfo) : PackageInfo{*pkginfo} {}
+        explicit InstalledMetaInfo(const YAML::Node& node);
 
-        InstalledPackageInfo(YAML::Node const &node, char const *file);
+        explicit InstalledMetaInfo(const MetaInfo& meta_info, std::string timestamp, bool dependency)
+            : MetaInfo{meta_info},
+              timestamp(std::move(timestamp)),
+              dependency(dependency) {
+        }
 
-        std::string const &installed_on() const { return mInstalledon; }
+        [[nodiscard]] std::string str() const;
     };
 
-    class SystemDatabase : public Object {
-       private:
-        Configuration *mConfig;
+    class SystemDatabase {
+        Configuration* mConfig;
         std::string data_dir;
 
-        std::map<std::string, std::shared_ptr<InstalledPackageInfo>> mPackages;
+        std::map<std::string, InstalledMetaInfo> mPackages;
 
-       public:
-        SystemDatabase(Configuration *config) : mConfig{config} {
+    public:
+        explicit SystemDatabase(Configuration* config) : mConfig{config} {
             data_dir = mConfig->get<std::string>(DIR_DATA, DEFAULT_DATA_DIR);
             init();
         }
 
-        bool init();
+        void init();
 
-        std::map<std::string, std::shared_ptr<InstalledPackageInfo>> const &get()
-            const {
+        [[nodiscard]] std::map<std::string, InstalledMetaInfo> const& get()
+        const {
             return mPackages;
         }
 
-        bool get_files(std::shared_ptr<InstalledPackageInfo> packageInfo,
-                       std::vector<std::string> &files);
+        void get_files(const InstalledMetaInfo& installed_meta_info,
+                       std::vector<std::string>& files) const;
 
-        std::shared_ptr<InstalledPackageInfo> get(char const *id);
+        std::optional<InstalledMetaInfo> get(const std::string& id);
 
-        std::shared_ptr<InstalledPackageInfo> add(std::shared_ptr<PackageInfo> pkginfo,
-                                                  std::vector<std::string> const &files,
-                                                  std::string root, bool update = false,
-                                                  bool is_dependency = false);
+        InstalledMetaInfo add(const MetaInfo& pkginfo,
+                              std::vector<std::string> const& files,
+                              const std::string& root, bool update = false,
+                              bool is_dependency = false);
 
-        bool remove(char const *id);
+        void remove(const std::string& id);
     };
-}  // namespace rlxos::libpkgupd
+} // namespace rlxos::libpkgupd
 
 #endif

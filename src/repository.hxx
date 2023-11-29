@@ -4,29 +4,28 @@
 #include <memory>
 
 #include "configuration.hxx"
-#include "package-info.hxx"
+#include "MetaInfo.hxx"
 
 namespace rlxos::libpkgupd {
-    class Repository : public Object {
-       private:
-        Configuration *mConfig;
+    class Repository {
+        Configuration* mConfig;
         std::vector<std::string> repos_list;
         std::string repo_dir;
-        std::map<std::string, std::shared_ptr<PackageInfo>> mPackages;
+        std::map<std::string, MetaInfo> mPackages;
 
-       public:
-        Repository(Configuration *config);
+    public:
+        explicit Repository(Configuration* config);
 
-        bool init();
+        void init();
 
-        std::map<std::string, std::shared_ptr<PackageInfo>> const &get() const {
+        [[nodiscard]] std::map<std::string, MetaInfo> const& get() const {
             return mPackages;
         }
 
-        std::vector<std::string> const &repos() const { return repos_list; }
+        [[nodiscard]] std::vector<std::string> const& repos() const { return repos_list; }
 
-        std::shared_ptr<PackageInfo> get(char const *pkgid);
+        std::optional<MetaInfo> get(const std::string& id);
     };
-}  // namespace rlxos::libpkgupd
+} // namespace rlxos::libpkgupd
 
 #endif

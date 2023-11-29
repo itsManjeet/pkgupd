@@ -5,22 +5,21 @@
 #include "defines.hxx"
 
 namespace rlxos::libpkgupd {
-    class Downloader : public Object {
-       private:
-        Configuration *mConfig;
+    class Downloader {
+        Configuration* mConfig;
 
-        bool valid(char const *url);
+        bool valid(char const* url);
 
-        static size_t write_data(void *ptr, size_t size, size_t nmemb, FILE *fstream);
+        static size_t write_data(void* ptr, size_t size, size_t nmemb, FILE* fstream);
 
-       public:
-        Downloader(Configuration *config) : mConfig{config} {}
+    public:
+        Downloader(Configuration* config) : mConfig{config} {
+        }
 
-        bool get(char const *file, char const *output);
+        void get(const std::filesystem::path& file, const std::filesystem::path& outdir);
 
-        bool download(char const *url, char const *output);
+        void download(const std::string& url, const std::filesystem::path& outfile);
     };
-
-}  // namespace rlxos::libpkgupd
+} // namespace rlxos::libpkgupd
 
 #endif

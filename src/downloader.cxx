@@ -7,9 +7,9 @@
 #include <system_error>
 
 using std::string;
-namespace rlxos::libpkgupd {
 
-    int progress_func(void *ptr, double TotalToDownload, double NowDownloaded,
+namespace rlxos::libpkgupd {
+    int progress_func(void* ptr, double TotalToDownload, double NowDownloaded,
                       double TotalToUpload, double NowUploaded) {
         // ensure that the file to be downloaded is not empty
         // because that would cause a division by zero error later on
@@ -21,7 +21,7 @@ namespace rlxos::libpkgupd {
         int totaldotz = 40;
         double fractiondownloaded = NowDownloaded / TotalToDownload;
         // part of the progressmeter that's already "full"
-        int dotz = (int)round(fractiondownloaded * totaldotz);
+        int dotz = (int) round(fractiondownloaded * totaldotz);
 
         // create the "meter"
         int ii = 0;
@@ -43,48 +43,46 @@ namespace rlxos::libpkgupd {
         return 0;
     }
 
-    bool Downloader::download(char const *url, char const *outfile) {
-        if (!std::filesystem::exists(std::filesystem::path(outfile).parent_path())) {
-            std::filesystem::create_directories(std::filesystem::path(outfile).parent_path());
+    void Downloader::download(const std::string& url, const std::filesystem::path& outfile) {
+        if (!std::filesystem::exists(outfile.parent_path())) {
+            std::filesystem::create_directories(outfile.parent_path());
         }
         std::stringstream ss;
         auto backend = mConfig->get<std::string>("downloader.backend", "curl");
         auto backend_output_flag = (backend == "curl") ? "-o" : "-O";
         ss << backend << " " << mConfig->get<std::string>("downloader.flags", "") << " " << url << " "
-           << backend_output_flag << " " << outfile;
+                << backend_output_flag << " " << outfile;
         int status = WEXITSTATUS(system(ss.str().c_str()));
-        return status == 0;
+        throw std::runtime_error("failed to complete download");
     }
 
-    bool Downloader::valid(char const *url) {
+    bool Downloader::valid(char const* url) {
         return true;
     }
 
-    bool Downloader::get(char const *file, char const *outdir) {
+    void Downloader::get(const std::filesystem::path& file, const std::filesystem::path& outdir) {
         std::vector<std::string> mirrors;
 
         mConfig->get("mirrors", mirrors);
         if (mirrors.size() == 0) {
-            p_Error = "No mirror specified";
-            return false;
+            throw std::runtime_error("No mirror specified");
         }
 
         std::string version_part = "/" + mConfig->get<std::string>("version", "2200");
 
-        for (auto const &mirror : mirrors) {
-            std::string fileurl = mirror + version_part + "/pkgs/" + file;
+        for (auto const& mirror: mirrors) {
+            std::string fileurl = mirror + version_part + "/pkgs/" + file.string();
 
             if (mConfig->get("downloader.check", true)) {
                 if (!valid(fileurl.c_str())) {
-                    DEBUG("VERIFICATION FAILED " << p_Error);
+                    DEBUG("VERIFICATION FAILED");
                     continue;
                 }
             }
 
             return download(fileurl.c_str(), outdir);
         }
-        p_Error = string(file) + " is missing on server";
 
-        return false;
+        throw std::runtime_error(file.string() + " is missing on server");
     }
-}  // namespace rlxos::libpkgupd
+} // namespace rlxos::libpkgupd

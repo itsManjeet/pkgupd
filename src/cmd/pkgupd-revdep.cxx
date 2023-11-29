@@ -18,15 +18,15 @@ PKGUPD_MODULE(revdep) {
     CHECK_ARGS(1);
     auto repository = Repository(config);
     auto package = repository.get(args[0].c_str());
-    if (package == nullptr) {
+    if (!package) {
         ERROR("missing required package " << args[0]);
         return 1;
     }
-    for (auto const &i: repository.get()) {
-        if (find_if(i.second->depends().begin(), i.second->depends().end(),
-                    [&](std::string id) -> bool { return id == package->id(); }) !=
-            i.second->depends().end()) {
-            std::cout << i.second->id() << std::endl;
+    for (auto const& [id, meta_info]: repository.get()) {
+        if (find_if(meta_info.depends.begin(), meta_info.depends.end(),
+                    [&](std::string id) -> bool { return id == package->id; }) !=
+            meta_info.depends.end()) {
+            std::cout << meta_info.id << std::endl;
         }
     }
 

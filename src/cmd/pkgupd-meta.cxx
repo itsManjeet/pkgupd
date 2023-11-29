@@ -1,4 +1,4 @@
-#include "../archive-manager/archive-manager.hxx"
+#include "../ArchiveManager/ArchiveManager.hxx"
 #include "../configuration.hxx"
 #include "../utils/utils.hxx"
 

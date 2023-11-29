@@ -29,15 +29,17 @@ PKGUPD_MODULE(sync) {
         return 1;
     }
     bool status = true;
-    for (auto const &repo: repos) {
+    for (auto const& repo: repos) {
         PROCESS("SYCING " << repo);
         std::string datafile =
                 config->get<std::string>("server.stability", "stable");
         DEBUG("STABILITY " << datafile);
-        if (!downloader->get((repo + "/" + datafile).c_str(),
-                             (repo_dir / repo).c_str())) {
+        try {
+            downloader->get((repo + "/" + datafile).c_str(),
+                            (repo_dir / repo).c_str());
+        } catch (const std::exception& exception) {
+            ERROR(exception.what());
             status = false;
-            ERROR(downloader->error());
         }
     }
     return status ? 0 : 1;

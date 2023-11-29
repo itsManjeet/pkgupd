@@ -1,6 +1,6 @@
-#include "../archive-manager/archive-manager.hxx"
+#include "../ArchiveManager/ArchiveManager.hxx"
 #include "../downloader.hxx"
-#include "../installer/installer.hxx"
+#include "../Installer/installer.hxx"
 
 using namespace rlxos::libpkgupd;
 
@@ -10,10 +10,11 @@ using namespace std;
 
 PKGUPD_MODULE_HELP(inject) {
     os << "Inject package from url or filepath directly into system\n"
-       << PADDING << "  - Can be used for rlxos .app files or bundle packages"
-       << endl
-       << endl;
+            << PADDING << "  - Can be used for rlxos .app files or bundle packages"
+            << endl
+            << endl;
 }
+
 PKGUPD_MODULE(inject) {
     CHECK_ARGS(1);
     std::shared_ptr<Installer> installer = std::make_shared<Installer>(config);
@@ -30,29 +31,17 @@ PKGUPD_MODULE(inject) {
         if (std::filesystem::exists(filename)) {
             INFO(filename << " already downloaded");
         } else {
-            if (!downloader.download(uri.c_str(), filename.c_str())) {
-                ERROR("failed to download '"
-                              << std::filesystem::path(filename).filename() << "' '"
-                              << downloader.error() << "'");
-                return 1;
-            }
+            downloader.download(uri.c_str(), filename.c_str());
         }
         uri = filename;
     }
 
-    auto archiveManager = ArchiveManager();
-    auto packageInfo = archiveManager.info(uri.c_str());
-    if (packageInfo == nullptr) {
-        ERROR("failed to read package information for " << uri);
-        return 1;
-    }
+    auto packageInfo = ArchiveManager::info(uri.c_str());
 
-    std::vector<std::pair<std::string, std::shared_ptr<PackageInfo>>> packages;
+
+    std::vector<std::pair<std::string, MetaInfo>> packages;
     packages.push_back({uri, packageInfo});
-    if (!installer->install(packages, system_database.get())) {
-        ERROR(installer->error());
-        return 1;
-    }
+    installer->install(packages, system_database.get());
 
     return 0;
 }

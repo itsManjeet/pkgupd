@@ -17,13 +17,11 @@ PKGUPD_MODULE(search) {
     auto repository = Repository(config);
 
     int found = 0;
-    for (auto const &p: repository.get()) {
-        if (p.first.find(package_id) != string::npos) {
-            found++;
-            cout << GREEN(p.second->id()) << ": " << BLUE(p.second->version())
-                 << "\n  " << BOLD(p.second->about()) << '\n'
-                 << endl;
-        }
+    for (auto const& [id, meta_info]: repository.get()) {
+        cout << GREEN(meta_info.id) << ": " << BLUE(meta_info.version)
+                << "\n  " << BOLD(meta_info.about) << '\n'
+                << endl;
+        found++;
     }
 
     if (found == 0) {

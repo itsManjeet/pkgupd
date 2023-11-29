@@ -1,13 +1,12 @@
 #ifndef _PKGUPD_TRIGGERER_HH_
 #define _PKGUPD_TRIGGERER_HH_
 
-#include "defines.hxx"
-#include "package-info.hxx"
-#include "system-database.hxx"
+#include "../defines.hxx"
+#include "../system-database.hxx"
 
 namespace rlxos::libpkgupd {
     class Triggerer : public Object {
-       public:
+    public:
         enum class type : int {
             INVALID,
             MIME,
@@ -25,25 +24,25 @@ namespace rlxos::libpkgupd {
             LIBRARY_CACHE,
         };
 
-       protected:
+    protected:
         std::string _mesg(type t);
 
         std::string _regex(type t);
 
-        type _get(std::string const &path);
+        type _get(std::string const& path);
 
         bool _exec(type t);
 
-        std::vector<type> _get(std::vector<std::string> const &fileslist);
+        std::vector<type> _get(std::vector<std::string> const& fileslist);
 
-       public:
-        Triggerer() {}
+    public:
+        Triggerer() {
+        }
 
-        bool trigger(std::vector<std::pair<std::shared_ptr<InstalledPackageInfo>,
-                                           std::vector<std::string>>> const &infos);
+        bool trigger(std::vector<std::pair<InstalledMetaInfo, std::vector<std::string>>> const& infos);
 
         bool trigger();
     };
-}  // namespace rlxos::libpkgupd
+} // namespace rlxos::libpkgupd
 
 #endif

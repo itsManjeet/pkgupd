@@ -16,18 +16,18 @@
 
 namespace rlxos::libpkgupd {
     class Object {
-       protected:
+    protected:
         std::string p_Error;
 
-       public:
-        std::string const &error() const { return p_Error; }
+    public:
+        std::string const& error() const { return p_Error; }
     };
 
     static inline std::string generateRandom(int const len) {
         static const char alnum[] =
-            "0123456789"
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-            "abcdefghijklmnopqrstuvwxyz";
+                "0123456789"
+                "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                "abcdefghijklmnopqrstuvwxyz";
 
         std::string res;
         for (auto i = 0; i < len; i++) {
@@ -46,8 +46,7 @@ namespace rlxos::libpkgupd {
         }
         return std::to_string(bytes) + " Bytes";
     }
-
-}  // namespace rlxos::libpkgupd
+} // namespace rlxos::libpkgupd
 
 #define GET_METHOD(type, var) \
     type const &var() const { return _##var; }
@@ -59,37 +58,36 @@ namespace rlxos::libpkgupd {
     GET_METHOD(type, var) \
     SET_METHOD(type, var)
 
-#define _CHECK_VALUE(type, variableID, variable) \
-    if (data[variableID]) variable = data[variableID].as<type>();
+#define _CHECK_VALUE(type, variable) \
+    if (node[#variable]) variable = node[#variable].as<type>();
 
-#define _CHECK_LIST(type, variableID, variable) \
-    if (data[variableID])                       \
-        for (auto const &i : data[variableID]) variable.push_back(i.as<type>());
+#define _CHECK_LIST(type, variable) \
+    if (node[#variable])                       \
+        for (auto const &i : node[#variable]) variable.push_back(i.as<type>());
 
-#define _THROW_ERROR(variableID)                                 \
-    else throw std::runtime_error(variableID " is missing in " + \
-                                  std::string(file));
+#define _THROW_ERROR(variable)                                 \
+    else throw std::runtime_error(#variable " is missing");
 
-#define _USE_FALLBACK(variableID, variable, fallback) else variable = fallback;
+#define _USE_FALLBACK(variable, fallback) else variable = fallback;
 
-#define READ_VALUE(type, variableID, variable) \
-    _CHECK_VALUE(type, variableID, variable)   \
-    _THROW_ERROR(variableID)
+#define READ_VALUE(type, variable) \
+    _CHECK_VALUE(type, variable)   \
+    _THROW_ERROR(variable)
 
-#define READ_LIST(type, variableID, variable) \
-    _CHECK_LIST(type, variableID, variable)
+#define READ_LIST(type, variable) \
+    _CHECK_LIST(type, variable)
 
-#define READ_OBJECT_LIST(type, variableID, variable) \
-    if (data[variableID])                            \
-        for (auto const &i : data[variableID]) variable.push_back(type(i, file));
+#define READ_OBJECT_LIST(type, variable) \
+    if (node[#variable])                            \
+        for (auto const &i : node[#variable]) variable.push_back(type(i, file));
 
 #define READ_LIST_FROM(type, variable, from, into) \
-    if (data[#from] && data[#from][#variable])     \
-        for (auto const &i : data[#from][#variable]) into.push_back(i.as<type>());
+    if (node[#from] && node[#from][#variable])     \
+        for (auto const &i : node[#from][#variable]) into.push_back(i.as<type>());
 
-#define OPTIONAL_VALUE(type, variableID, variable, fallback) \
-    _CHECK_VALUE(type, variableID, variable)                 \
-    _USE_FALLBACK(variableID, variable, fallback)
+#define OPTIONAL_VALUE(type, variable, fallback) \
+    _CHECK_VALUE(type, variable)                 \
+    _USE_FALLBACK(variable, fallback)
 
 #define DIR_ROOT "dir.root"
 #define DIR_CACHE "dir.cache"

@@ -6,15 +6,15 @@
 
 namespace rlxos::libpkgupd {
     class SourceRepository : public Object {
-       private:
-        Configuration *mConfig;
+    private:
+        Configuration* mConfig;
         std::string mRecipeDir;
 
-       public:
-        SourceRepository(Configuration *config);
+    public:
+        SourceRepository(Configuration* config);
 
-        std::shared_ptr<Recipe> get(char const *id);
+        std::optional<Recipe> get(const std::string& id);
     };
-}  // namespace rlxos::libpkgupd
+} // namespace rlxos::libpkgupd
 
 #endif

@@ -22,19 +22,19 @@ PKGUPD_MODULE(owner) {
 
     int status = 1;
 
-    for (auto const &p: system_database->get()) {
+    for (auto const& p: system_database->get()) {
         auto package_info = p.second;
         std::vector<std::string> files;
         system_database->get_files(package_info, files);
         auto iter =
                 std::find_if(files.begin(), files.end(),
-                             [&filepath](std::string const &path) -> bool {
+                             [&filepath](std::string const& path) -> bool {
                                  if (path.length() < 2) return false;
                                  return filepath.compare("/" + path.substr(2)) == 0;
                              });
         if (iter != files.end()) {
-            std::cout << BOLD("Provided by") << " " << GREEN(package_info->id())
-                      << std::endl;
+            std::cout << BOLD("Provided by") << " " << GREEN(package_info.id)
+                    << std::endl;
             status = 0;
         }
     }

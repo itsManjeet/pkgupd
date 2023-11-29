@@ -1,8 +1,8 @@
 #include "../common.hxx"
 #include "../configuration.hxx"
 #include "../system-database.hxx"
-#include "../triggerer.hxx"
-#include "../uninstaller/uninstaller.hxx"
+#include "../Trigger/Trigger.hxx"
+#include "../Uninstaller/Uninstaller.hxx"
 
 using namespace rlxos::libpkgupd;
 
@@ -20,9 +20,9 @@ PKGUPD_MODULE(autoremove) {
     auto system_database = SystemDatabase(config);
 
     auto is_required = [&](std::string id) -> bool {
-        for (auto const &i: system_database.get()) {
-            if (std::find(i.second->depends().begin(), i.second->depends().end(),
-                          id) != i.second->depends().end()) {
+        for (auto const& [id, info]: system_database.get()) {
+            if (std::find(info.depends.begin(), info.depends.end(),
+                          id) != info.depends.end()) {
                 return true;
             }
         }
@@ -30,16 +30,16 @@ PKGUPD_MODULE(autoremove) {
     };
 
     PROCESS("checking for unneeded packages");
-    std::vector<std::pair<std::shared_ptr<InstalledPackageInfo>, std::vector<std::string>>>
+    std::vector<std::pair<InstalledMetaInfo, std::vector<std::string>>>
             packages_to_remove;
-    for (auto const &i: system_database.get()) {
-        if (!i.second->isDependency()) {
+    for (auto const& [id, installed_meta_info]: system_database.get()) {
+        if (!installed_meta_info.dependency) {
             continue;
         }
-        if (!is_required(i.first)) {
+        if (!is_required(id)) {
             std::vector<std::string> files;
-            system_database.get_files(i.second, files);
-            packages_to_remove.push_back({i.second, files});
+            system_database.get_files(installed_meta_info, files);
+            packages_to_remove.push_back({installed_meta_info, files});
         }
     }
 
@@ -49,9 +49,9 @@ PKGUPD_MODULE(autoremove) {
     }
 
     INFO("Found " << BLUE(to_string(packages_to_remove.size()))
-                  << " unneeded packages");
-    for (auto const &i: packages_to_remove) {
-        std::cout << "- " << i.first->id() << std::endl;
+        << " unneeded packages");
+    for (auto const& [installed_meta_info, files]: packages_to_remove) {
+        std::cout << "- " << installed_meta_info.id << std::endl;
     }
 
     if (!ask_user("You you want to remove the above unneeded packages", config)) {
@@ -60,11 +60,13 @@ PKGUPD_MODULE(autoremove) {
     }
 
     auto uninstaller = Uninstaller(config);
-    for (auto const &i: packages_to_remove) {
-        PROCESS("uninstalling " << BLUE(i.first->id()));
-        if (!uninstaller.uninstall(i.first, &system_database)) {
-            ERROR("failed to remove " << i.first->id() << ", "
-                                      << uninstaller.error());
+    for (auto const& [installed_meta_info, files]: packages_to_remove) {
+        PROCESS("uninstalling " << BLUE(installed_meta_info.id));
+        try {
+            uninstaller.uninstall(installed_meta_info, &system_database);
+        } catch (const std::exception& exception) {
+            ERROR("failed to remove " << installed_meta_info.id << ", "
+                << exception.what());
         }
     }
 

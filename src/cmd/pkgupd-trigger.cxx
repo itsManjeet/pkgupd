@@ -1,4 +1,4 @@
-#include "../triggerer.hxx"
+#include "../Trigger/Trigger.hxx"
 
 using namespace rlxos::libpkgupd;
 
@@ -13,9 +13,9 @@ PKGUPD_MODULE_HELP(trigger) {
 PKGUPD_MODULE(trigger) {
     auto triggerer = std::make_shared<Triggerer>();
     auto system_database = std::make_shared<SystemDatabase>(config);
-    std::vector<std::pair<std::shared_ptr<InstalledPackageInfo>, std::vector<std::string>>>
+    std::vector<std::pair<InstalledMetaInfo, std::vector<std::string>>>
             packages;
-    for (auto const &i: system_database->get()) {
+    for (auto const& i: system_database->get()) {
         std::vector<std::string> files;
         system_database->get_files(i.second, files);
         packages.push_back({i.second, files});
