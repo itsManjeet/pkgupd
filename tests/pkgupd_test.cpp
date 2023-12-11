@@ -14,20 +14,3 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  */
-
-#ifndef PKGUPD_HASH_H
-#define PKGUPD_HASH_H
-
-#include <string>
-
-class Hash {
-    unsigned sum;
-public:
-    Hash() = default;
-
-    Hash &add(const std::string &content);
-
-    std::string get();
-};
-
-#endif //PKGUPD_HASH_H

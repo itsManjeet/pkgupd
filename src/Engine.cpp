@@ -3,11 +3,12 @@
 #include "Engine.h"
 
 #include <ranges>
+#include <format>
 
 #include "Resolver.h"
 #include "ArchiveManager.h"
 #include "Trigger.h"
-#include "Hash.h"
+#include "picosha2.h"
 
 
 Engine::Engine(const Configuration &config)
@@ -31,10 +32,7 @@ void Engine::uninstall(const InstalledMetaInfo &installed_meta_info) {
     std::vector<std::string> installed_files_list;
     system_database.get_files(installed_meta_info, installed_files_list);
     for (auto const &installed_file: std::ranges::reverse_view(installed_files_list)) {
-        auto installed_filepath = root /
-                                  (installed_file.starts_with("./")
-                                   ? installed_file.substr(2)
-                                   : installed_file);
+        auto installed_filepath = root / installed_file;
 
         try {
             if (std::filesystem::exists(installed_filepath)) {
@@ -202,24 +200,24 @@ std::map<std::string, MetaInfo> const &Engine::list_remote() const {
 }
 
 std::filesystem::path Engine::build(const Builder::BuildInfo &build_info) {
-    auto hash = Hash();
+    std::string hash_sum;
 
     {
         std::stringstream ss;
         ss << build_info.config.node;
-        hash.add(ss.str());
+        picosha2::hash256_hex_string(ss.str(), hash_sum);
     }
 
     for (auto const &dep: build_info.depends) {
         auto meta_info = this->repository.get(dep);
         if (!meta_info) throw std::runtime_error("missing runtime dependency '" + dep + "'");
-        hash.add(meta_info->str());
+        picosha2::hash256_hex_string(meta_info->str() + hash_sum, hash_sum);
     }
 
     for (auto const &dep: build_info.build_time_depends) {
         auto meta_info = this->repository.get(dep);
         if (!meta_info) throw std::runtime_error("missing buildtime dependency '" + dep + "'");
-        hash.add(meta_info->str());
+        picosha2::hash256_hex_string(meta_info->str() + hash_sum, hash_sum);
     }
 
     std::filesystem::path work_dir = config.get<std::string>("dir.build", std::filesystem::current_path() / "build");
@@ -229,7 +227,13 @@ std::filesystem::path Engine::build(const Builder::BuildInfo &build_info) {
     auto build_root = work_dir / "build-root";
     auto install_root = work_dir / "install-root";
 
-    auto package_path = packages_dir / hash.get();
+    auto package_path = packages_dir / std::format("{}-{}-{}.pkg", build_info.id, build_info.version, hash_sum);
+
+    for (auto const &path: {build_root, install_root}) {
+        if (std::filesystem::exists(path)) {
+            std::filesystem::remove_all(path);
+        }
+    }
 
     for (auto const &path: {source_dir, packages_dir, build_root, install_root}) {
         if (!std::filesystem::exists(path)) {
@@ -244,6 +248,13 @@ std::filesystem::path Engine::build(const Builder::BuildInfo &build_info) {
     build_root /= build_info.config.get<std::string>("build-dir", subdir->string());
     builder.compile_source(build_root, install_root);
     builder.pack(install_root, package_path);
+
+    for (auto const &path: {build_root, install_root}) {
+        if (std::filesystem::exists(path)) {
+            std::filesystem::remove_all(path);
+        }
+    }
+
 
     return package_path;
 }

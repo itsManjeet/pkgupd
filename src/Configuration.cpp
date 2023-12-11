@@ -9,6 +9,10 @@ static inline std::string trim(std::string str) {
     return str;
 }
 
+
 void Configuration::update_from(const std::string &input) {
-    node = YAML::Load(input);
+    auto new_node = YAML::Load(input);
+    for (auto const &i: new_node) {
+        node[i.first] = i.second;
+    }
 }

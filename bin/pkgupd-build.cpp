@@ -19,6 +19,8 @@
 
 #include <fstream>
 
+PKGUPD_MODULE(install);
+
 PKGUPD_MODULE_HELP(build) {
     os << "Build the PKGUPD component from element file" << std::endl;
 }
@@ -28,13 +30,38 @@ PKGUPD_MODULE(build) {
     std::string build_info_content;
     {
         std::ifstream reader(args[0]);
+
         build_info_content = std::string(
                 (std::istreambuf_iterator<char>(reader)),
                 (std::istreambuf_iterator<char>())
         );
     }
 
+    auto c = config->get<std::string>("builder.config", "");
+    if (!c.empty()) {
+        std::ifstream reader(c);
+        if (!reader.good()) throw std::runtime_error("failed to read configuration file '" + c + "'");
+        config->update_from(std::string(
+                (std::istreambuf_iterator<char>(reader)),
+                (std::istreambuf_iterator<char>())
+        ));
+    }
+
     auto build_info = Builder::BuildInfo(build_info_content);
+    if (config->get<bool>("build.depends", true)) {
+        std::vector<std::string> to_install = build_info.depends;
+        to_install.insert(to_install.begin(), build_info.build_time_depends.begin(),
+                          build_info.build_time_depends.end());
+        if (!config->node["installer.depends"]) {
+            config->set("installer.depends", true);
+        }
+        if (PKGUPD_install(to_install, engine, config) != 0) {
+            ERROR("failed to install build dependencies");
+            return 1;
+        }
+    }
+
+
     auto package_path = engine->build(build_info);
 
     MESSAGE("READY", "your package is ready at " << package_path);

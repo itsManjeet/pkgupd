@@ -18,13 +18,22 @@
 #include "Execute.h"
 
 #include <sstream>
+#include <cstring>
 
 Executor &Executor::start() {
     if (pipe(pipe_fd) == -1) {
         throw std::runtime_error("pipe creating failed");
     }
-    if (pipe(err_pipe) == -1) {
-        throw std::runtime_error("pipe creating failed");
+    {
+        std::stringstream ss;
+        for (auto const &i: args_) {
+            ss << i << " ";
+        }
+        for (auto const &e: environ_) {
+            ss << "ENV=" << e << " ";
+        }
+        if (path_) ss << "DIR=" << *path_;
+        DEBUG("COMMAND: " << ss.str());
     }
 
     pid = fork();
@@ -32,46 +41,44 @@ Executor &Executor::start() {
         throw std::runtime_error("failed to fork new process");
     } else if (pid == 0) {
         close(pipe_fd[0]);
-        close(err_pipe[0]);
 
         dup2(pipe_fd[1], STDOUT_FILENO);
-        dup2(err_pipe[1], STDERR_FILENO);
+        dup2(pipe_fd[1], STDERR_FILENO);
 
         close(pipe_fd[1]);
-        close(err_pipe[1]);
 
         if (path_) chdir(path_->c_str());
         clearenv();
 
+        std::vector<const char *> args;
+        for (auto const &c: args_) args.emplace_back(c.c_str());
+        args.push_back(nullptr);
 
-        if (execve(args_.front().c_str(), (char *const *) args_.data(), (char *const *) environ_.data()) == -1) {
-            throw std::runtime_error("failed to exec");
+        std::vector<const char *> env;
+        for (auto const &c: environ_) env.emplace_back(c.c_str());
+        env.push_back(nullptr);
+
+        if (execve(args_[0].c_str(), (char *const *) args.data(), (char *const *) env.data()) == -1) {
+            throw std::runtime_error(strerror(errno));
         }
         std::unreachable();
-    } else {
-        close(pipe_fd[1]);
-        close(err_pipe[1]);
     }
     return *this;
 }
 
-int Executor::wait(std::ostream *out, std::ostream *err) {
-    char buffer[BUFSIZ];
-    ssize_t bytes_read;
+int Executor::wait(std::ostream *out) {
+    close(pipe_fd[1]);
 
-    while ((bytes_read = read(pipe_fd[0], buffer, BUFSIZ)) > 0) {
-        if (out) out->write(buffer, BUFSIZ);
+    char buffer[BUFSIZ] = {0};
+    ssize_t bytes_read;
+    while ((bytes_read = read(pipe_fd[0], buffer, sizeof(buffer))) > 0) {
+        if (out) out->write(buffer, bytes_read);
     }
-    // TODO: do this in parallel
-    while ((bytes_read = read(err_pipe[0], buffer, BUFSIZ)) > 0) {
-        if (err) err->write(buffer, BUFSIZ);
-    }
-    close(pipe_fd[0]);
 
     int status;
     waitpid(pid, &status, 0);
 
-    return status;
+    return WEXITSTATUS(status);
 }
 
 int Executor::run() {
@@ -80,9 +87,11 @@ int Executor::run() {
 }
 
 std::tuple<int, std::string> Executor::output() {
-    std::stringstream output, error;
+    std::stringstream output;
     start();
-    int status = wait(&output, &error);
-    return {status, output.str() + " " + error.str()};
+    int status = wait(&output);
+    std::string output_data = output.str();
+    output_data.shrink_to_fit();
+    return {status, output_data};
 }
 

@@ -22,7 +22,8 @@
 #include "ArchiveManager.h"
 #include "Execute.h"
 
-Builder::BuildInfo::BuildInfo(const std::string &input) : MetaInfo(input) {
+Builder::BuildInfo::BuildInfo(const std::string &input) {
+    config.node["cache"] = "none";
     update_from(input);
     if (config.node["build-depends"]) {
         for (auto const &dep: config.node["build-depends"]) build_time_depends.emplace_back(dep.as<std::string>());
@@ -44,8 +45,14 @@ Builder::prepare_sources(const std::filesystem::path &source_dir, const std::fil
         }
 
         auto filepath = source_dir / filename;
-        Downloader::download(url, filepath);
-
+        if (!std::filesystem::exists(filepath)) {
+            if (int status = Executor("/bin/wget")
+                        .arg(url)
+                        .arg("-O")
+                        .arg(filepath).run(); status != 0) {
+                throw std::runtime_error("failed to run wget " + std::to_string(status));
+            }
+        }
         if (ArchiveManager::is_archive(filepath)) {
             std::vector<std::string> files_list;
             ArchiveManager::extract(filepath, build_root, files_list);
@@ -60,18 +67,23 @@ Builder::prepare_sources(const std::filesystem::path &source_dir, const std::fil
 }
 
 void Builder::compile_source(const std::filesystem::path &build_root, const std::filesystem::path &install_root) {
-    std::stringstream output, error;
-    auto compiler = get_compiler(build_root);
-    auto status = Executor("sh")
+    std::stringstream output;
+    auto script = build_info.config.get<std::string>("script", "");
+    if (script.empty()) {
+        auto compiler = get_compiler(build_root);
+        script = compiler.script;
+    }
+
+    auto status = Executor("/bin/sh")
             .arg("-ec")
-            .arg(compiler.script)
+            .arg(script)
             .path(build_root)
             .environ("BUILD_ROOT=" + build_root.string())
             .environ("INSTALL_ROOT=" + install_root.string())
             .start()
-            .wait(&output, &error);
+            .wait(&output);
     if (status != 0) {
-        throw std::runtime_error("failed to execute compiler script '" + output.str() + ": " + error.str());
+        throw std::runtime_error("failed to execute compiler script '" + output.str());
     }
 }
 
@@ -93,15 +105,16 @@ Builder::Compiler Builder::get_compiler(const std::filesystem::path &build_root)
     }
 
     if (build_type.empty() || !compilers.contains(build_type)) {
-        throw std::runtime_error("unknown build-type or failed to detect build-type '" + build_type + "'");
+        throw std::runtime_error(
+                "unknown build-type or failed to detect build-type '" + build_type + "' at " + build_root.string());
     }
     return compilers[build_type];
 }
 
 Builder::Builder(const Configuration &config, const Builder::BuildInfo &build_info)
         : config{config}, build_info{build_info} {
-    if (config.node["compilers"]) {
-        for (auto const &c: config.node["compilers"]) {
+    if (config.node["compiler"]) {
+        for (auto const &c: config.node["compiler"]) {
             compilers[c.first.as<std::string>()] = Compiler{
                     c.second["file"].as<std::string>(),
                     c.second["script"].as<std::string>(),

@@ -15,19 +15,14 @@
  *
  */
 
-#include <sstream>
-#include "Hash.h"
+#include <gtest/gtest.h>
 
+#include "../src/Execute.h"
 
-Hash &Hash::add(const std::string &content) {
-    for (auto c: content) {
-        sum = (sum * 54059) ^ (c * 76963);
-    }
-    return *this;
-}
-
-std::string Hash::get() {
-    std::stringstream ss;
-    ss << std::hex << sum;
-    return ss.str();
+TEST(ExecutorTest, Basic) {
+    auto [status, output] = Executor("/bin/echo")
+            .arg("11")
+            .output();
+    EXPECT_EQ(status, 0);
+    EXPECT_EQ("11\n", output);
 }

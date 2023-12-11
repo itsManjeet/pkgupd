@@ -15,6 +15,5 @@ add_library(${PROJECT_NAME}_LIB STATIC
         Builder.cpp
         Builder.h
         Executor.cpp
-        Hash.cpp
-        Hash.h)
+)
 target_link_libraries(${PROJECT_NAME}_LIB yaml-cpp)

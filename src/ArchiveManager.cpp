@@ -22,7 +22,6 @@ void ArchiveManager::extract(const std::filesystem::path &filepath,
                              const std::string &input_path,
                              const std::filesystem::path &output_path) {
     std::ofstream writer(output_path);
-    std::stringstream error;
     int status = Executor("/bin/tar")
             .arg("--zstd")
             .arg("-O")
@@ -30,9 +29,9 @@ void ArchiveManager::extract(const std::filesystem::path &filepath,
             .arg(filepath)
             .arg(input_path)
             .start()
-            .wait(&writer, &error);
+            .wait(&writer);
     if (status != 0) {
-        throw std::runtime_error("failed to get data from " + filepath.string() + ": " + error.str());
+        throw std::runtime_error("failed to get data from " + filepath.string());
     }
 }
 
@@ -45,15 +44,15 @@ MetaInfo ArchiveManager::info(const std::filesystem::path &input_path) {
 
 void ArchiveManager::list(const std::filesystem::path &filepath, std::vector<std::string> &files) {
     std::stringstream output;
-    std::stringstream error;
-    int status = Executor("/bin/tar")
+    int status = Executor("/usr/bin/tar")
             .arg("--zstd")
             .arg("-tf")
             .arg(filepath)
             .start()
-            .wait(&output, &error);
+            .wait(&output);
     if (status != 0) {
-        throw std::runtime_error("failed to list file from archive " + filepath.string() + ": " + error.str());
+        throw std::runtime_error(
+                "failed to list file from archive " + filepath.string() + ": " + output.str());
     }
 
     std::stringstream ss(output.str());
@@ -67,19 +66,6 @@ void ArchiveManager::list(const std::filesystem::path &filepath, std::vector<std
 void ArchiveManager::extract(const std::filesystem::path &filepath, const std::string &output_path,
                              std::vector<std::string> &files_list) {
     std::stringstream output;
-    std::stringstream error;
-
-    int status = Executor("/bin/tar")
-            .arg("--zstd")
-            .arg("--exclude")
-            .arg("./info")
-            .arg("-xPhpf")
-            .arg(filepath)
-            .arg("-C")
-            .arg(output_path)
-            .start()
-            .wait(&output, &error);
-
     if (!std::filesystem::exists(output_path)) {
         std::error_code code;
         std::filesystem::create_directories(output_path, code);
@@ -87,13 +73,28 @@ void ArchiveManager::extract(const std::filesystem::path &filepath, const std::s
             throw std::runtime_error("failed to create required directory '" + output_path + "': " + code.message());
         }
     }
+
+    int status = Executor("/usr/bin/tar")
+            .arg("--zstd")
+            .arg("--exclude")
+            .arg("./info")
+            .arg("-xvPhpf")
+            .arg(filepath)
+            .arg("-C")
+            .arg(output_path)
+            .start()
+            .wait(&output);
+
     std::stringstream ss(output.str());
     for (std::string f; std::getline(ss, f);) {
+        if (f.starts_with("./")) f = f.substr(2);
+        if (f.empty()) continue;
         files_list.emplace_back(f);
     }
+    DEBUG("EXTRACTED: " << files_list.size() << " file(s)");
 
     if (status != 0) {
-        throw std::runtime_error("failed to execute extraction command");
+        throw std::runtime_error("failed to execute extraction command: " + output.str());
     }
 }
 

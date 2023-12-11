@@ -22,7 +22,7 @@ PKGUPD_MODULE(install) {
     engine->sync(false);
 
     std::vector<MetaInfo> meta_infos;
-    if (config->get("intaller.depends", true)) {
+    if (config->get("installer.depends", true)) {
         PROCESS("calculating dependencies")
         engine->resolve(args, meta_infos);
         if (meta_infos.empty()) {
@@ -62,7 +62,12 @@ PKGUPD_MODULE(install) {
         installed_meta_infos.emplace_back(engine->install(meta_info, deprecated_files));
     }
 
-    engine->triggers(installed_meta_infos);
+    try {
+        engine->triggers(installed_meta_infos);
+    } catch (const std::exception &exception) {
+        ERROR(exception.what());
+    }
+
 
     return 0;
 }

@@ -19,7 +19,6 @@ class Executor {
     std::vector<std::string> environ_;
     pid_t pid = -1;
     int pipe_fd[2]{};
-    int err_pipe[2]{};
 
 public:
     explicit Executor(const std::string &binary) {
@@ -48,7 +47,7 @@ public:
 
     Executor &start();
 
-    int wait(std::ostream *out = nullptr, std::ostream *err = nullptr);
+    int wait(std::ostream *out = nullptr);
 
     int run();
 

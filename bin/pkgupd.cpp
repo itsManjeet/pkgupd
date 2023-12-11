@@ -12,6 +12,7 @@
   X(depends)                \
   X(trigger)                \
   X(owner)                  \
+  X(build)                  \
   X(cleanup)                \
   X(autoremove)
 
