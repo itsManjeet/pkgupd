@@ -11,6 +11,7 @@ add_executable(${PROJECT_NAME}
         pkgupd-sync.cpp
         pkgupd-trigger.cpp
         pkgupd-update.cpp
-        pkgupd-build.cpp)
+        pkgupd-build.cpp
+        pkgupd-cachefile.cpp)
 
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_LIB -static)

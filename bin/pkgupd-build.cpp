@@ -61,7 +61,6 @@ PKGUPD_MODULE(build) {
         }
     }
 
-
     auto package_path = engine->build(build_info);
 
     MESSAGE("READY", "your package is ready at " << package_path);

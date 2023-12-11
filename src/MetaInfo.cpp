@@ -13,7 +13,11 @@ void MetaInfo::update_from(const std::string &input) {
     cache = config.get<std::string>("cache");
 
     if (config.node["depends"]) {
-        for (auto const &dep: config.node["depends"]) depends.push_back(dep.as<std::string>());
+        for (auto const &dep: config.node["depends"]) {
+            auto depend = dep.as<std::string>();
+            if (depend.ends_with(".yml")) depend = depend.substr(0, depend.length() - 4);
+            depends.emplace_back(depend);
+        }
     }
     if (config.node["backup"]) {
         for (auto const &b: config.node["backup"]) backup.push_back(b.as<std::string>());

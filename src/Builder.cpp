@@ -15,8 +15,11 @@
  *
  */
 
-#include <optional>
 #include "Builder.h"
+
+#include <optional>
+#include <regex>
+
 
 #include "Downloader.h"
 #include "ArchiveManager.h"
@@ -26,7 +29,11 @@ Builder::BuildInfo::BuildInfo(const std::string &input) {
     config.node["cache"] = "none";
     update_from(input);
     if (config.node["build-depends"]) {
-        for (auto const &dep: config.node["build-depends"]) build_time_depends.emplace_back(dep.as<std::string>());
+        for (auto const &dep: config.node["build-depends"]) {
+            auto depend = dep.as<std::string>();
+            if (depend.ends_with(".yml")) depend = depend.substr(0, depend.length() - 4);
+            build_time_depends.emplace_back(depend);
+        };
     }
     if (config.node["sources"]) {
         for (auto const &dep: config.node["sources"]) sources.emplace_back(dep.as<std::string>());
@@ -74,12 +81,55 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
         script = compiler.script;
     }
 
+    std::vector<std::string> environ;
+    if (config.node["environ"]) {
+        for (auto const &env: config.node["environ"]) {
+            environ.push_back(env.as<std::string>());
+        }
+    }
+
+    if (build_info.config.node["environ"]) {
+        for (auto const &env: build_info.config.node["environ"]) {
+            environ.push_back(env.as<std::string>());
+        }
+    }
+
+    std::map<std::string, std::string> variables;
+
+    if (config.node["variables"]) {
+        for (auto const &v: config.node["variables"]) {
+            variables[v.first.as<std::string>()] = v.second.as<std::string>();
+        }
+    }
+
+    if (build_info.config.node["variables"]) {
+        for (auto const &v: build_info.config.node["variables"]) {
+            variables[v.first.as<std::string>()] = v.second.as<std::string>();
+        }
+    }
+    variables["install-root"] = install_root.string();
+    variables["build-root"] = build_root.string();
+
+    std::regex pattern(R"(\%\{([^}]+)\})");
+    std::smatch match;
+
+    while (std::regex_search(script, match, pattern)) {
+        if (match.size() > 1) {
+            std::string variable = match.str(1);
+            auto it = variables.find(variable);
+            if (it != variables.end()) {
+                script = std::regex_replace(script, pattern, it->second);
+            } else {
+                throw std::runtime_error("variable not found: " + variable);
+            }
+        }
+    }
+
     auto status = Executor("/bin/sh")
             .arg("-ec")
             .arg(script)
             .path(build_root)
-            .environ("BUILD_ROOT=" + build_root.string())
-            .environ("INSTALL_ROOT=" + install_root.string())
+            .environ(environ)
             .start()
             .wait(&output);
     if (status != 0) {
@@ -111,7 +161,9 @@ Builder::Compiler Builder::get_compiler(const std::filesystem::path &build_root)
     return compilers[build_type];
 }
 
-Builder::Builder(const Configuration &config, const Builder::BuildInfo &build_info)
+Builder::Builder(
+        const Configuration &config,
+        const Builder::BuildInfo &build_info)
         : config{config}, build_info{build_info} {
     if (config.node["compiler"]) {
         for (auto const &c: config.node["compiler"]) {

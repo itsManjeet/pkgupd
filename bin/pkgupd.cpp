@@ -14,6 +14,7 @@
   X(owner)                  \
   X(build)                  \
   X(cleanup)                \
+  X(cachefile)              \
   X(autoremove)
 
 #include <functional>
@@ -109,10 +110,6 @@ int main(int argc, char **argv) {
         } else {
             args.push_back(arg);
         }
-    }
-
-    for (auto const &s: configuration.node) {
-        std::cout << s.first << ": " << s.second << std::endl;
     }
 
 

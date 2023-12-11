@@ -23,6 +23,8 @@ public:
 
     std::filesystem::path build(const Builder::BuildInfo &build_info);
 
+    std::filesystem::path cache_file(const Builder::BuildInfo& build_info);
+
     void uninstall(const InstalledMetaInfo &installed_meta_infos);
 
     [[nodiscard]] std::map<std::string, InstalledMetaInfo> const &list_installed() const;
