@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.22.1)
-set(PROJECT "PKGUPD")
+project(pkgupd
+    VERSION 1.0
+    DESCRIPTION "Package Manager"
+    LANGUAGES C CXX)
 
-project(${PROJECT})
 set(POSITION_INDEPENDENT_CODE TRUE)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -14,9 +16,9 @@ FetchContent_Declare(yaml-cpp
 FetchContent_MakeAvailable(yaml-cpp)
 
 include_directories(include)
-file(GLOB_RECURSE PKGUPD_Src "src/*.cxx" "src/*.hxx")
-add_executable(pkgupd ${PKGUPD_Src})
-target_link_libraries(pkgupd yaml-cpp -static)
+add_subdirectory(src)
+add_subdirectory(bin)
+
 
 install(TARGETS pkgupd
     RUNTIME DESTINATION bin)
