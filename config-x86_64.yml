@@ -1,0 +1,20 @@
+variables:
+  prefix: /usr
+  bindir: /usr/bin
+  sysconfdir: /etc
+  libdir: /usr/lib
+  libexecdir: /usr/lib
+
+environ:
+  - PATH=/usr/bin
+  - TERM=linux
+
+compiler:
+  autotools:
+    file: configure
+    script: |-
+      mkdir -p build && cd build
+      ../configure --prefix=%{prefix}
+
+      make 
+      make install DESTDIR=%{install-root}

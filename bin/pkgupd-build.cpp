@@ -27,27 +27,17 @@ PKGUPD_MODULE_HELP(build) {
 
 PKGUPD_MODULE(build) {
     CHECK_ARGS(1);
-    std::string build_info_content;
-    {
-        std::ifstream reader(args[0]);
-
-        build_info_content = std::string(
-                (std::istreambuf_iterator<char>(reader)),
-                (std::istreambuf_iterator<char>())
-        );
-    }
 
     auto c = config->get<std::string>("builder.config", "");
     if (!c.empty()) {
-        std::ifstream reader(c);
-        if (!reader.good()) throw std::runtime_error("failed to read configuration file '" + c + "'");
-        config->update_from(std::string(
-                (std::istreambuf_iterator<char>(reader)),
-                (std::istreambuf_iterator<char>())
-        ));
+        PROCESS("Using builder configuration " << c);
+        config->update_from_file(c);
+        DEBUG("CONFIGURATION: " << config->node);
     }
 
-    auto build_info = Builder::BuildInfo(build_info_content);
+    engine->sync();
+
+    auto build_info = Builder::BuildInfo(args[0]);
     if (config->get<bool>("build.depends", true)) {
         std::vector<std::string> to_install = build_info.depends;
         to_install.insert(to_install.begin(), build_info.build_time_depends.begin(),
@@ -55,12 +45,20 @@ PKGUPD_MODULE(build) {
         if (!config->node["installer.depends"]) {
             config->set("installer.depends", true);
         }
+        for (auto i = to_install.begin(); i != to_install.end();) {
+            if (engine->list_installed().find(*i) != engine->list_installed().end()) {
+                i = to_install.erase(i);
+            } else {
+                i++;
+            }
+        }
         if (PKGUPD_install(to_install, engine, config) != 0) {
             ERROR("failed to install build dependencies");
             return 1;
         }
     }
 
+    PROCESS("BUILDING " << build_info.id);
     auto package_path = engine->build(build_info);
 
     MESSAGE("READY", "your package is ready at " << package_path);

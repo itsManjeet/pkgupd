@@ -11,7 +11,7 @@
 #include "defines.hxx"
 
 InstalledMetaInfo::InstalledMetaInfo(const std::string &input) {
-    update_from(input);
+    update_from_data(input, "");
 
     timestamp = config.get<std::string>("timestamp");
 }

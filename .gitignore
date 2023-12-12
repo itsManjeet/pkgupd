@@ -11,3 +11,4 @@ tests/src
 tests/repo
 cmake-build-debug
 /.idea
+/sysroot

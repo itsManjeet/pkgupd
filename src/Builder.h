@@ -30,8 +30,11 @@ public:
 
         BuildInfo() = default;
 
-        explicit BuildInfo(const std::string &input);
+        explicit BuildInfo(const std::string &filepath);
 
+        static std::string resolve(const std::string &data, const std::map<std::string, std::string> &variables);
+
+        void resolve(const Configuration &global);
     };
 
     struct Compiler {

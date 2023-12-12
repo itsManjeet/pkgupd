@@ -21,7 +21,7 @@ public:
 
     InstalledMetaInfo install(const MetaInfo &meta_infos, std::vector<std::string> &deprecated_files);
 
-    std::filesystem::path build(const Builder::BuildInfo &build_info);
+    std::filesystem::path build(Builder::BuildInfo &build_info);
 
     std::filesystem::path cache_file(const Builder::BuildInfo& build_info);
 

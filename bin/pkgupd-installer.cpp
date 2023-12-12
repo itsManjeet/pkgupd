@@ -42,7 +42,7 @@ PKGUPD_MODULE(install) {
             std::cout << count++ << ". " << meta_info.id << std::endl;
         }
         if (!ask_user("Do you want to install " + std::to_string(meta_infos.size()) + " package(s)", config)) {
-            return 0;
+            return 1;
         }
     }
 

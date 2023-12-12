@@ -1,12 +1,14 @@
 #include "MetaInfo.h"
 
 #include <format>
+#include <fstream>
 
 #include "Configuration.h"
 
 
-void MetaInfo::update_from(const std::string &input) {
-    config.update_from(input);
+void MetaInfo::update_from_data(const std::string &data, const std::string &filepath) {
+    config.update_from(data, filepath);
+
     id = config.get<std::string>("id");
     version = config.get<std::string>("version");
     about = config.get<std::string>("about");
@@ -69,4 +71,13 @@ std::string MetaInfo::str() const {
     }
 
     return ss.str();
+}
+
+void MetaInfo::update_from_file(const std::string &filepath) {
+    std::ifstream reader(filepath);
+    if (!reader.good()) throw std::runtime_error("failed to read file '" + filepath + "'");
+    update_from_data(std::string(
+            (std::istreambuf_iterator<char>(reader)),
+            (std::istreambuf_iterator<char>())
+    ), filepath);
 }

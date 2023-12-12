@@ -39,7 +39,7 @@ MetaInfo ArchiveManager::info(const std::filesystem::path &input_path) {
     std::string content;
     get(input_path, "./info", content);
 
-    return MetaInfo(content);
+    return MetaInfo::from_data(content);
 }
 
 void ArchiveManager::list(const std::filesystem::path &filepath, std::vector<std::string> &files) {

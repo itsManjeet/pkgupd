@@ -24,7 +24,21 @@ struct MetaInfo {
     virtual ~MetaInfo() = default;
 
 
-    explicit MetaInfo(const std::string &input) { update_from(input); }
+    static MetaInfo from_file(const std::string &filepath) {
+        MetaInfo metaInfo;
+        metaInfo.update_from_file(filepath);
+        return metaInfo;
+    }
+
+    static MetaInfo from_data(const std::string &data, const std::string &filepath = "") {
+        MetaInfo metaInfo;
+        metaInfo.update_from_data(data, filepath);
+        return metaInfo;
+    }
+
+    void update_from_data(const std::string &data, const std::string &filepath);
+
+    void update_from_file(const std::string &filepath);
 
     [[nodiscard]] std::string name() const;
 
@@ -32,8 +46,6 @@ struct MetaInfo {
 
     [[nodiscard]] std::string package_name() const;
 
-protected:
-    void update_from(const std::string &input);
 };
 
 #endif

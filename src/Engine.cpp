@@ -199,7 +199,7 @@ std::map<std::string, MetaInfo> const &Engine::list_remote() const {
     return repository.get();
 }
 
-std::filesystem::path Engine::build(const Builder::BuildInfo &build_info) {
+std::filesystem::path Engine::build(Builder::BuildInfo &build_info) {
 
     std::filesystem::path work_dir = config.get<std::string>("dir.build", std::filesystem::current_path() / "build");
     std::filesystem::path source_dir = config.get<std::string>("dir.sources", work_dir / "sources");
@@ -221,6 +221,8 @@ std::filesystem::path Engine::build(const Builder::BuildInfo &build_info) {
             std::filesystem::create_directories(path);
         }
     }
+
+    build_info.resolve(config);
 
     auto builder = Builder(config, build_info);
     auto subdir = builder.prepare_sources(source_dir, build_root);
@@ -257,7 +259,7 @@ std::filesystem::path Engine::cache_file(const Builder::BuildInfo &build_info) {
 
     for (auto const &dep: build_info.build_time_depends) {
         auto meta_info = this->repository.get(dep);
-        if (!meta_info) throw std::runtime_error("missing buildtime dependency '" + dep + "'");
+        if (!meta_info) throw std::runtime_error("missing build-time dependency '" + dep + "'");
         picosha2::hash256_hex_string(meta_info->str() + hash_sum, hash_sum);
     }
     return std::format("{}-{}-{}.pkg", build_info.id, build_info.version, hash_sum);

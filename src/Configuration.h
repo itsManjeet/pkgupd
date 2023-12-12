@@ -10,7 +10,9 @@ struct Configuration {
 
     Configuration() = default;
 
-    void update_from(const std::string &input);
+    void update_from_file(const std::string &filepath);
+
+    void update_from(const std::string &data, const std::string &filepath = {});
 
 
     template<typename T>

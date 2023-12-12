@@ -25,9 +25,9 @@
 #include "ArchiveManager.h"
 #include "Execute.h"
 
-Builder::BuildInfo::BuildInfo(const std::string &input) {
+Builder::BuildInfo::BuildInfo(const std::string &filepath) {
     config.node["cache"] = "none";
-    update_from(input);
+    update_from_file(filepath);
     if (config.node["build-depends"]) {
         for (auto const &dep: config.node["build-depends"]) {
             auto depend = dep.as<std::string>();
@@ -39,6 +39,49 @@ Builder::BuildInfo::BuildInfo(const std::string &input) {
         for (auto const &dep: config.node["sources"]) sources.emplace_back(dep.as<std::string>());
     }
 }
+
+std::string Builder::BuildInfo::resolve(const std::string &data, const std::map<std::string, std::string> &variables) {
+    std::regex pattern(R"(\%\{([^}]+)\})");
+    std::smatch match;
+    std::string result = data;
+
+    while (std::regex_search(result, match, pattern)) {
+        if (match.size() > 1) {
+            std::string variable = match.str(1);
+            auto it = variables.find(variable);
+            if (it != variables.end()) {
+                result.replace(match[0].first, match[0].second, it->second);
+            } else {
+                throw std::runtime_error("undefined variable '" + variable + "'");
+            }
+        }
+    }
+    return result;
+}
+
+void Builder::BuildInfo::resolve(const Configuration &global) {
+    std::map<std::string, std::string> variables;
+    if (global.node["variables"]) {
+        for (auto const &v: global.node["variables"]) {
+            variables[v.first.as<std::string>()] = v.second.as<std::string>();
+        }
+    }
+
+    if (this->config.node["variables"]) {
+        for (auto const &v: this->config.node["variables"]) {
+            variables[v.first.as<std::string>()] = v.second.as<std::string>();
+        }
+    }
+
+
+    variables["version"] = version;
+    variables["id"] = id;
+
+    for (auto &source: sources) {
+        source = resolve(source, variables);
+    }
+}
+
 
 std::optional<std::filesystem::path>
 Builder::prepare_sources(const std::filesystem::path &source_dir, const std::filesystem::path &build_root) {
@@ -53,12 +96,17 @@ Builder::prepare_sources(const std::filesystem::path &source_dir, const std::fil
 
         auto filepath = source_dir / filename;
         if (!std::filesystem::exists(filepath)) {
-            if (int status = Executor("/bin/wget")
-                        .arg(url)
-                        .arg("-O")
-                        .arg(filepath).run(); status != 0) {
-                throw std::runtime_error("failed to run wget " + std::to_string(status));
+            if (url.starts_with("http")) {
+                if (int status = Executor("/bin/wget")
+                            .arg(url)
+                            .arg("-O")
+                            .arg(filepath)
+                            .start()
+                            .wait(&std::cout); status != 0) {
+                    throw std::runtime_error("failed to run wget " + std::to_string(status));
+                }
             }
+
         }
         if (ArchiveManager::is_archive(filepath)) {
             std::vector<std::string> files_list;
@@ -74,7 +122,6 @@ Builder::prepare_sources(const std::filesystem::path &source_dir, const std::fil
 }
 
 void Builder::compile_source(const std::filesystem::path &build_root, const std::filesystem::path &install_root) {
-    std::stringstream output;
     auto script = build_info.config.get<std::string>("script", "");
     if (script.empty()) {
         auto compiler = get_compiler(build_root);
@@ -95,7 +142,6 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
     }
 
     std::map<std::string, std::string> variables;
-
     if (config.node["variables"]) {
         for (auto const &v: config.node["variables"]) {
             variables[v.first.as<std::string>()] = v.second.as<std::string>();
@@ -107,23 +153,13 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
             variables[v.first.as<std::string>()] = v.second.as<std::string>();
         }
     }
+
     variables["install-root"] = install_root.string();
     variables["build-root"] = build_root.string();
+    script = BuildInfo::resolve(script, variables);
 
-    std::regex pattern(R"(\%\{([^}]+)\})");
-    std::smatch match;
-
-    while (std::regex_search(script, match, pattern)) {
-        if (match.size() > 1) {
-            std::string variable = match.str(1);
-            auto it = variables.find(variable);
-            if (it != variables.end()) {
-                script = std::regex_replace(script, pattern, it->second);
-            } else {
-                throw std::runtime_error("variable not found: " + variable);
-            }
-        }
-    }
+    PROCESS("Executing compilation script")
+    DEBUG(script);
 
     auto status = Executor("/bin/sh")
             .arg("-ec")
@@ -131,13 +167,24 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
             .path(build_root)
             .environ(environ)
             .start()
-            .wait(&output);
+            .wait(&std::cout);
     if (status != 0) {
-        throw std::runtime_error("failed to execute compiler script '" + output.str());
+        throw std::runtime_error("failed to execute compiler script: exit code " + std::to_string(status));
     }
 }
 
 void Builder::pack(const std::filesystem::path &install_root, const std::filesystem::path &package) {
+    for (auto const &i: std::filesystem::recursive_directory_iterator(install_root)) {
+        if (i.is_directory()) {
+            if (i.path().empty()) {
+                DEBUG("CLEANUP " << i.path());
+                std::filesystem::remove(i.path());
+            }
+        } else if (i.path().has_extension() && i.path().extension() == ".la") {
+            DEBUG("CLEANUP " << i.path());
+            std::filesystem::remove(i.path());
+        }
+    }
     ArchiveManager::compress(package, install_root);
 }
 
