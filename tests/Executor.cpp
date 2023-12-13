@@ -17,7 +17,7 @@
 
 #include <gtest/gtest.h>
 
-#include "../src/Execute.h"
+#include "../src/Executor.h"
 
 TEST(ExecutorTest, Basic) {
     auto [status, output] = Executor("/bin/echo")

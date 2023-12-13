@@ -5,15 +5,13 @@ add_library(${PROJECT_NAME}_LIB STATIC
         defines.hxx
         Downloader.cpp Downloader.h
         Engine.cpp Engine.h
-        Execute.h
+        Executor.h Executor.cpp
         MetaInfo.h MetaInfo.cpp
         Repository.cpp Repository.h
         Resolver.h
         SystemDatabase.cpp SystemDatabase.h
         Trigger.cpp Trigger.h
         json.h
-        Builder.cpp
-        Builder.h
-        Executor.cpp
+        Builder.cpp Builder.h
 )
 target_link_libraries(${PROJECT_NAME}_LIB yaml-cpp)

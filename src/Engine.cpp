@@ -208,7 +208,8 @@ std::filesystem::path Engine::build(Builder::BuildInfo &build_info) {
     auto build_root = work_dir / "build-root";
     auto install_root = work_dir / "install-root";
 
-    auto package_path = packages_dir / cache_file(build_info);
+    build_info.cache = hash(build_info);
+    auto package_path = packages_dir / build_info.package_name();
 
     for (auto const &path: {build_root, install_root}) {
         if (std::filesystem::exists(path)) {
@@ -242,7 +243,7 @@ std::filesystem::path Engine::build(Builder::BuildInfo &build_info) {
     return package_path;
 }
 
-std::filesystem::path Engine::cache_file(const Builder::BuildInfo &build_info) {
+std::filesystem::path Engine::hash(const Builder::BuildInfo &build_info) {
     std::string hash_sum;
 
     {
@@ -262,5 +263,5 @@ std::filesystem::path Engine::cache_file(const Builder::BuildInfo &build_info) {
         if (!meta_info) throw std::runtime_error("missing build-time dependency '" + dep + "'");
         picosha2::hash256_hex_string(meta_info->str() + hash_sum, hash_sum);
     }
-    return std::format("{}-{}-{}.pkg", build_info.id, build_info.version, hash_sum);
+    return hash_sum;
 }

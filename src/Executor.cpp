@@ -15,7 +15,7 @@
  *
  */
 
-#include "Execute.h"
+#include "Executor.h"
 
 #include <sstream>
 #include <cstring>
@@ -24,17 +24,6 @@ Executor &Executor::start() {
     if (pipe(pipe_fd) == -1) {
         throw std::runtime_error("pipe creating failed");
     }
-//    {
-//        std::stringstream ss;
-//        for (auto const &i: args_) {
-//            ss << i << " ";
-//        }
-//        for (auto const &e: environ_) {
-//            ss << "ENV=" << e << " ";
-//        }
-//        if (path_) ss << "DIR=" << *path_;
-//        DEBUG("COMMAND: " << ss.str());
-//    }
 
     pid = fork();
     if (pid == -1) {

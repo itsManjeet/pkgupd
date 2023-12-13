@@ -23,7 +23,7 @@ public:
 
     std::filesystem::path build(Builder::BuildInfo &build_info);
 
-    std::filesystem::path cache_file(const Builder::BuildInfo& build_info);
+    std::filesystem::path hash(const Builder::BuildInfo& build_info);
 
     void uninstall(const InstalledMetaInfo &installed_meta_infos);
 

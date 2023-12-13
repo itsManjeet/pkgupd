@@ -18,3 +18,7 @@ compiler:
 
       make 
       make install DESTDIR=%{install-root}
+      
+
+strip: |-
+  find-debuginfo --run-dwz -m -i -j ${MAXJOBS} %{build-root} %{install-root} %{id}-%{version}

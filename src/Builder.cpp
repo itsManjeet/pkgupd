@@ -23,7 +23,7 @@
 
 #include "Downloader.h"
 #include "ArchiveManager.h"
-#include "Execute.h"
+#include "Executor.h"
 
 Builder::BuildInfo::BuildInfo(const std::string &filepath) {
     config.node["cache"] = "none";
@@ -97,12 +97,8 @@ Builder::prepare_sources(const std::filesystem::path &source_dir, const std::fil
         auto filepath = source_dir / filename;
         if (!std::filesystem::exists(filepath)) {
             if (url.starts_with("http")) {
-                if (int status = Executor("/bin/wget")
-                            .arg(url)
-                            .arg("-O")
-                            .arg(filepath)
-                            .start()
-                            .wait(&std::cout); status != 0) {
+                if (int status = Executor("/bin/wget").arg(url).arg("-O").arg(filepath).start().wait(&std::cout);
+                        status != 0) {
                     throw std::runtime_error("failed to run wget " + std::to_string(status));
                 }
             }
@@ -122,12 +118,6 @@ Builder::prepare_sources(const std::filesystem::path &source_dir, const std::fil
 }
 
 void Builder::compile_source(const std::filesystem::path &build_root, const std::filesystem::path &install_root) {
-    auto script = build_info.config.get<std::string>("script", "");
-    if (script.empty()) {
-        auto compiler = get_compiler(build_root);
-        script = compiler.script;
-    }
-
     std::vector<std::string> environ;
     if (config.node["environ"]) {
         for (auto const &env: config.node["environ"]) {
@@ -154,8 +144,34 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
         }
     }
 
-    variables["install-root"] = install_root.string();
+    variables["install-root"] = (install_root / build_info.package_name()).string();
     variables["build-root"] = build_root.string();
+    variables["id"] = build_info.id;
+    variables["version"] = build_info.version;
+    variables["name"] = build_info.name();
+
+    if (auto pre_script = build_info.config.get<std::string>("pre-script", ""); !pre_script.empty()) {
+        pre_script = BuildInfo::resolve(pre_script, variables);
+        PROCESS("Executing pre compilation script")
+        DEBUG(pre_script);
+
+        auto status = Executor("/bin/sh")
+                .arg("-ec")
+                .arg(pre_script)
+                .path(build_root)
+                .environ(environ)
+                .start()
+                .wait(&std::cout);
+        if (status != 0) {
+            throw std::runtime_error("failed to execute pre compilation script: exit code " + std::to_string(status));
+        }
+    }
+    auto script = build_info.config.get<std::string>("script", "");
+    if (script.empty()) {
+        auto compiler = get_compiler(build_root);
+        script = compiler.script;
+    }
+
     script = BuildInfo::resolve(script, variables);
 
     PROCESS("Executing compilation script")
@@ -171,21 +187,106 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
     if (status != 0) {
         throw std::runtime_error("failed to execute compiler script: exit code " + std::to_string(status));
     }
+
+    if (auto post_script = build_info.config.get<std::string>("post-script", ""); !post_script.empty()) {
+        post_script = BuildInfo::resolve(post_script, variables);
+        PROCESS("Executing pre compilation script")
+        DEBUG(post_script);
+
+        status = Executor("/bin/sh")
+                .arg("-ec")
+                .arg(post_script)
+                .path(build_root)
+                .environ(environ)
+                .start()
+                .wait(&std::cout);
+        if (status != 0) {
+            throw std::runtime_error("failed to execute post compilation script: exit code " + std::to_string(status));
+        }
+    }
+
+    if (auto strip_script = config.get<std::string>("strip", ""); (!strip_script.empty() &&
+                                                                   !build_info.config.get<bool>("skip-strip", false))) {
+        strip_script = BuildInfo::resolve(strip_script, variables);
+
+        PROCESS("Executing strip script")
+        DEBUG(strip_script);
+
+        status = Executor("/bin/sh")
+                .arg("-ec")
+                .arg(strip_script)
+                .path(install_root)
+                .environ(environ)
+                .start()
+                .wait(&std::cout);
+        if (status != 0) {
+            throw std::runtime_error("failed to execute strip script: exit code " + std::to_string(status));
+        }
+    }
+
 }
 
 void Builder::pack(const std::filesystem::path &install_root, const std::filesystem::path &package) {
-    for (auto const &i: std::filesystem::recursive_directory_iterator(install_root)) {
+    auto install_root_package = install_root / build_info.package_name();
+    auto install_root_devel = install_root / (build_info.package_name() + ".devel");
+    auto install_root_dbg = install_root / (build_info.package_name() + ".dbg");
+    auto install_root_doc = install_root / (build_info.package_name() + ".doc");
+
+    for (auto const &i: {install_root_dbg, install_root_devel}) {
+        std::filesystem::create_directories(i);
+    }
+
+    auto replace_directory = [&](const std::filesystem::path &filepath,
+                                 const std::filesystem::path &old_parent,
+                                 const std::filesystem::path &new_parent) -> std::filesystem::path {
+
+        auto relative_path = std::filesystem::relative(filepath, old_parent);
+        return new_parent / relative_path;
+    };
+
+    auto move_file = [&](const std::filesystem::path &filepath,
+                         const std::filesystem::path &new_path) {
+        auto replaced_path = replace_directory(filepath, install_root_package, new_path);
+        std::filesystem::create_directories(replaced_path.parent_path());
+        std::filesystem::rename(filepath, replaced_path);
+    };
+
+    for (auto const &devel: {"usr/include", "usr/lib/cmake", "usr/lib/pkgconfig"}) {
+        if (auto path = install_root_package / devel; std::filesystem::exists(path)) {
+            move_file(path, install_root_devel);
+        }
+    }
+
+    for (auto const &dbg: {"usr/src", "usr/lib/dbg"}) {
+        if (auto path = install_root_package / dbg; std::filesystem::exists(path)) {
+            move_file(path, install_root_dbg);
+        }
+    }
+
+    for (auto const &dbg: {"usr/share/doc"}) {
+        if (auto path = install_root_package / dbg; std::filesystem::exists(path)) {
+            move_file(path, install_root_doc);
+        }
+    }
+
+
+    for (auto const &i: std::filesystem::recursive_directory_iterator(install_root_package)) {
         if (i.is_directory()) {
             if (i.path().empty()) {
-                DEBUG("CLEANUP " << i.path());
                 std::filesystem::remove(i.path());
             }
         } else if (i.path().has_extension() && i.path().extension() == ".la") {
-            DEBUG("CLEANUP " << i.path());
             std::filesystem::remove(i.path());
+        } else if (i.path().has_extension() && i.path().extension() == ".a") {
+            move_file(i.path(), install_root_devel);
         }
     }
-    ArchiveManager::compress(package, install_root);
+
+    PROCESS("Compressing " << build_info.name());
+    ArchiveManager::compress(package, install_root_package);
+    ArchiveManager::compress(package.string() + ".dbg", install_root_dbg);
+    ArchiveManager::compress(package.string() + ".devel", install_root_devel);
+    ArchiveManager::compress(package.string() + ".doc", install_root_doc);
 }
 
 Builder::Compiler Builder::get_compiler(const std::filesystem::path &build_root) {
@@ -208,16 +309,12 @@ Builder::Compiler Builder::get_compiler(const std::filesystem::path &build_root)
     return compilers[build_type];
 }
 
-Builder::Builder(
-        const Configuration &config,
-        const Builder::BuildInfo &build_info)
-        : config{config}, build_info{build_info} {
+Builder::Builder(const Configuration &config, const Builder::BuildInfo &build_info) : config{config},
+                                                                                      build_info{build_info} {
     if (config.node["compiler"]) {
         for (auto const &c: config.node["compiler"]) {
-            compilers[c.first.as<std::string>()] = Compiler{
-                    c.second["file"].as<std::string>(),
-                    c.second["script"].as<std::string>(),
-            };
+            compilers[c.first.as<std::string>()] = Compiler{c.second["file"].as<std::string>(),
+                                                            c.second["script"].as<std::string>(),};
         }
     }
 }

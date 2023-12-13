@@ -28,16 +28,8 @@ PKGUPD_MODULE(cachefile) {
 
     engine->sync();
 
-    std::ifstream reader(args[0]);
-    if (!reader.good()) {
-        throw std::runtime_error("failed to read build build_info");
-    }
-
-    std::string content(
-            (std::istreambuf_iterator<char>(reader)),
-            (std::istreambuf_iterator<char>())
-    );
-
-    std::cout << engine->cache_file(Builder::BuildInfo(content)).string() << std::endl;
+    auto build_info = Builder::BuildInfo(args[0]);
+    build_info.cache = engine->hash(build_info);
+    std::cout << build_info.package_name() << std::endl;
     return 0;
 }
