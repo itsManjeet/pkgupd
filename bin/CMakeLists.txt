@@ -12,6 +12,10 @@ add_executable(${PROJECT_NAME}
         pkgupd-trigger.cpp
         pkgupd-update.cpp
         pkgupd-build.cpp
-        pkgupd-cachefile.cpp)
+        pkgupd-cachefile.cpp
+        pkgupd-ignite.cpp
+        ignite/ignite_common.h
+        ignite/ignite-status.cpp
+        ignite/ignite-build.cpp)
 
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_LIB -static)

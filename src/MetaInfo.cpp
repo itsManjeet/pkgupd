@@ -11,7 +11,7 @@ void MetaInfo::update_from_data(const std::string &data, const std::string &file
 
     id = config.get<std::string>("id");
     version = config.get<std::string>("version");
-    about = config.get<std::string>("about");
+    about = config.get<std::string>("about", "");
     cache = config.get<std::string>("cache");
 
     if (config.node["depends"]) {

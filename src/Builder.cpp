@@ -25,14 +25,16 @@
 #include "ArchiveManager.h"
 #include "Executor.h"
 
-Builder::BuildInfo::BuildInfo(const std::string &filepath) {
+Builder::BuildInfo::BuildInfo(const std::string &filepath, const std::filesystem::path &search_path) {
+    config.search_path.push_back(search_path);
     config.node["cache"] = "none";
     update_from_file(filepath);
+    for (auto &dep: depends) {
+        if (!dep.ends_with(".yml")) dep += ".yml";
+    }
     if (config.node["build-depends"]) {
         for (auto const &dep: config.node["build-depends"]) {
-            auto depend = dep.as<std::string>();
-            if (depend.ends_with(".yml")) depend = depend.substr(0, depend.length() - 4);
-            build_time_depends.emplace_back(depend);
+            build_time_depends.push_back(dep.as<std::string>());
         };
     }
     if (config.node["sources"]) {
@@ -60,6 +62,12 @@ std::string Builder::BuildInfo::resolve(const std::string &data, const std::map<
 }
 
 void Builder::BuildInfo::resolve(const Configuration &global) {
+    for (auto &source: sources) {
+        source = resolve(source, global);
+    }
+}
+
+std::string Builder::BuildInfo::resolve(const std::string &value, const Configuration &global) const {
     std::map<std::string, std::string> variables;
     if (global.node["variables"]) {
         for (auto const &v: global.node["variables"]) {
@@ -76,10 +84,7 @@ void Builder::BuildInfo::resolve(const Configuration &global) {
 
     variables["version"] = version;
     variables["id"] = id;
-
-    for (auto &source: sources) {
-        source = resolve(source, variables);
-    }
+    return resolve(value, variables);
 }
 
 
@@ -97,10 +102,12 @@ Builder::prepare_sources(const std::filesystem::path &source_dir, const std::fil
         auto filepath = source_dir / filename;
         if (!std::filesystem::exists(filepath)) {
             if (url.starts_with("http")) {
-                if (int status = Executor("/bin/wget").arg(url).arg("-O").arg(filepath).start().wait(&std::cout);
-                        status != 0) {
-                    throw std::runtime_error("failed to run wget " + std::to_string(status));
-                }
+                Executor("/bin/curl")
+                        .arg(url)
+                        .arg("-L")
+                        .arg("-o")
+                        .arg(filepath)
+                        .execute();
             }
 
         }
@@ -144,8 +151,12 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
         }
     }
 
-    variables["install-root"] = (install_root / build_info.package_name()).string();
-    variables["build-root"] = build_root.string();
+    auto resolved_install_root = (container ? container->host_root : std::filesystem::path(""))
+                                 / install_root / build_info.package_name();
+    auto resolved_build_root = (container ? container->host_root : std::filesystem::path(""))
+                               / build_root;
+    variables["install-root"] = resolved_install_root;
+    variables["build-root"] = resolved_build_root;
     variables["id"] = build_info.id;
     variables["version"] = build_info.version;
     variables["name"] = build_info.name();
@@ -155,16 +166,13 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
         PROCESS("Executing pre compilation script")
         DEBUG(pre_script);
 
-        auto status = Executor("/bin/sh")
+        Executor("/bin/sh")
                 .arg("-ec")
                 .arg(pre_script)
                 .path(build_root)
                 .environ(environ)
-                .start()
-                .wait(&std::cout);
-        if (status != 0) {
-            throw std::runtime_error("failed to execute pre compilation script: exit code " + std::to_string(status));
-        }
+                .container(container)
+                .execute();
     }
     auto script = build_info.config.get<std::string>("script", "");
     if (script.empty()) {
@@ -177,51 +185,42 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
     PROCESS("Executing compilation script")
     DEBUG(script);
 
-    auto status = Executor("/bin/sh")
+    Executor("/bin/sh")
             .arg("-ec")
             .arg(script)
             .path(build_root)
             .environ(environ)
-            .start()
-            .wait(&std::cout);
-    if (status != 0) {
-        throw std::runtime_error("failed to execute compiler script: exit code " + std::to_string(status));
-    }
+            .container(container)
+            .execute();
 
     if (auto post_script = build_info.config.get<std::string>("post-script", ""); !post_script.empty()) {
         post_script = BuildInfo::resolve(post_script, variables);
         PROCESS("Executing pre compilation script")
         DEBUG(post_script);
 
-        status = Executor("/bin/sh")
+        Executor("/bin/sh")
                 .arg("-ec")
                 .arg(post_script)
                 .path(build_root)
                 .environ(environ)
-                .start()
-                .wait(&std::cout);
-        if (status != 0) {
-            throw std::runtime_error("failed to execute post compilation script: exit code " + std::to_string(status));
-        }
+                .container(container)
+                .execute();
     }
 
-    if (auto strip_script = config.get<std::string>("strip", ""); (!strip_script.empty() &&
-                                                                   !build_info.config.get<bool>("skip-strip", false))) {
+    if (auto strip_script = config.get<std::string>("strip", "");
+            (!strip_script.empty() && !build_info.config.get<bool>("skip-strip", false))) {
         strip_script = BuildInfo::resolve(strip_script, variables);
 
         PROCESS("Executing strip script")
         DEBUG(strip_script);
 
-        status = Executor("/bin/sh")
+        Executor("/bin/sh")
                 .arg("-ec")
                 .arg(strip_script)
                 .path(install_root)
                 .environ(environ)
-                .start()
-                .wait(&std::cout);
-        if (status != 0) {
-            throw std::runtime_error("failed to execute strip script: exit code " + std::to_string(status));
-        }
+                .container(container)
+                .execute();
     }
 
 }
@@ -232,7 +231,7 @@ void Builder::pack(const std::filesystem::path &install_root, const std::filesys
     auto install_root_dbg = install_root / (build_info.package_name() + ".dbg");
     auto install_root_doc = install_root / (build_info.package_name() + ".doc");
 
-    for (auto const &i: {install_root_dbg, install_root_devel}) {
+    for (auto const &i: {install_root_dbg, install_root_devel, install_root_doc}) {
         std::filesystem::create_directories(i);
     }
 
@@ -309,8 +308,11 @@ Builder::Compiler Builder::get_compiler(const std::filesystem::path &build_root)
     return compilers[build_type];
 }
 
-Builder::Builder(const Configuration &config, const Builder::BuildInfo &build_info) : config{config},
-                                                                                      build_info{build_info} {
+Builder::Builder(const Configuration &config, const Builder::BuildInfo &build_info,
+                 const std::optional<Container> &container)
+        : config{config},
+          build_info{build_info},
+          container{container} {
     if (config.node["compiler"]) {
         for (auto const &c: config.node["compiler"]) {
             compilers[c.first.as<std::string>()] = Compiler{c.second["file"].as<std::string>(),

@@ -13,5 +13,9 @@ add_library(${PROJECT_NAME}_LIB STATIC
         Trigger.cpp Trigger.h
         json.h
         Builder.cpp Builder.h
+        Ignite.cpp
+        Ignite.h
+        Container.cpp
+        Container.h
 )
 target_link_libraries(${PROJECT_NAME}_LIB yaml-cpp)

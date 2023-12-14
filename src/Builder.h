@@ -22,6 +22,8 @@
 #include <filesystem>
 #include "MetaInfo.h"
 
+#include "Container.h"
+
 
 class Builder {
 public:
@@ -30,11 +32,13 @@ public:
 
         BuildInfo() = default;
 
-        explicit BuildInfo(const std::string &filepath);
+        explicit BuildInfo(const std::string &filepath, const std::filesystem::path &search_path = {});
 
         static std::string resolve(const std::string &data, const std::map<std::string, std::string> &variables);
 
         void resolve(const Configuration &global);
+
+        std::string resolve(const std::string &value, const Configuration &global) const;
     };
 
     struct Compiler {
@@ -47,8 +51,11 @@ private:
     const BuildInfo &build_info;
     std::map<std::string, Compiler> compilers;
 
+    std::optional<Container> container;
+
 public:
-    explicit Builder(const Configuration &config, const BuildInfo &build_info);
+    explicit Builder(const Configuration &config, const BuildInfo &build_info,
+                     const std::optional<Container> &container);
 
     std::optional<std::filesystem::path>
     prepare_sources(const std::filesystem::path &source_dir, const std::filesystem::path &build_root);

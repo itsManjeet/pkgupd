@@ -5,6 +5,7 @@
 #include "Repository.h"
 #include "Downloader.h"
 #include "Builder.h"
+#include "Container.h"
 
 
 class Engine {
@@ -19,11 +20,13 @@ private:
 public:
     explicit Engine(const Configuration &config);
 
+    void load_system_database();
+
     InstalledMetaInfo install(const MetaInfo &meta_infos, std::vector<std::string> &deprecated_files);
 
-    std::filesystem::path build(Builder::BuildInfo &build_info);
+    std::filesystem::path build(const Builder::BuildInfo &build_info, const std::optional<Container>& container = {});
 
-    std::filesystem::path hash(const Builder::BuildInfo& build_info);
+    std::filesystem::path hash(const Builder::BuildInfo &build_info);
 
     void uninstall(const InstalledMetaInfo &installed_meta_infos);
 

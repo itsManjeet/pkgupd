@@ -35,6 +35,7 @@ PKGUPD_MODULE(build) {
         DEBUG("CONFIGURATION: " << config->node);
     }
 
+    engine->load_system_database();
     engine->sync();
 
     auto build_info = Builder::BuildInfo(args[0]);
@@ -57,6 +58,9 @@ PKGUPD_MODULE(build) {
             return 1;
         }
     }
+
+    build_info.resolve(*config);
+    build_info.cache = engine->hash(build_info);
 
     PROCESS("BUILDING " << build_info.id);
     auto package_path = engine->build(build_info);

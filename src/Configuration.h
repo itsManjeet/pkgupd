@@ -4,11 +4,14 @@
 #include <string>
 #include <vector>
 #include <yaml-cpp/yaml.h>
+#include <filesystem>
 
 struct Configuration {
     YAML::Node node;
 
     Configuration() = default;
+
+    std::vector<std::filesystem::path> search_path;
 
     void update_from_file(const std::string &filepath);
 

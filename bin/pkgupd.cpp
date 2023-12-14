@@ -14,6 +14,7 @@
   X(owner)                  \
   X(build)                  \
   X(cleanup)                \
+  X(ignite)                 \
   X(cachefile)              \
   X(autoremove)
 

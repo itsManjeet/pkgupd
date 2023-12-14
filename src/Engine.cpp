@@ -15,7 +15,6 @@ Engine::Engine(const Configuration &config)
         : config(config),
           root(config.get<std::string>(DIR_ROOT, "/")),
           server(config.get<std::string>("server", "http://repo.rlxos.dev")) {
-    system_database.load(config.get<std::string>(DIR_DATA, DEFAULT_DATA_DIR));
 }
 
 std::filesystem::path Engine::download(const MetaInfo &meta_info, bool force) const {
@@ -199,7 +198,7 @@ std::map<std::string, MetaInfo> const &Engine::list_remote() const {
     return repository.get();
 }
 
-std::filesystem::path Engine::build(Builder::BuildInfo &build_info) {
+std::filesystem::path Engine::build(const Builder::BuildInfo &build_info, const std::optional<Container> &container) {
 
     std::filesystem::path work_dir = config.get<std::string>("dir.build", std::filesystem::current_path() / "build");
     std::filesystem::path source_dir = config.get<std::string>("dir.sources", work_dir / "sources");
@@ -208,7 +207,6 @@ std::filesystem::path Engine::build(Builder::BuildInfo &build_info) {
     auto build_root = work_dir / "build-root";
     auto install_root = work_dir / "install-root";
 
-    build_info.cache = hash(build_info);
     auto package_path = packages_dir / build_info.package_name();
 
     for (auto const &path: {build_root, install_root}) {
@@ -223,13 +221,12 @@ std::filesystem::path Engine::build(Builder::BuildInfo &build_info) {
         }
     }
 
-    build_info.resolve(config);
-
-    auto builder = Builder(config, build_info);
+    auto builder = Builder(config, build_info, container);
     auto subdir = builder.prepare_sources(source_dir, build_root);
     if (!subdir) subdir = ".";
 
-    build_root /= build_info.config.get<std::string>("build-dir", subdir->string());
+    build_root /= build_info.config.get<std::string>("build-dir", build_info.resolve(subdir->string(), config));
+    build_root = build_info.resolve(build_root.string(), config);
     builder.compile_source(build_root, install_root);
     builder.pack(install_root, package_path);
 
@@ -264,4 +261,8 @@ std::filesystem::path Engine::hash(const Builder::BuildInfo &build_info) {
         picosha2::hash256_hex_string(meta_info->str() + hash_sum, hash_sum);
     }
     return hash_sum;
+}
+
+void Engine::load_system_database() {
+    system_database.load(config.get<std::string>(DIR_DATA, DEFAULT_DATA_DIR));
 }

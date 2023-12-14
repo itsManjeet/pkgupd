@@ -10,6 +10,7 @@
 
 #include <sys/wait.h>
 #include "Colors.h"
+#include "Container.h"
 
 
 class Executor {
@@ -23,6 +24,16 @@ class Executor {
 public:
     explicit Executor(const std::string &binary) {
         args_.push_back(binary);
+    }
+
+    Executor &container(const std::optional<Container> &container) {
+        if (container) {
+            std::string path = path_ ? *path_ : "/";
+            auto a = container->args();
+            a.insert(a.end(), {"--chdir", path});
+            args_.insert(args_.begin(), a.begin(), a.end());
+        }
+        return *this;
     }
 
     Executor &arg(const std::string &a) {
@@ -50,6 +61,8 @@ public:
     int wait(std::ostream *out = nullptr);
 
     int run();
+
+    void execute();
 
     std::tuple<int, std::string> output();
 };

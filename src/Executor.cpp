@@ -36,7 +36,7 @@ Executor &Executor::start() {
 
         close(pipe_fd[1]);
 
-        if (path_) chdir(path_->c_str());
+        if (path_) if (chdir(path_->c_str()) == -1) throw std::runtime_error("failed to switch path to " + *path_);
         clearenv();
 
         std::vector<const char *> args;
@@ -72,7 +72,7 @@ int Executor::wait(std::ostream *out) {
 
 int Executor::run() {
     start();
-    return wait({});
+    return wait(&std::cout);
 }
 
 std::tuple<int, std::string> Executor::output() {
@@ -82,5 +82,18 @@ std::tuple<int, std::string> Executor::output() {
     std::string output_data = output.str();
     output_data.shrink_to_fit();
     return {status, output_data};
+}
+
+void Executor::execute() {
+    std::stringstream ss;
+    for (auto const &a: args_) {
+        ss << a << " ";
+    }
+    DEBUG("COMMAND : " << ss.str());
+    DEBUG("PATH    : " << (path_ ? *path_ : "."));
+    if (int status = run(); status != 0) {
+
+        throw std::runtime_error("failed to execute command: exit code " + std::to_string(status));
+    }
 }
 
