@@ -112,7 +112,7 @@ void ArchiveManager::compress(const std::filesystem::path &filepath, const std::
 }
 
 bool ArchiveManager::is_archive(const std::filesystem::path &filepath) {
-    for (auto const &ext: {".tar", ".zip", ".gz", ".xz", ".bzip2", ".tgz", ".txz", ".bz"}) {
+    for (auto const &ext: {".tar", ".zip", ".gz", ".xz", ".bzip2", ".tgz", ".txz", ".bz", ".zst", ".zstd"}) {
         if (filepath.has_extension() && filepath.extension() == ext) {
             return true;
         }

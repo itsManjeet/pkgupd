@@ -19,6 +19,7 @@
 
 #include <optional>
 #include <regex>
+#include <fstream>
 
 
 #include "Downloader.h"
@@ -92,6 +93,8 @@ std::optional<std::filesystem::path>
 Builder::prepare_sources(const std::filesystem::path &source_dir, const std::filesystem::path &build_root) {
     std::optional<std::filesystem::path> subdir;
 
+    std::filesystem::create_directories(build_root);
+
     for (auto url: build_info.sources) {
         auto filename = std::filesystem::path(url).filename().string();
         if (auto idx = url.find("::"); idx != std::string::npos) {
@@ -108,17 +111,23 @@ Builder::prepare_sources(const std::filesystem::path &source_dir, const std::fil
                         .arg("-o")
                         .arg(filepath)
                         .execute();
+            } else {
+                std::filesystem::copy((container ? container->base_dir : std::filesystem::current_path()) / url,
+                                      filepath,
+                                      std::filesystem::copy_options::recursive |
+                                      std::filesystem::copy_options::overwrite_existing);
             }
 
         }
         if (ArchiveManager::is_archive(filepath)) {
             std::vector<std::string> files_list;
-            ArchiveManager::extract(filepath, build_root, files_list);
+            ArchiveManager::extract(filepath, build_root / (subdir ? *subdir : std::filesystem::path("")), files_list);
             if (!subdir) {
                 subdir = files_list.front();
             }
         } else {
-            std::filesystem::copy_file(filepath, build_root / filename);
+            std::filesystem::copy_file(filepath,
+                                       build_root / (subdir ? *subdir : std::filesystem::path("")) / filename);
         }
     }
     return subdir;
@@ -155,8 +164,8 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
                                  / install_root / build_info.package_name();
     auto resolved_build_root = (container ? container->host_root : std::filesystem::path(""))
                                / build_root;
-    variables["install-root"] = resolved_install_root;
-    variables["build-root"] = resolved_build_root;
+    variables["install-root"] = std::filesystem::path("/") / install_root / build_info.package_name();
+    variables["build-root"] = std::filesystem::path("/") / build_root;
     variables["id"] = build_info.id;
     variables["version"] = build_info.version;
     variables["name"] = build_info.name();
@@ -169,29 +178,41 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
         Executor("/bin/sh")
                 .arg("-ec")
                 .arg(pre_script)
-                .path(build_root)
+                .path(variables["build-root"])
                 .environ(environ)
                 .container(container)
                 .execute();
     }
-    auto script = build_info.config.get<std::string>("script", "");
-    if (script.empty()) {
-        auto compiler = get_compiler(build_root);
-        script = compiler.script;
+
+    if (build_info.config.get<std::string>("build-type", "") == "import") {
+        auto source = resolved_build_root / build_info.config.get<std::string>("source", "");
+        auto target = resolved_install_root / build_info.config.get<std::string>("target", "");
+        std::filesystem::create_directories(target);
+        Executor("/bin/cp")
+                .arg("-rap")
+                .arg(source / ".")
+                .arg("-t").arg(target).execute();
+    } else {
+        auto script = build_info.config.get<std::string>("script", "");
+        if (script.empty()) {
+            auto compiler = get_compiler(resolved_build_root);
+            script = compiler.script;
+        }
+
+        script = BuildInfo::resolve(script, variables);
+
+        PROCESS("Executing compilation script")
+        DEBUG(script);
+
+        Executor("/bin/sh")
+                .arg("-ec")
+                .arg(script)
+                .path(variables["build-root"])
+                .environ(environ)
+                .container(container)
+                .execute();
+
     }
-
-    script = BuildInfo::resolve(script, variables);
-
-    PROCESS("Executing compilation script")
-    DEBUG(script);
-
-    Executor("/bin/sh")
-            .arg("-ec")
-            .arg(script)
-            .path(build_root)
-            .environ(environ)
-            .container(container)
-            .execute();
 
     if (auto post_script = build_info.config.get<std::string>("post-script", ""); !post_script.empty()) {
         post_script = BuildInfo::resolve(post_script, variables);
@@ -201,24 +222,33 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
         Executor("/bin/sh")
                 .arg("-ec")
                 .arg(post_script)
-                .path(build_root)
+                .path(variables["build-root"])
                 .environ(environ)
                 .container(container)
                 .execute();
     }
 
     if (auto strip_script = config.get<std::string>("strip", "");
-            (!strip_script.empty() && !build_info.config.get<bool>("skip-strip", false))) {
+            (!strip_script.empty() && build_info.config.get<bool>("strip", true))) {
         strip_script = BuildInfo::resolve(strip_script, variables);
 
         PROCESS("Executing strip script")
         DEBUG(strip_script);
 
+        auto env_copy = environ;
+        if (build_info.config.node["skip-strip"]) {
+            std::stringstream ss;
+            for (auto const &i: build_info.config.node["skip-strip"]) {
+                ss << i.as<std::string>() << " ";
+            }
+            env_copy.push_back("nostrip=" + ss.str());
+        }
+
         Executor("/bin/sh")
                 .arg("-ec")
                 .arg(strip_script)
-                .path(install_root)
-                .environ(environ)
+                .path(variables["install-root"])
+                .environ(env_copy)
                 .container(container)
                 .execute();
     }
@@ -282,6 +312,36 @@ void Builder::pack(const std::filesystem::path &install_root, const std::filesys
     }
 
     PROCESS("Compressing " << build_info.name());
+
+    std::ofstream user_map(install_root / "user-map");
+    user_map << "+" << getuid() << " root:0\n"
+             << config.get<std::string>("user-map", "") << '\n'
+             << build_info.config.get<std::string>("user-map", "") << '\n';
+    user_map.close();
+
+    std::ofstream group_map(install_root / "group-map");
+    group_map << "+" << getgid() << " root:0\n"
+              << config.get<std::string>("group-map", "") << '\n'
+              << build_info.config.get<std::string>("group-map", "") << '\n';
+    group_map.close();
+
+    for (auto const &i: std::map<std::string, std::string>{
+            {"", install_root_package},
+            {".dbg", install_root_dbg},
+            {".devel", install_root_devel},
+            {".doc", install_root_doc},
+    }) {
+        Executor("/bin/tar")
+                .arg("--zstd")
+                .arg("--owner-map=" + (install_root / "user-map").string())
+                .arg("--group-map=" + (install_root / "group-map").string())
+                .arg("-cPf")
+                .arg(package.string() + i.first)
+                .arg("-C")
+                .arg(i.second)
+                .arg(".").output();
+    }
+
     ArchiveManager::compress(package, install_root_package);
     ArchiveManager::compress(package.string() + ".dbg", install_root_dbg);
     ArchiveManager::compress(package.string() + ".devel", install_root_devel);

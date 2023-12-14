@@ -132,19 +132,29 @@ std::string Ignite::hash(const Builder::BuildInfo &build_info) {
 
 void Ignite::build(const Builder::BuildInfo &build_info, Engine *engine) {
     auto container = setup_container(build_info, engine, ContainerType::Build);
-
-    auto package_path = cache_path / "cache";
+    std::shared_ptr<void> _(nullptr, [&container](...) {
+        std::filesystem::remove_all(container.host_root);
+    });
+    auto package_path = cache_path / build_info.package_name();
     auto builder = Builder(config, build_info, container);
     auto subdir = builder.prepare_sources(cache_path / "sources", container.host_root / "build-root");
     if (!subdir) subdir = ".";
 
     auto build_root =
-            std::filesystem::path("/build-root") / build_info.config.get<std::string>("build-dir", subdir->string());
+            std::filesystem::path("build-root") / build_info.config.get<std::string>("build-dir", subdir->string());
     build_root = build_info.resolve(build_root.string(), config);
-    builder.compile_source(build_root, "/install-root");
-    builder.pack(container.host_root / "install-root", package_path);
+    try {
+        builder.compile_source(build_root, "install-root");
+        builder.pack(container.host_root / "install-root", package_path);
+    } catch (const std::exception &exception) {
+        ERROR(exception.what())
+        PROCESS("Entering rescue shell");
+        Executor("/bin/sh")
+                .container(container)
+                .execute();
+        throw;
+    }
 
-    std::filesystem::remove(container.host_root);
 
 }
 
@@ -172,6 +182,7 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
 
             },
             .host_root = host_root,
+            .base_dir = project_path,
             .name = build_info.package_name(),
     };
     for (auto const &i: {"sources", "cache"}) {
@@ -187,11 +198,11 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
 
     resolve(depends, states);
     for (auto const &[path, info, cached]: states) {
-        integrate(container, info, "/");
+        integrate(container, info, "");
     }
 
     if (container_type == ContainerType::Shell) {
-        integrate(container, build_info, "/");
+        integrate(container, build_info, "");
     }
 
     return container;
@@ -199,31 +210,27 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
 
 void Ignite::integrate(Container &container, const Builder::BuildInfo &build_info, const std::filesystem::path &root) {
     PROCESS("Integrating " << build_info.id);
-    auto package_file = std::filesystem::path("/cache") / build_info.package_name();
-    auto root_path = root.has_parent_path() ? root.parent_path() : "/";
-    Executor("/bin/mkdir")
-            .arg("-p")
-            .arg(root_path)
-            .container(container)
-            .execute();
+    std::filesystem::create_directories(container.host_root / root);
 
-    Executor("/bin/tar")
-            .arg("-xPhf")
-            .arg(package_file)
-            .arg("-C")
-            .arg(root)
-            .arg("--exclude=./etc/hosts")
-            .arg("--exclude=./etc/hostname")
-            .arg("--exclude=./etc/resolve.conf")
-            .arg("--exclude=./proc")
-            .arg("--exclude=./run")
-            .arg("--exclude=./sys")
-            .arg("--exclude=./dev")
-            .container(container)
-            .execute();
+    for (auto const &i: {"", ".devel"}) {
+        Executor("/bin/tar")
+                .arg("-xPhf")
+                .arg(cache_path / (build_info.package_name() + i))
+                .arg("-C")
+                .arg(container.host_root / root)
+                .arg("--exclude=./etc/hosts")
+                .arg("--exclude=./etc/hostname")
+                .arg("--exclude=./etc/resolve.conf")
+                .arg("--exclude=./proc")
+                .arg("--exclude=./run")
+                .arg("--exclude=./sys")
+                .arg("--exclude=./dev")
+                .execute();
+
+    }
 
 
-    if (root == "/") {
+    if (root == "/" && !build_info.integration.empty()) {
         DEBUG("INTEGRATION SCRIPT");
         Executor("/bin/sh")
                 .arg("-ec")

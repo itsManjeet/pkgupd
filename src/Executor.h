@@ -32,6 +32,7 @@ public:
             auto a = container->args();
             a.insert(a.end(), {"--chdir", path});
             args_.insert(args_.begin(), a.begin(), a.end());
+            path_.reset();
         }
         return *this;
     }

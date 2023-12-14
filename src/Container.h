@@ -32,6 +32,7 @@ struct Container {
     std::vector<std::pair<std::string, std::string>> binds;
 
     std::filesystem::path host_root;
+    std::filesystem::path base_dir;
     std::string name;
 
     [[nodiscard]] std::vector<std::string> args() const;

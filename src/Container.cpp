@@ -26,6 +26,8 @@ std::vector<std::string> Container::args() const {
                                   "--ro-bind", "/etc/resolv.conf", "/etc/resolv.conf",
                                   "--unshare-all",
                                   "--share-net",
+                                  "--uid", "0",
+                                  "--gid", "0",
                                   "--die-with-parent"};
     for (auto const &[dest, source]: binds) {
         a.insert(a.end(), {"--bind", source, dest});
