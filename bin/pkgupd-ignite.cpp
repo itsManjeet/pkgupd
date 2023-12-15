@@ -43,17 +43,18 @@ std::map<std::string, std::function<int(std::vector<std::string> const &, Engine
 PKGUPD_MODULE_HELP(ignite) {
     os << "Project Build tool" << std::endl;
 
+    if (padding > 0) return;
     int size = 10;
 #define X(id) \
   if (strlen(#id) > size) size = std::strlen(#id);
     PKGUPD_IGNITE_MODULES_LIST
 #undef X
 
-    std::cout << "Task:" << std::endl;
+    std::cout << "SUB Task:" << std::endl;
 #define X(id)                                                        \
-  std::cout << " - " << BLUE(#id) << std::string(size - std::strlen(#id), ' ') \
+  std::cout  << " - " << BLUE(#id) << std::string(size - std::strlen(#id), ' ') \
        << "    ";                                                    \
-  PKGUPD_IGNITE_help_##id(std::cout, 2 + size + 4);
+  PKGUPD_IGNITE_help_##id(std::cout, 2 + size + 4 );
     PKGUPD_IGNITE_MODULES_LIST
 #undef X
 }
