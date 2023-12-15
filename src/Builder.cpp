@@ -339,13 +339,8 @@ void Builder::pack(const std::filesystem::path &install_root, const std::filesys
                 .arg(package.string() + i.first)
                 .arg("-C")
                 .arg(i.second)
-                .arg(".").output();
+                .arg(".").execute();
     }
-
-    ArchiveManager::compress(package, install_root_package);
-    ArchiveManager::compress(package.string() + ".dbg", install_root_dbg);
-    ArchiveManager::compress(package.string() + ".devel", install_root_devel);
-    ArchiveManager::compress(package.string() + ".doc", install_root_doc);
 }
 
 Builder::Compiler Builder::get_compiler(const std::filesystem::path &build_root) {
