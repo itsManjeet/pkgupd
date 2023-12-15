@@ -63,13 +63,14 @@ std::string Builder::BuildInfo::resolve(const std::string &data, const std::map<
     return result;
 }
 
-void Builder::BuildInfo::resolve(const Configuration &global) {
+void Builder::BuildInfo::resolve(const Configuration &global, const std::map<std::string, std::string> &extra) {
     for (auto &source: sources) {
-        source = resolve(source, global);
+        source = resolve(source, global, extra);
     }
 }
 
-std::string Builder::BuildInfo::resolve(const std::string &value, const Configuration &global) const {
+std::string Builder::BuildInfo::resolve(const std::string &value, const Configuration &global,
+                                        const std::map<std::string, std::string> &extra) const {
     std::map<std::string, std::string> variables;
     if (global.node["variables"]) {
         for (auto const &v: global.node["variables"]) {
@@ -87,6 +88,9 @@ std::string Builder::BuildInfo::resolve(const std::string &value, const Configur
     variables["version"] = version;
     variables["id"] = id;
     variables["build-dir"] = "_pkgupd_build_dir";
+    for (auto const &i: extra) {
+        variables[i.first] = i.second;
+    }
     return resolve(value, variables);
 }
 
@@ -135,62 +139,44 @@ Builder::prepare_sources(const std::filesystem::path &source_dir, const std::fil
         } else {
             std::filesystem::copy_file(filepath,
                                        build_root / (subdir ? *subdir : std::filesystem::path("")) / filename,
-                                        std::filesystem::copy_options::overwrite_existing);
+                                       std::filesystem::copy_options::overwrite_existing);
         }
     }
     return subdir;
 }
 
 void Builder::compile_source(const std::filesystem::path &build_root, const std::filesystem::path &install_root) {
-    std::vector<std::string> environ;
+    std::vector<std::string> env;
     if (config.node["environ"]) {
-        for (auto const &env: config.node["environ"]) {
-            environ.push_back(env.as<std::string>());
+        for (auto const &e: config.node["environ"]) {
+            env.push_back(e.as<std::string>());
         }
     }
 
     if (build_info.config.node["environ"]) {
-        for (auto const &env: build_info.config.node["environ"]) {
-            environ.push_back(env.as<std::string>());
+        for (auto const &e: build_info.config.node["environ"]) {
+            env.push_back(e.as<std::string>());
         }
     }
-
-    std::map<std::string, std::string> variables;
-    if (config.node["variables"]) {
-        for (auto const &v: config.node["variables"]) {
-            variables[v.first.as<std::string>()] = v.second.as<std::string>();
-        }
-    }
-
-    if (build_info.config.node["variables"]) {
-        for (auto const &v: build_info.config.node["variables"]) {
-            variables[v.first.as<std::string>()] = v.second.as<std::string>();
-        }
-    }
+    std::map<std::string, std::string> extra_variables;
 
     auto resolved_install_root = (container ? container->host_root : std::filesystem::path(""))
                                  / install_root / build_info.package_name();
     auto resolved_build_root = (container ? container->host_root : std::filesystem::path(""))
                                / build_root;
-    variables["install-root"] = std::filesystem::path("/") / install_root / build_info.package_name();
-    variables["build-root"] = std::filesystem::path("/") / build_root;
-    variables["id"] = build_info.id;
-    variables["version"] = build_info.version;
-    variables["name"] = build_info.name();
-    // TODO: FIX this
-    variables["build-dir"] = "_pkgupd_build_dir";
-    if (!variables.contains("configure")) variables["configure"] = ""
+    extra_variables["install-root"] = std::filesystem::path("/") / install_root / build_info.package_name();
+    extra_variables["build-root"] = std::filesystem::path("/") / build_root;
 
     if (auto pre_script = build_info.config.get<std::string>("pre-script", ""); !pre_script.empty()) {
-        pre_script = BuildInfo::resolve(pre_script, variables);
+        pre_script = build_info.resolve(pre_script, config, extra_variables);
         PROCESS("Executing pre compilation script")
         DEBUG(pre_script);
 
         Executor("/bin/sh")
                 .arg("-ec")
                 .arg(pre_script)
-                .path(variables["build-root"])
-                .environ(environ)
+                .path(extra_variables["build-root"])
+                .environ(env)
                 .container(container)
                 .execute();
     }
@@ -210,7 +196,7 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
             script = compiler.script;
         }
 
-        script = BuildInfo::resolve(script, variables);
+        script = build_info.resolve(script, config, extra_variables);
 
         PROCESS("Executing compilation script")
         DEBUG(script);
@@ -218,35 +204,35 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
         Executor("/bin/sh")
                 .arg("-ec")
                 .arg(script)
-                .path(variables["build-root"])
-                .environ(environ)
+                .path(extra_variables["build-root"])
+                .environ(env)
                 .container(container)
                 .execute();
 
     }
 
     if (auto post_script = build_info.config.get<std::string>("post-script", ""); !post_script.empty()) {
-        post_script = BuildInfo::resolve(post_script, variables);
+        post_script = build_info.resolve(post_script, config, extra_variables);
         PROCESS("Executing pre compilation script")
         DEBUG(post_script);
 
         Executor("/bin/sh")
                 .arg("-ec")
                 .arg(post_script)
-                .path(variables["build-root"])
-                .environ(environ)
+                .path(extra_variables["build-root"])
+                .environ(env)
                 .container(container)
                 .execute();
     }
 
     if (auto strip_script = config.get<std::string>("strip", "");
             (!strip_script.empty() && build_info.config.get<bool>("strip", true))) {
-        strip_script = BuildInfo::resolve(strip_script, variables);
+        strip_script = build_info.resolve(strip_script, config, extra_variables);
 
         PROCESS("Executing strip script")
         DEBUG(strip_script);
 
-        auto env_copy = environ;
+        auto env_copy = env;
         if (build_info.config.node["skip-strip"]) {
             std::stringstream ss;
             for (auto const &i: build_info.config.node["skip-strip"]) {
@@ -258,7 +244,7 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
         Executor("/bin/sh")
                 .arg("-ec")
                 .arg(strip_script)
-                .path(variables["install-root"])
+                .path(extra_variables["install-root"])
                 .environ(env_copy)
                 .container(container)
                 .execute();
@@ -337,10 +323,10 @@ void Builder::pack(const std::filesystem::path &install_root, const std::filesys
     group_map.close();
 
     for (auto const &i: std::map<std::string, std::string>{
-            {"", install_root_package},
-            {".dbg", install_root_dbg},
+            {"",       install_root_package},
+            {".dbg",   install_root_dbg},
             {".devel", install_root_devel},
-            {".doc", install_root_doc},
+            {".doc",   install_root_doc},
     }) {
         Executor("/bin/tar")
                 .arg("--zstd")

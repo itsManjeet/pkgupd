@@ -37,9 +37,9 @@ public:
 
         static std::string resolve(const std::string &data, const std::map<std::string, std::string> &variables);
 
-        void resolve(const Configuration &global);
+        void resolve(const Configuration &global, const std::map<std::string, std::string>& extra = {});
 
-        std::string resolve(const std::string &value, const Configuration &global) const;
+        std::string resolve(const std::string &value, const Configuration &global, const std::map<std::string, std::string>& extra = {}) const;
     };
 
     struct Compiler {
