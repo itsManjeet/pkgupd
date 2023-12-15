@@ -50,7 +50,7 @@ Executor &Executor::start() {
         if (execve(args_[0].c_str(), (char *const *) args.data(), (char *const *) env.data()) == -1) {
             throw std::runtime_error(strerror(errno));
         }
-        std::unreachable();
+        throw std::runtime_error("unreachable code");
     }
     return *this;
 }

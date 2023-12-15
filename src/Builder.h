@@ -20,6 +20,7 @@
 
 #include <utility>
 #include <filesystem>
+#include <optional>
 #include "MetaInfo.h"
 
 #include "Container.h"

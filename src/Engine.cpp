@@ -3,7 +3,6 @@
 #include "Engine.h"
 
 #include <ranges>
-#include <format>
 
 #include "Resolver.h"
 #include "ArchiveManager.h"

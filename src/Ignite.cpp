@@ -30,8 +30,6 @@ Ignite::Ignite(Configuration &config, std::filesystem::path project_path, std::f
     std::string arch = "unknown";
 #ifdef __x86_64__
     arch = "x86_64";
-#elifdef __arm__
-    arch = "arm";
 #endif
     auto config_file = this->project_path / ("config-" + arch + ".yml");
     if (!std::filesystem::exists(config_file)) {

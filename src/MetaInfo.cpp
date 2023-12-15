@@ -1,6 +1,5 @@
 #include "MetaInfo.h"
 
-#include <format>
 #include <fstream>
 
 #include "Configuration.h"
@@ -38,7 +37,7 @@ std::string MetaInfo::name() const {
 }
 
 std::string MetaInfo::package_name() const {
-    return std::format("{}-{}-{}.pkg", name(), version, cache);
+  return name() + "-" + version + "-" + cache + ".pkg";
 }
 
 

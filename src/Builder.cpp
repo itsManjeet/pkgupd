@@ -17,6 +17,7 @@
 
 #include "Builder.h"
 
+#include <filesystem>
 #include <optional>
 #include <regex>
 #include <fstream>
@@ -85,6 +86,7 @@ std::string Builder::BuildInfo::resolve(const std::string &value, const Configur
 
     variables["version"] = version;
     variables["id"] = id;
+    variables["build-dir"] = "_pkgupd_build_dir";
     return resolve(value, variables);
 }
 
@@ -123,11 +125,17 @@ Builder::prepare_sources(const std::filesystem::path &source_dir, const std::fil
             std::vector<std::string> files_list;
             ArchiveManager::extract(filepath, build_root / (subdir ? *subdir : std::filesystem::path("")), files_list);
             if (!subdir) {
-                subdir = files_list.front();
+                std::string dir = files_list.front();
+                auto idx = dir.find('/');
+                if (idx != std::string::npos) {
+                    dir = dir.substr(0, idx);
+                }
+                subdir = dir;
             }
         } else {
             std::filesystem::copy_file(filepath,
-                                       build_root / (subdir ? *subdir : std::filesystem::path("")) / filename);
+                                       build_root / (subdir ? *subdir : std::filesystem::path("")) / filename,
+                                        std::filesystem::copy_options::overwrite_existing);
         }
     }
     return subdir;
@@ -169,6 +177,9 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
     variables["id"] = build_info.id;
     variables["version"] = build_info.version;
     variables["name"] = build_info.name();
+    // TODO: FIX this
+    variables["build-dir"] = "_pkgupd_build_dir";
+    if (!variables.contains("configure")) variables["configure"] = ""
 
     if (auto pre_script = build_info.config.get<std::string>("pre-script", ""); !pre_script.empty()) {
         pre_script = BuildInfo::resolve(pre_script, variables);

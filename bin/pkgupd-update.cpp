@@ -1,4 +1,3 @@
-#include <format>
 #include <ranges>
 
 #include "common.h"
@@ -34,9 +33,10 @@ PKGUPD_MODULE(update) {
     for (auto const& [_, installed_meta_info] : engine->list_installed()) {
         auto remote_meta_info = engine->get_remote_meta_info(installed_meta_info.id);
         if (remote_meta_info.cache != installed_meta_info.cache) {
-            changelog << std::format("{} {}:{} => {}:{}", remote_meta_info.id, installed_meta_info.version,
-                                     installed_meta_info.cache,
-                                     remote_meta_info.version, remote_meta_info.cache);
+            changelog << remote_meta_info.id << " "
+                      << installed_meta_info.version << ":" << installed_meta_info.cache
+                      <<  " => "
+                      << remote_meta_info.version << ":" << remote_meta_info.cache;
             outdated_meta_infos.emplace_back(remote_meta_info);
         }
     }

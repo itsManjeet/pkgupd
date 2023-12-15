@@ -9,7 +9,6 @@
 
 #include <cstring>
 #include <filesystem>
-#include <format>
 #include <iostream>
 #include <sys/stat.h>
 
