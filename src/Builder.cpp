@@ -71,7 +71,7 @@ void Builder::BuildInfo::resolve(const Configuration &global, const std::map<std
 
 std::string Builder::BuildInfo::resolve(const std::string &value, const Configuration &global,
                                         const std::map<std::string, std::string> &extra) const {
-    std::map<std::string, std::string> variables;
+    std::map<std::string, std::string> variables = extra;
     if (global.node["variables"]) {
         for (auto const &v: global.node["variables"]) {
             variables[v.first.as<std::string>()] = v.second.as<std::string>();
@@ -83,14 +83,13 @@ std::string Builder::BuildInfo::resolve(const std::string &value, const Configur
             variables[v.first.as<std::string>()] = v.second.as<std::string>();
         }
     }
-
-
-    variables["version"] = version;
-    variables["id"] = id;
-    variables["build-dir"] = "_pkgupd_build_dir";
-    for (auto const &i: extra) {
-        variables[i.first] = i.second;
+    for(auto const& i : {"id", "version", "configure", "install", "compile"}) {
+        if (this->config.node[i]) {
+            variables[i] = this->config.node[i].as<std::string>();
+        }
     }
+    variables["build-dir"] = "_pkgupd_build_dir";
+    
     return resolve(value, variables);
 }
 
@@ -127,6 +126,7 @@ Builder::prepare_sources(const std::filesystem::path &source_dir, const std::fil
         }
         if (ArchiveManager::is_archive(filepath)) {
             std::vector<std::string> files_list;
+            
             ArchiveManager::extract(filepath, build_root / (subdir ? *subdir : std::filesystem::path("")), files_list);
             if (!subdir) {
                 std::string dir = files_list.front();
@@ -225,29 +225,61 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
                 .execute();
     }
 
-    if (auto strip_script = config.get<std::string>("strip", "");
-            (!strip_script.empty() && build_info.config.get<bool>("strip", true))) {
-        strip_script = build_info.resolve(strip_script, config, extra_variables);
+    if (build_info.config.get<bool>("strip", true)) {
+        for(auto const& iter : std::filesystem::recursive_directory_iterator(resolved_install_root)) {
+            if (!iter.is_regular_file()) continue;
+            // if file is executable and writable or
+            // if file ends with .so and .a
+            // TODO check if it cover all cases
+            if (((iter.path().has_extension() && (iter.path().extension() == ".so" || iter.path().extension() == ".a")) ||
+                (access(iter.path().c_str(), X_OK) == 0)) && 
+                access(iter.path().c_str(), W_OK) == 0) {
 
-        PROCESS("Executing strip script")
-        DEBUG(strip_script);
+                    auto [status, mime_type] = Executor("/bin/file").arg("-b").arg("--mime-type").arg(iter.path()).output();
+                    if (status != 0) {
+                        ERROR("failed to read MIME TYPE for " + iter.path().string() + ": " + mime_type);
+                        continue;
+                    }
 
-        auto env_copy = env;
-        if (build_info.config.node["skip-strip"]) {
-            std::stringstream ss;
-            for (auto const &i: build_info.config.node["skip-strip"]) {
-                ss << i.as<std::string>() << " ";
+                    if (mime_type.starts_with("text/") || mime_type.ends_with("symlink")) continue;
+
+                    // Some .so are GNU linker scripts, skip them
+                    DEBUG("MIME_TYPE: '" << mime_type << "'")
+
+                    auto dbg_file_path = iter.path().string() + ".dbg";
+                    // Copy debugging symbols to dbg directory
+                    Executor("/bin/objcopy")
+                        .arg("--only-keep-debug")
+                        .arg(iter.path())
+                        .arg(dbg_file_path)
+                        .silent()
+                        .execute();
+
+                    std::string strip_args = "--strip-all";
+                    if (iter.path().has_extension()) {
+                        if (iter.path().extension() == ".a") {
+                            strip_args = "--strip-debug";
+                        } else {
+                            strip_args = "--strip-unneeded";
+                        }
+                    }
+                    
+                    // Strip out the debugging symbols
+                    Executor("/bin/strip")
+                        .arg(strip_args)
+                        .arg(iter.path())
+                        .silent()
+                        .execute();
+                    
+                    // Link to the extracted debugging symbols
+                    Executor("/bin/objcopy")
+                        .arg("--add-gnu-debuglink=" + iter.path().filename().string() + ".dbg")
+                        .arg(iter.path())
+                        .path(iter.path().parent_path())
+                        .silent()
+                        .execute();
             }
-            env_copy.push_back("nostrip=" + ss.str());
         }
-
-        Executor("/bin/sh")
-                .arg("-ec")
-                .arg(strip_script)
-                .path(extra_variables["install-root"])
-                .environ(env_copy)
-                .container(container)
-                .execute();
     }
 
 }
@@ -261,6 +293,22 @@ void Builder::pack(const std::filesystem::path &install_root, const std::filesys
     for (auto const &i: {install_root_dbg, install_root_devel, install_root_doc}) {
         std::filesystem::create_directories(i);
     }
+
+    std::vector<std::regex> keep_files;
+    if (build_info.config.node["keep-files"]) {
+        for(auto const& i : build_info.config.node["keep-files"]) {
+            keep_files.push_back(std::regex(i.as<std::string>()));
+        }
+    }
+
+    auto keep_file = [&keep_files](const std::string& filename) -> bool {
+        for(auto const& i : keep_files) {
+            if (std::regex_match(filename, i)) {
+                return true;
+            }
+        }
+        return false;
+    };
 
     auto replace_directory = [&](const std::filesystem::path &filepath,
                                  const std::filesystem::path &old_parent,
@@ -283,13 +331,13 @@ void Builder::pack(const std::filesystem::path &install_root, const std::filesys
         }
     }
 
-    for (auto const &dbg: {"usr/src", "usr/lib/dbg"}) {
+    for (auto const &dbg: {"usr/src", "usr/lib/debug"}) {
         if (auto path = install_root_package / dbg; std::filesystem::exists(path)) {
             move_file(path, install_root_dbg);
         }
     }
 
-    for (auto const &dbg: {"usr/share/doc"}) {
+    for (auto const &dbg: {"usr/share/doc", "usr/share/man"}) {
         if (auto path = install_root_package / dbg; std::filesystem::exists(path)) {
             move_file(path, install_root_doc);
         }
@@ -301,10 +349,14 @@ void Builder::pack(const std::filesystem::path &install_root, const std::filesys
             if (i.path().empty()) {
                 std::filesystem::remove(i.path());
             }
+        } else if (!keep_files.empty() && keep_file(i.path().filename())) {
+            continue;
         } else if (i.path().has_extension() && i.path().extension() == ".la") {
             std::filesystem::remove(i.path());
         } else if (i.path().has_extension() && i.path().extension() == ".a") {
             move_file(i.path(), install_root_devel);
+        } else if (i.path().has_extension() && i.path().extension() == ".dbg") {
+            move_file(i.path(), install_root_dbg);
         }
     }
 

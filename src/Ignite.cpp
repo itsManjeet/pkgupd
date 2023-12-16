@@ -79,7 +79,7 @@ void Ignite::resolve(const std::vector<std::string> &id,
         }
 
         build_info->second.cache = hash(build_info->second);
-        auto cached = std::filesystem::exists(cache_path / build_info->second.package_name());
+        auto cached = std::filesystem::exists(cache_path / "cache" / build_info->second.package_name());
 
         for (auto depend: depends) {
             auto idx = std::find_if(output.begin(), output.end(), [&depend](const auto &val) -> bool {
@@ -133,7 +133,7 @@ void Ignite::build(const Builder::BuildInfo &build_info, Engine *engine) {
     std::shared_ptr<void> _(nullptr, [&container](...) {
         std::filesystem::remove_all(container.host_root);
     });
-    auto package_path = cache_path / build_info.package_name();
+    auto package_path = cache_path / "cache" / build_info.package_name();
     auto builder = Builder(config, build_info, container);
     auto subdir = builder.prepare_sources(cache_path / "sources", container.host_root / "build-root");
     if (!subdir) subdir = ".";
@@ -211,9 +211,10 @@ void Ignite::integrate(Container &container, const Builder::BuildInfo &build_inf
     std::filesystem::create_directories(container.host_root / root);
 
     for (auto const &i: {"", ".devel"}) {
-        Executor("/bin/tar")
+        try {
+            Executor("/bin/tar")
                 .arg("-xPhf")
-                .arg(cache_path / (build_info.package_name() + i))
+                .arg(cache_path / "cache" / (build_info.package_name() + i))
                 .arg("-C")
                 .arg(container.host_root / root)
                 .arg("--exclude=./etc/hosts")
@@ -225,6 +226,10 @@ void Ignite::integrate(Container &container, const Builder::BuildInfo &build_inf
                 .arg("--exclude=./dev")
                 .execute();
 
+        } catch (const std::exception& exception) {
+            throw std::runtime_error("failed to integrate " + build_info.package_name() + i + " " + exception.what());
+        }
+        
     }
 
 

@@ -20,6 +20,7 @@ class Executor {
     std::vector<std::string> environ_;
     pid_t pid = -1;
     int pipe_fd[2]{};
+    bool silent_{false};
 
 public:
     explicit Executor(const std::string &binary) {
@@ -44,6 +45,11 @@ public:
 
     Executor &path(const std::string &p) {
         path_ = p;
+        return *this;
+    }
+
+    Executor &silent() {
+        silent_ = true;
         return *this;
     }
 

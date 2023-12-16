@@ -74,11 +74,8 @@ void ArchiveManager::extract(const std::filesystem::path &filepath, const std::s
         }
     }
 
-    int status = Executor("/usr/bin/tar")
-            .arg("--zstd")
-            .arg("--exclude")
-            .arg("./info")
-            .arg("-xvPhpf")
+    int status = Executor("/bin/bsdtar")
+            .arg("-xvPf")
             .arg(filepath)
             .arg("-C")
             .arg(output_path)
@@ -88,13 +85,14 @@ void ArchiveManager::extract(const std::filesystem::path &filepath, const std::s
     std::stringstream ss(output.str());
     for (std::string f; std::getline(ss, f);) {
         if (f.starts_with("./")) f = f.substr(2);
+        if (f.starts_with("x ")) f = f.substr(2);
         if (f.empty()) continue;
         files_list.emplace_back(f);
     }
     DEBUG("EXTRACTED: " << files_list.size() << " file(s)");
 
     if (status != 0) {
-        throw std::runtime_error("failed to execute extraction command: " + output.str());
+        throw std::runtime_error("failed to extract " + filepath.string() +  " :" + output.str());
     }
 }
 
@@ -112,7 +110,7 @@ void ArchiveManager::compress(const std::filesystem::path &filepath, const std::
 }
 
 bool ArchiveManager::is_archive(const std::filesystem::path &filepath) {
-    for (auto const &ext: {".tar", ".zip", ".gz", ".xz", ".bzip2", ".tgz", ".txz", ".bz", ".zst", ".zstd"}) {
+    for (auto const &ext: {".tar", ".zip", ".gz", ".xz", ".bzip2", ".tgz", ".txz", ".bz2", ".zst", ".zstd"}) {
         if (filepath.has_extension() && filepath.extension() == ext) {
             return true;
         }
