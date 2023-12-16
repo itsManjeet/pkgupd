@@ -394,8 +394,8 @@ void Builder::pack(const std::filesystem::path &install_root, const std::filesys
 
 Builder::Compiler Builder::get_compiler(const std::filesystem::path &build_root) {
     std::string build_type;
-    if (config.node["build-type"]) {
-        build_type = config.node["build-type"].as<std::string>();
+    if (build_info.config.node["build-type"]) {
+        build_type = build_info.config.node["build-type"].as<std::string>();
     } else {
         for (auto const &[id, compiler]: compilers) {
             if (std::filesystem::exists(build_root / compiler.file)) {
