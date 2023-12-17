@@ -44,6 +44,22 @@ Builder::BuildInfo::BuildInfo(const std::string &filepath, const std::filesystem
     }
 }
 
+std::vector<std::string> split(const std::string& str, char del) {
+    std::stringstream ss(str);
+    std::vector<std::string> l;
+    for(std::string s; std::getline(ss, s, del); ) {
+        l.push_back(s);
+    }
+    return l;
+}
+
+std::string replace(std::string v, char old, char n) {
+    for(auto& i : v) {
+        if (i == old) i = n;
+    }
+    return v;
+} 
+
 std::string Builder::BuildInfo::resolve(const std::string &data, const std::map<std::string, std::string> &variables) {
     std::regex pattern(R"(\%\{([^}]+)\})");
     std::smatch match;
@@ -55,6 +71,19 @@ std::string Builder::BuildInfo::resolve(const std::string &data, const std::map<
             auto it = variables.find(variable);
             if (it != variables.end()) {
                 result.replace(match[0].first, match[0].second, it->second);
+            // TODO: a better way to handle this hack
+            } else if (variable == "version:1") {
+                auto version_info = split(variables.at("version"), '.');
+                result.replace(match[0].first, match[0].second, version_info[version_info.size()-1]);
+            } else if (variable == "version:2") {
+                auto version_info = split(variables.at("version"), '.');
+                result.replace(match[0].first, match[0].second, version_info[version_info.size()-2]);
+            } else if (variable == "version:_") {
+                auto version = variables.at("version");
+                result.replace(match[0].first, match[0].second, replace(version, '.', '_'));
+            } else if (variable == "version:-") {
+                auto version = variables.at("version");
+                result.replace(match[0].first, match[0].second, replace(version, '.', '-'));
             } else {
                 throw std::runtime_error("undefined variable '" + variable + "'");
             }
