@@ -22,7 +22,8 @@
 
 #define PKGUPD_IGNITE_MODULES_LIST \
     X(status)                      \
-    X(build)
+    X(build)                       \
+    X(checkout)
 
 #define X(id) PKGUPD_IGNITE_MODULE(id);
 PKGUPD_IGNITE_MODULES_LIST

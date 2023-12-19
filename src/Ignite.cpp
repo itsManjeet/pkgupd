@@ -244,6 +244,10 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
     return container;
 }
 
+std::filesystem::path Ignite::cachefile(const Builder::BuildInfo& build_info) {
+    return cache_path / "cache" / build_info.package_name();
+}
+
 void Ignite::integrate(Container &container, const Builder::BuildInfo &build_info, const std::filesystem::path &root) {
     PROCESS("Integrating " << build_info.id);
     std::filesystem::create_directories(container.host_root / root);

@@ -39,6 +39,8 @@ public:
 
     void load();
 
+    std::filesystem::path cachefile(const Builder::BuildInfo& build_info);
+
     void
     resolve(const std::vector<std::string> &id, std::vector<State> &output);
 
