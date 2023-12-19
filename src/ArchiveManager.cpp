@@ -74,7 +74,12 @@ void ArchiveManager::extract(const std::filesystem::path &filepath, const std::s
         }
     }
 
-    int status = Executor("/bin/bsdtar")
+    auto exe = "/bin/tar";
+    if (filepath.has_extension() && filepath.extension() == ".zip") {
+        exe = "/bin/bsdtar";
+    }
+
+    int status = Executor(exe)
             .arg("-xvPf")
             .arg(filepath)
             .arg("-C")
@@ -110,7 +115,7 @@ void ArchiveManager::compress(const std::filesystem::path &filepath, const std::
 }
 
 bool ArchiveManager::is_archive(const std::filesystem::path &filepath) {
-    for (auto const &ext: {".tar", ".zip", ".gz", ".xz", ".bzip2", ".tgz", ".txz", ".bz2", ".zst", ".zstd"}) {
+    for (auto const &ext: {".tar", ".zip", ".gz", ".xz", ".bzip2", ".tgz", ".txz", ".bz2", ".zst", ".zstd", ".lz"}) {
         if (filepath.has_extension() && filepath.extension() == ext) {
             return true;
         }

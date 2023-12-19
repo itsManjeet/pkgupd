@@ -30,6 +30,7 @@ struct Container {
     std::string image{};
     std::vector<std::string> environ;
     std::vector<std::pair<std::string, std::string>> binds;
+    std::vector<std::string> capabilites;
 
     std::filesystem::path host_root;
     std::filesystem::path base_dir;

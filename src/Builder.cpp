@@ -112,11 +112,16 @@ std::string Builder::BuildInfo::resolve(const std::string &value, const Configur
             variables[v.first.as<std::string>()] = v.second.as<std::string>();
         }
     }
-    for(auto const& i : {"id", "version", "configure", "install", "compile"}) {
-        if (this->config.node[i]) {
-            variables[i] = this->config.node[i].as<std::string>();
+
+    for(auto const& i : this->config.node) {
+        if (i.second.IsScalar()) {
+            try {
+                variables[i.first.as<std::string>()] = i.second.as<std::string>();
+            } catch (...) {
+            }
         }
     }
+
     variables["build-dir"] = "_pkgupd_build_dir";
     
     return resolve(value, variables);
@@ -139,10 +144,9 @@ Builder::prepare_sources(const std::filesystem::path &source_dir, const std::fil
         auto filepath = source_dir / filename;
         if (!std::filesystem::exists(filepath)) {
             if (url.starts_with("http")) {
-                Executor("/bin/curl")
+                Executor("/bin/wget")
                         .arg(url)
-                        .arg("-L")
-                        .arg("-o")
+                        .arg("-O")
                         .arg(filepath)
                         .execute();
             } else {
@@ -230,14 +234,31 @@ void Builder::compile_source(const std::filesystem::path &build_root, const std:
         PROCESS("Executing compilation script")
         DEBUG(script);
 
-        Executor("/bin/sh")
+        if (script.length() > 500) {
+            auto script_path = resolved_build_root / "pkgupd_exec_script.sh";
+            {
+                std::ofstream script_writer(script_path);
+                script_writer << script;
+            }
+
+            Executor("/bin/sh")
+                .arg("-e")
+                .arg("pkgupd_exec_script.sh")
+                .path(extra_variables["build-root"])
+                .environ(env)
+                .container(container)
+                .execute();
+
+        } else {
+            Executor("/bin/sh")
                 .arg("-ec")
                 .arg(script)
                 .path(extra_variables["build-root"])
                 .environ(env)
                 .container(container)
                 .execute();
-
+        }
+        
     }
 
     if (auto post_script = build_info.config.get<std::string>("post-script", ""); !post_script.empty()) {

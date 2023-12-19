@@ -131,6 +131,14 @@ std::string Ignite::hash(const Builder::BuildInfo &build_info) {
 void Ignite::build(const Builder::BuildInfo &build_info, Engine *engine) {
     auto container = setup_container(build_info, engine, ContainerType::Build);
     std::shared_ptr<void> _(nullptr, [&container](...) {
+        for (auto const& i : std::filesystem::recursive_directory_iterator(container.host_root)) {
+            if (i.is_regular_file()) {
+                if (access(i.path().c_str(), W_OK) != 0) {
+                    std::error_code code;
+                    std::filesystem::permissions(i.path(), std::filesystem::perms::owner_write, code);
+                }
+            }
+        }
         std::filesystem::remove_all(container.host_root);
     });
     auto package_path = cache_path / "cache" / build_info.package_name();
@@ -166,9 +174,18 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
     if (auto n = build_info.config.node["environ"]; n) {
         for (auto const &i: n) env.push_back(i.as<std::string>());
     }
+    env.push_back("NOCONFIGURE=1");
+    env.push_back("HOME=/");
 
     auto host_root = (cache_path / "temp" / build_info.package_name());
     std::filesystem::create_directories(host_root);
+
+    std::vector<std::string> capabilities;
+    if (build_info.config.node["capabilities"]) {
+        for(auto const& i : build_info.config.node["capabilities"]) {
+            capabilities.push_back(i.as<std::string>());
+        }
+    }
 
     auto container = Container{
             .environ = env,
@@ -179,6 +196,7 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
                     {"/patches", project_path / "patches"},
 
             },
+            .capabilites = capabilities,
             .host_root = host_root,
             .base_dir = project_path,
             .name = build_info.package_name(),
@@ -187,6 +205,9 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
         std::filesystem::create_directories(cache_path / i);
     }
     config.node["dir.build"] = host_root.string();
+
+    // TODO: temporary fix for glib and dependent packages to resolve -Werror=missing-include-dir
+    std::filesystem::create_directories(host_root / "usr" / "local" / "include");
 
     std::vector<State> states;
     auto depends = build_info.depends;
@@ -202,6 +223,23 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
     if (container_type == ContainerType::Shell) {
         integrate(container, build_info, "");
     }
+    
+    // Add Included elements to provided path
+    if (build_info.config.node["include"]) {
+        states.clear();
+
+        std::vector<std::string> include;
+        for(auto const& i : build_info.config.node["include"]) include.push_back(i.as<std::string>());
+        resolve(include, states);
+
+        for(auto const& [path, info, cached] : states) {
+            auto installation_path = std::filesystem::path("install-root") / build_info.package_name();
+            installation_path = build_info.config.get<std::string>(build_info.name() +"-include-path", 
+                build_info.config.get<std::string>("include-root", installation_path.string()));
+            integrate(container, info, installation_path);
+        }
+    }
+    
 
     return container;
 }
@@ -233,11 +271,12 @@ void Ignite::integrate(Container &container, const Builder::BuildInfo &build_inf
     }
 
 
-    if (root == "/" && !build_info.integration.empty()) {
+    if (root.empty() && !build_info.integration.empty()) {
         DEBUG("INTEGRATION SCRIPT");
+        auto integration_script = build_info.resolve(build_info.integration, config);
         Executor("/bin/sh")
                 .arg("-ec")
-                .arg(build_info.integration)
+                .arg(integration_script)
                 .container(container)
                 .execute();
     }

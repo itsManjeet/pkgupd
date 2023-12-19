@@ -33,6 +33,10 @@ std::vector<std::string> Container::args() const {
         a.insert(a.end(), {"--bind", source, dest});
     }
 
+    for(auto const& c : capabilites) {
+        a.insert(a.end(), {"--cap-add", c});
+    }
+
     for (auto const &e: environ) {
         auto idx = e.find('=');
         auto key = e.substr(0, idx);
