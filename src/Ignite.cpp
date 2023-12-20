@@ -56,7 +56,8 @@ void Ignite::load() {
 
 void Ignite::resolve(const std::vector<std::string> &id,
                      std::vector<State> &output,
-                     bool devel) {
+                     bool devel,
+                     bool included) {
     std::map<std::string, bool> visited;
 
     std::function<void(const std::string &i)> dfs = [&](const std::string &i) {
@@ -115,7 +116,14 @@ std::string Ignite::hash(const Builder::BuildInfo &build_info) {
         picosha2::hash256_hex_string(ss.str(), hash_sum);
     }
 
-    for (auto const &d: {build_info.depends, build_info.build_time_depends}) {
+    std::vector<std::string> includes;
+    if (build_info.config.node["include"]) {
+        for (auto const& i : build_info.config.node["include"]) {
+            includes.push_back(i.as<std::string>());
+        }
+    }
+
+    for (auto const &d: {build_info.depends, build_info.build_time_depends, includes}) {
         for (auto const &i: d) {
             {
                 auto depend_build_info = pool.find(i);
@@ -145,6 +153,9 @@ void Ignite::build(const Builder::BuildInfo &build_info, Engine *engine) {
         }
         std::filesystem::remove_all(container.host_root);
     });
+    std::ofstream logger(cache_path / "logs" / (build_info.package_name() + ".log"));
+    container.logger = &logger;
+    
     auto package_path = cache_path / "cache" / build_info.package_name();
     auto builder = Builder(config, build_info, container);
     auto subdir = builder.prepare_sources(cache_path / "sources", container.host_root / "build-root");

@@ -75,7 +75,7 @@ int Executor::wait(std::ostream *out) {
 
 int Executor::run() {
     start();
-    return wait(&std::cout);
+    return wait(logger_ == nullptr ? &std::cout : logger_);
 }
 
 std::tuple<int, std::string> Executor::output() {
@@ -96,6 +96,11 @@ void Executor::execute() {
         }
         DEBUG("COMMAND : " << ss.str());
         DEBUG("PATH    : " << (path_ ? *path_ : "."));
+
+        if (logger_) {
+            *logger_ << "COMMAND  : " << ss.str() << std::endl;
+            *logger_ << "path     : " << (path_ ? *path_ : ".") << std::endl;
+        }
     }
     
     if (int status = run(); status != 0) {

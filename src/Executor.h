@@ -20,6 +20,7 @@ class Executor {
     std::vector<std::string> environ_;
     pid_t pid = -1;
     int pipe_fd[2]{};
+    std::ostream* logger_{nullptr};
     bool silent_{false};
 
 public:
@@ -34,6 +35,7 @@ public:
             a.insert(a.end(), {"--chdir", path});
             args_.insert(args_.begin(), a.begin(), a.end());
             path_.reset();
+            logger_ = container->logger;
         }
         return *this;
     }

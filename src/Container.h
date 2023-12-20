@@ -35,6 +35,7 @@ struct Container {
     std::filesystem::path host_root;
     std::filesystem::path base_dir;
     std::string name;
+    std::ostream* logger;
 
     [[nodiscard]] std::vector<std::string> args() const;
 };
