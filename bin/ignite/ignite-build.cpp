@@ -23,16 +23,31 @@ PKGUPD_IGNITE_MODULE_HELP(build) {
 
 
 PKGUPD_IGNITE_MODULE(build) {
-    CHECK_ARGS(1);
-
     std::vector<std::tuple<std::string, Builder::BuildInfo, bool>> status;
-    ignite->resolve({args[0]}, status);
+    if (args.empty()) {
+        std::vector<std::string> all;
+        for(auto const &[path, build_info]: ignite->get_pool()) {
+            all.emplace_back(path);
+        }
+        ignite->resolve(all, status);
+    } else {
+        ignite->resolve(args, status);
+    }
+
+    bool early_failure = config->get("ignite.build.early-failure", false);
 
     for (auto &[path, build_info, cached]: status) {
         if (!cached) {
-            PROCESS("Building " << build_info.id)
-            build_info.resolve(*config);
-            ignite->build(build_info, engine);
+            try {
+                PROCESS("Building " << build_info.id)
+                build_info.resolve(*config);
+                ignite->build(build_info, engine);
+            } catch(const std::exception& error) {
+                if (early_failure) {
+                    throw;
+                }
+                ERROR("failed to build " << build_info.id << ": " << error.what());
+            }
         }
     }
 

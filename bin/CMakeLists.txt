@@ -17,6 +17,7 @@ add_executable(${PROJECT_NAME}
         ignite/ignite_common.h
         ignite/ignite-status.cpp
         ignite/ignite-build.cpp
-        ignite/ignite-checkout.cpp)
+        ignite/ignite-checkout.cpp
+        ignite/ignite-meta.cpp)
 
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_LIB -static)

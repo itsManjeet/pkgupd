@@ -30,8 +30,6 @@ class Ignite {
 
     Configuration &config;
 
-    std::string hash(const Builder::BuildInfo &build_info);
-
 public:
     using State = std::tuple<std::string, Builder::BuildInfo, bool>;
 
@@ -39,10 +37,14 @@ public:
 
     void load();
 
+    std::string hash(const Builder::BuildInfo &build_info);
+
     std::filesystem::path cachefile(const Builder::BuildInfo& build_info);
 
+    std::map<std::string, Builder::BuildInfo> const& get_pool() const { return pool; }
+
     void
-    resolve(const std::vector<std::string> &id, std::vector<State> &output);
+    resolve(const std::vector<std::string> &id, std::vector<State> &output, bool devel = true);
 
     enum class ContainerType {
         Build,
@@ -54,7 +56,7 @@ public:
                     Engine *engine,
                     ContainerType container_type = ContainerType::Shell);
 
-    void integrate(Container &container, const Builder::BuildInfo &build_info, const std::filesystem::path &root = {});
+    void integrate(Container &container, const Builder::BuildInfo &build_info, const std::filesystem::path &root = {}, std::vector<std::string> extras = {"devel"});
 
     void build(const Builder::BuildInfo &build_info, Engine *engine);
 };

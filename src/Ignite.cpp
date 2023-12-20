@@ -55,7 +55,8 @@ void Ignite::load() {
 }
 
 void Ignite::resolve(const std::vector<std::string> &id,
-                     std::vector<State> &output) {
+                     std::vector<State> &output,
+                     bool devel) {
     std::map<std::string, bool> visited;
 
     std::function<void(const std::string &i)> dfs = [&](const std::string &i) {
@@ -66,8 +67,11 @@ void Ignite::resolve(const std::vector<std::string> &id,
         }
 
         auto depends = build_info->second.depends;
-        depends.insert(depends.end(), build_info->second.build_time_depends.begin(),
+        if (devel) {
+            depends.insert(depends.end(), build_info->second.build_time_depends.begin(),
                        build_info->second.build_time_depends.end());
+        }
+        
 
         for (const auto &depend: depends) {
             if (visited[depend]) continue;
@@ -230,13 +234,13 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
 
         std::vector<std::string> include;
         for(auto const& i : build_info.config.node["include"]) include.push_back(i.as<std::string>());
-        resolve(include, states);
+        resolve(include, states, false);
 
         for(auto const& [path, info, cached] : states) {
             auto installation_path = std::filesystem::path("install-root") / build_info.package_name();
             installation_path = build_info.config.get<std::string>(build_info.name() +"-include-path", 
                 build_info.config.get<std::string>("include-root", installation_path.string()));
-            integrate(container, info, installation_path);
+            integrate(container, info, installation_path, {});
         }
     }
     
@@ -248,11 +252,21 @@ std::filesystem::path Ignite::cachefile(const Builder::BuildInfo& build_info) {
     return cache_path / "cache" / build_info.package_name();
 }
 
-void Ignite::integrate(Container &container, const Builder::BuildInfo &build_info, const std::filesystem::path &root) {
+void Ignite::integrate(Container &container, 
+                       const Builder::BuildInfo &build_info, 
+                       const std::filesystem::path &root,
+                       std::vector<std::string> extras) {
     PROCESS("Integrating " << build_info.id);
     std::filesystem::create_directories(container.host_root / root);
 
-    for (auto const &i: {"", ".devel"}) {
+    auto cache_file_path = cachefile(build_info);
+    for(auto& e : extras) e.insert(e.begin(), '.');
+    extras.insert(extras.begin(), {""});
+    for (auto const &i: extras) {
+        auto sub_cache_file_path = cache_file_path.string() + i;
+        if (!std::filesystem::exists(sub_cache_file_path)) {
+            throw std::runtime_error(build_info.id + " not yet cached");
+        }
         try {
             Executor("/bin/tar")
                 .arg("-xPhf")
@@ -283,5 +297,13 @@ void Ignite::integrate(Container &container, const Builder::BuildInfo &build_inf
                 .arg(integration_script)
                 .container(container)
                 .execute();
+    } else {
+        auto data_dir = container.host_root / root / "usr" / "share" / "pkgupd" / "manifest" / build_info.name();
+        std::filesystem::create_directories(data_dir);
+        { std::ofstream writer(data_dir / "info"); writer << build_info.str(); }
+        if (!build_info.integration.empty()) { 
+            auto integration_script = build_info.resolve(build_info.integration, config);
+            { std::ofstream writer(data_dir / "integration"); writer << integration_script; }
+        }
     }
 }

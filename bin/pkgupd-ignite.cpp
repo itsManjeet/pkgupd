@@ -23,7 +23,8 @@
 #define PKGUPD_IGNITE_MODULES_LIST \
     X(status)                      \
     X(build)                       \
-    X(checkout)
+    X(checkout)                    \
+    X(meta)
 
 #define X(id) PKGUPD_IGNITE_MODULE(id);
 PKGUPD_IGNITE_MODULES_LIST
@@ -72,6 +73,10 @@ PKGUPD_MODULE(ignite) {
         return 1;
     }
     auto sub_args = std::vector<std::string>(args.begin() + 1, args.end());
+    auto global_config_file = std::filesystem::path(getenv("HOME")) / ".config" / ("pkgupd.yml");
+    if (std::filesystem::exists(global_config_file)) {
+        config->update_from_file(global_config_file);
+    }
 
     auto ignite = Ignite(*config, config->get<std::string>("ignite.source", std::filesystem::current_path()),
                          config->get<std::string>("ignite.cache", ""));
