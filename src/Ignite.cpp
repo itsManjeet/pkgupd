@@ -56,8 +56,7 @@ void Ignite::load() {
 
 void Ignite::resolve(const std::vector<std::string> &id,
                      std::vector<State> &output,
-                     bool devel,
-                     bool included) {
+                     bool devel) {
     std::map<std::string, bool> visited;
 
     std::function<void(const std::string &i)> dfs = [&](const std::string &i) {
@@ -156,7 +155,7 @@ void Ignite::build(const Builder::BuildInfo &build_info, Engine *engine) {
     std::ofstream logger(cache_path / "logs" / (build_info.package_name() + ".log"));
     container.logger = &logger;
     
-    auto package_path = cache_path / "cache" / build_info.package_name();
+    auto package_path = cachefile(build_info);
     auto builder = Builder(config, build_info, container);
     auto subdir = builder.prepare_sources(cache_path / "sources", container.host_root / "build-root");
     if (!subdir) subdir = ".";
@@ -315,6 +314,24 @@ void Ignite::integrate(Container &container,
         if (!build_info.integration.empty()) { 
             auto integration_script = build_info.resolve(build_info.integration, config);
             { std::ofstream writer(data_dir / "integration"); writer << integration_script; }
+        }
+
+        std::ofstream writer(data_dir / "files");
+        int status = Executor("/bin/tar")
+                .arg("-tf")
+                .arg(cache_file_path)
+                .arg("--exclude=./etc/hosts")
+                .arg("--exclude=./etc/hostname")
+                .arg("--exclude=./etc/resolve.conf")
+                .arg("--exclude=./proc")
+                .arg("--exclude=./run")
+                .arg("--exclude=./sys")
+                .arg("--exclude=./dev")
+                .start()
+                .wait(&writer);
+        writer.close();
+        if (status != 0) {
+            throw std::runtime_error("failed to read tar files from " + cache_file_path.string());
         }
     }
 }

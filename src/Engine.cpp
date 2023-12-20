@@ -157,7 +157,7 @@ void Engine::triggers() const {
 void Engine::sync(bool force) {
     auto repo_path = config.get<std::string>(DIR_CACHE, DEFAULT_CACHE_DIR) + "/repo";
     if (!(std::filesystem::exists(repo_path) && !force)) {
-        Downloader::download(server + "/origin", repo_path);
+        Downloader::download(server + "/" + config.get<std::string>("version", "stable"), repo_path);
     }
     repository.load(repo_path);
 }
@@ -175,7 +175,10 @@ void Engine::resolve(const std::vector<std::string> &ids, std::vector<MetaInfo> 
 void Engine::resolve(const std::vector<MetaInfo> &meta_infos, std::vector<MetaInfo> &output_meta_infos) const {
     auto resolver = Resolver<MetaInfo>(
             [&](const std::string &id) -> std::optional<MetaInfo> { return repository.get(id); },
-            [&](const MetaInfo &meta_info) -> bool { return system_database.get(meta_info.id) != std::nullopt; },
+            [&](const MetaInfo &meta_info) -> bool { 
+                auto installed_meta_info = system_database.get(meta_info.id);
+                if (installed_meta_info == std::nullopt) return false;
+                return installed_meta_info->cache == meta_info.cache; },
             [&](const MetaInfo &pkg) -> std::vector<std::string> { return pkg.depends; }
     );
     std::vector<std::string> ids;

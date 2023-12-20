@@ -43,10 +43,11 @@ void SystemDatabase::load(std::filesystem::path p) {
             throw std::runtime_error("Failed to create missing database directory " + data_dir.string());
         }
     }
-    for (auto const &file: std::filesystem::directory_iterator(data_dir)) {
-        if (file.path().has_extension()) continue;
+    for (auto const &path: std::filesystem::directory_iterator(data_dir)) {
+        auto info_file_path = path.path() / "info";
+        if (!std::filesystem::exists(info_file_path)) continue;
         try {
-            std::ifstream reader(file.path());
+            std::ifstream reader(info_file_path);
             auto meta_info = InstalledMetaInfo(std::string(
                     (std::istreambuf_iterator<char>(reader)),
                     (std::istreambuf_iterator<char>())));
@@ -62,7 +63,7 @@ void SystemDatabase::load(std::filesystem::path p) {
 void SystemDatabase::get_files(const InstalledMetaInfo &installed_meta_info,
                                std::vector<std::string> &files) const {
     auto files_path =
-            std::filesystem::path(data_dir) / (installed_meta_info.name() + ".files");
+            std::filesystem::path(data_dir) / installed_meta_info.name() / "files";
     if (!std::filesystem::exists(files_path)) {
         throw std::runtime_error("no files data exists for " + installed_meta_info.id + " at " +
                                  files_path.string());
