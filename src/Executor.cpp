@@ -64,6 +64,7 @@ int Executor::wait(std::ostream *out) {
     ssize_t bytes_read;
     while ((bytes_read = read(pipe_fd[READ], buffer, sizeof(buffer))) > 0) {
         if (out) out->write(buffer, bytes_read);
+        if (logger_) logger_->write(buffer, bytes_read);
     }
 
     close(pipe_fd[READ]);
@@ -75,7 +76,7 @@ int Executor::wait(std::ostream *out) {
 
 int Executor::run() {
     start();
-    return wait(logger_ == nullptr ? &std::cout : logger_);
+    return wait(silent_ ? nullptr : &std::cout);
 }
 
 std::tuple<int, std::string> Executor::output() {

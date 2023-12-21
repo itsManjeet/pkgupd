@@ -72,18 +72,26 @@ std::string Builder::BuildInfo::resolve(const std::string &data, const std::map<
             if (it != variables.end()) {
                 result.replace(match[0].first, match[0].second, it->second);
             // TODO: a better way to handle this hack
-            } else if (variable == "version:1") {
-                auto version_info = split(variables.at("version"), '.');
-                result.replace(match[0].first, match[0].second, version_info[version_info.size()-1]);
-            } else if (variable == "version:2") {
-                auto version_info = split(variables.at("version"), '.');
-                result.replace(match[0].first, match[0].second, version_info[version_info.size()-2]);
-            } else if (variable == "version:_") {
+            } else if (variable.starts_with("version:")) {
+                auto data = variable.substr(variable.find_first_of(':') + 1);
                 auto version = variables.at("version");
-                result.replace(match[0].first, match[0].second, replace(version, '.', '_'));
-            } else if (variable == "version:-") {
-                auto version = variables.at("version");
-                result.replace(match[0].first, match[0].second, replace(version, '.', '-'));
+                try {                    
+                    auto nth = std::stoi(data);
+                    int count = 0, position = 0;
+                    while (count <= nth) {
+                        position += 1;
+                        position = version.find('.', position);
+                        if (position == std::string::npos) {
+                            throw std::string("invalid variable value spliting for " + std::to_string(nth) + "th position");
+                        }
+                        count++;
+                    }
+                    result.replace(match[0].first, match[0].second, version.substr(0, position));
+                } catch (const std::string& error) {
+                    throw std::runtime_error(error);
+                } catch (...) {
+                    result.replace(match[0].first, match[0].second, replace(version, '.', data[0]));
+                }
             } else {
                 throw std::runtime_error("undefined variable '" + variable + "'");
             }
@@ -147,8 +155,9 @@ Builder::prepare_sources(const std::filesystem::path &source_dir, const std::fil
                 Executor("/bin/wget")
                         .arg(url)
                         .arg("-O")
-                        .arg(filepath)
+                        .arg(filepath.string()+".tmp")
                         .execute();
+                std::filesystem::rename(filepath.string()+".tmp", filepath);
             } else {
                 std::filesystem::copy((container ? container->base_dir : std::filesystem::current_path()) / url,
                                       filepath,

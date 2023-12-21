@@ -79,21 +79,11 @@ void print_help(char const *id) {
 }
 
 int main(int argc, char **argv) {
-    if (argc == 1) {
-        print_help(argv[0]);
-        exit(EXIT_FAILURE);
-    }
-
     vector<string> args;
     Configuration configuration;
-    string task = argv[1];
-    auto iter = MODULES.find(task);
-    if (iter == MODULES.end()) {
-        print_help(argv[0]);
-        exit(EXIT_FAILURE);
-    }
+    std::optional<std::string> task;
 
-    for (int i = 2; i < argc; i++) {
+    for (int i = 1; i < argc; i++) {
         string arg = argv[i];
         auto idx = arg.find_first_of('=');
         if (idx != std::string::npos) {
@@ -104,15 +94,31 @@ int main(int argc, char **argv) {
                 for (std::string s; std::getline(ss, s, ',');) {
                     configuration.push(var, s);
                 }
+            } else if (is_number(val)) {
+                configuration.set(val, std::stod(val));
+            } else if (is_bool(val)) {
+                configuration.set(val, val == "true" ? true : false);
             } else {
                 configuration.set(var, val);
             }
 
+        } else if (!task.has_value()) {
+            task = arg;
         } else {
             args.push_back(arg);
         }
     }
 
+    if (!task.has_value()) {
+        print_help(argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    auto iter = MODULES.find(*task);
+    if (iter == MODULES.end()) {
+        print_help(argv[0]);
+        exit(EXIT_FAILURE);
+    }
 
     try {
         auto engine = Engine(configuration);

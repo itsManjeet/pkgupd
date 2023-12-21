@@ -1,6 +1,7 @@
 add_executable(${PROJECT_NAME}_TEST
     pkgupd_test.cpp
         Executor.cpp
+        BuildInfo.cpp
         merge.cpp)
 
 target_link_libraries(${PROJECT_NAME}_TEST

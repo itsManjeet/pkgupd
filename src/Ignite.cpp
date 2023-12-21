@@ -187,15 +187,23 @@ void Ignite::build(const Builder::BuildInfo &build_info, Engine *engine) {
 Container Ignite::setup_container(const Builder::BuildInfo &build_info,
                                   Engine *engine,
                                   const ContainerType container_type) {
-    auto env = std::vector<std::string>();
+    auto env = std::vector<std::string>{
+        "NOCONFIGURE=1",
+        "HOME=/",
+        "SHELL=/bin/sh",
+        "TERM=dumb",
+        "USER=nishu",
+        "LOGNAME=nishu",
+        "LC_ALL=C",
+        "TZ=UTC",
+        "SOURCE_DATA_EPOCH=918239400"
+    };
     if (auto n = config.node["environ"]; n) {
         for (auto const &i: n) env.push_back(i.as<std::string>());
     }
     if (auto n = build_info.config.node["environ"]; n) {
         for (auto const &i: n) env.push_back(i.as<std::string>());
     }
-    env.push_back("NOCONFIGURE=1");
-    env.push_back("HOME=/");
 
     auto host_root = (cache_path / "temp" / build_info.package_name());
     std::filesystem::create_directories(host_root);
@@ -272,8 +280,9 @@ void Ignite::integrate(Container &container,
                        const Builder::BuildInfo &build_info, 
                        const std::filesystem::path &root,
                        std::vector<std::string> extras) {
+    auto container_root = container.host_root / (root.has_root_path() ? std::filesystem::path(root.string().substr(1)) : root);
     PROCESS("Integrating " << build_info.id);
-    std::filesystem::create_directories(container.host_root / root);
+    std::filesystem::create_directories(container_root);
 
     auto cache_file_path = cachefile(build_info);
     for(auto& e : extras) e.insert(e.begin(), '.');
@@ -288,7 +297,7 @@ void Ignite::integrate(Container &container,
                 .arg("-xPhf")
                 .arg(cache_path / "cache" / (build_info.package_name() + i))
                 .arg("-C")
-                .arg(container.host_root / root)
+                .arg(container_root)
                 .arg("--exclude=./etc/hosts")
                 .arg("--exclude=./etc/hostname")
                 .arg("--exclude=./etc/resolve.conf")
@@ -314,7 +323,7 @@ void Ignite::integrate(Container &container,
                 .container(container)
                 .execute();
     } else {
-        auto data_dir = container.host_root / root / "usr" / "share" / "pkgupd" / "manifest" / build_info.name();
+        auto data_dir = container_root / "usr" / "share" / "pkgupd" / "manifest" / build_info.name();
         std::filesystem::create_directories(data_dir);
         { std::ofstream writer(data_dir / "info"); writer << build_info.str(); }
         if (!build_info.integration.empty()) { 
