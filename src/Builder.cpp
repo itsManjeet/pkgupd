@@ -42,6 +42,7 @@ Builder::BuildInfo::BuildInfo(const std::string &filepath, const std::filesystem
     if (config.node["sources"]) {
         for (auto const &dep: config.node["sources"]) sources.emplace_back(dep.as<std::string>());
     }
+    element_id = std::filesystem::relative(filepath, search_path).replace_extension();
 }
 
 std::vector<std::string> split(const std::string& str, char del) {

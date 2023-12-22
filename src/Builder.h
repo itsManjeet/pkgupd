@@ -30,6 +30,7 @@ class Builder {
 public:
     struct BuildInfo : MetaInfo {
         std::vector<std::string> build_time_depends, sources;
+        std::string element_id;
 
         BuildInfo() = default;
 

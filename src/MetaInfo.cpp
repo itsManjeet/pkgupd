@@ -51,7 +51,7 @@ std::string MetaInfo::str() const {
 
     if (!depends.empty()) {
         ss << "depends:\n";
-        for (auto const &i: depends) ss << "- " << i << "\n";
+        for (auto const &i: depends) ss << "- " << std::filesystem::path(i).replace_extension() << "\n";
     }
 
     if (!backup.empty()) {

@@ -33,12 +33,16 @@ PKGUPD_IGNITE_MODULE(meta) {
         build_info.cache = ignite->hash(build_info);
         auto cache_file = ignite->cachefile(build_info);
         if (std::filesystem::exists(cache_file)) {
+            auto depends = std::vector<std::string>();
+            for(std::filesystem::path depend : build_info.depends) {
+                depends.push_back(depend.replace_extension());
+            }
             data.push_back({
-                {"id", build_info.id},
+                {"id", std::filesystem::path(path).replace_extension()},
                 {"version", build_info.version},
                 {"about", build_info.about},
                 {"cache", build_info.cache},
-                {"depends", build_info.depends},
+                {"depends", depends},
                 {"integration", build_info.integration},
                 {"backup", build_info.backup},
             });

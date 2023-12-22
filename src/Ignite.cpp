@@ -323,9 +323,13 @@ void Ignite::integrate(Container &container,
                 .container(container)
                 .execute();
     } else {
-        auto data_dir = container_root / "usr" / "share" / "pkgupd" / "manifest" / build_info.name();
+        auto meta_info = build_info;
+        meta_info.id = build_info.element_id;
+
+        auto data_dir = container_root / "usr" / "share" / "pkgupd" / "manifest" / meta_info.name();
         std::filesystem::create_directories(data_dir);
-        { std::ofstream writer(data_dir / "info"); writer << build_info.str(); }
+        
+        { std::ofstream writer(data_dir / "info"); writer << meta_info.str(); }
         if (!build_info.integration.empty()) { 
             auto integration_script = build_info.resolve(build_info.integration, config);
             { std::ofstream writer(data_dir / "integration"); writer << integration_script; }
