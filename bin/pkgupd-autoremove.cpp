@@ -12,6 +12,7 @@ PKGUPD_MODULE_HELP (autoremove) {
 
 PKGUPD_MODULE (autoremove) {
     CHECK_ARGS(0);
+    engine->load_system_database();
 
     auto is_required = [&](std::string id) -> bool {
         for (auto const &[id, info]: engine->list_installed()) {

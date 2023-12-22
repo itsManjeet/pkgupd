@@ -11,6 +11,7 @@ PKGUPD_MODULE_HELP(owner) {
 
 PKGUPD_MODULE(owner) {
     CHECK_ARGS(1);
+    engine->load_system_database();
     std::filesystem::path filepath = args[0];
     bool found = false;
     for (auto const &[_, installed_meta_info]: engine->list_installed()) {

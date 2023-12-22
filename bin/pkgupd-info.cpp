@@ -11,6 +11,7 @@ PKGUPD_MODULE_HELP(info) {
 
 PKGUPD_MODULE(info) {
     CHECK_ARGS(1);
+    engine->load_system_database();
 
     if (auto const installed_meta_info = engine->list_installed().find(args[0]);
             installed_meta_info != engine->list_installed().end()) {

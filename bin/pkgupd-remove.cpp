@@ -15,6 +15,7 @@ PKGUPD_MODULE_HELP(remove) {
 
 PKGUPD_MODULE(remove) {
     CHECK_ARGS(1);
+    engine->load_system_database();
 
     auto const iter = engine->list_installed().find(args[0]);
     if (iter == engine->list_installed().end()) {

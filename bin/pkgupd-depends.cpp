@@ -14,6 +14,8 @@ PKGUPD_MODULE_HELP(depends) {
 }
 
 PKGUPD_MODULE(depends) {
+    engine->load_system_database();
+    
     std::vector<MetaInfo> meta_infos;
     PROCESS("loading repository");
     engine->sync(false);

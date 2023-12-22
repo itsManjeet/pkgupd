@@ -20,6 +20,7 @@ PKGUPD_MODULE_HELP(install) {
 
 PKGUPD_MODULE(install) {
     engine->sync(false);
+    engine->load_system_database();
 
     std::vector<MetaInfo> meta_infos;
     if (config->get("installer.depends", true)) {

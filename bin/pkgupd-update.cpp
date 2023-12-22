@@ -23,6 +23,8 @@ PKGUPD_MODULE_HELP(update) {
 }
 
 PKGUPD_MODULE(update) {
+    engine->load_system_database();
+
     PROCESS("syncing remote");
     engine->sync(true);
 
