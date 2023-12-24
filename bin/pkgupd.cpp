@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+#define PKGUPD_DEFAULT_CONFIG "/etc/pkgupd.yml"
 #define PKGUPD_MODULES_LIST \
   X(install)                \
   X(remove)                 \
@@ -83,8 +84,8 @@ int main(int argc, char **argv) {
     Configuration configuration;
     std::optional<std::string> task;
 
-    if (std::filesystem::exists("/etc/pkgupd.yml")) {
-        configuration.update_from("/etc/pkgupd.yml");
+    if (std::filesystem::exists(PKGUPD_DEFAULT_CONFIG)) {
+        configuration.update_from_file(PKGUPD_DEFAULT_CONFIG);
     }
 
     for (int i = 1; i < argc; i++) {
