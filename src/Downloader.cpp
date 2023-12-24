@@ -27,7 +27,7 @@ static inline std::string humanize(size_t bytes) {
     return std::to_string(bytes) + " Bytes";
 }
 
-int progress_func(ssize_t downloaded, ssize_t total_size) {
+int progress_func(const char* filename, ssize_t downloaded, ssize_t total_size) {
     // ensure that the file to be downloaded is not empty
     // because that would cause a division by zero error later on
     if (total_size <= 0.0) {
@@ -42,15 +42,7 @@ int progress_func(ssize_t downloaded, ssize_t total_size) {
 
     // create the "meter"
     int ii = 0;
-    printf("%3.0f%% ", fractiondownloaded * 100);
-    // part  that's full already
-    for (; ii < dotz; ii++) {
-        printf("\033[32;1m▬\033[0m");
-    }
-    // remaining part (spaces)
-    for (; ii < totaldotz; ii++) {
-        printf("\033[1m▬\033[0m");
-    }
+    printf("Downloading %s %3.0f%% ", filename, fractiondownloaded * 100);
     // and back to line begin - do not forget the fflush to avoid output buffering
     // problems!
     printf("\033[1m [%.10s/%.10s]\033[0m                                           \r",
@@ -162,7 +154,7 @@ void Downloader::download(const std::string &url, const std::filesystem::path &o
     ssize_t total_downloaded = 0;
     while ((bytes_received = recv(socket_fd, buffer, DOWNLOAD_BUFFER_SIZE, 0)) > 0) {
         fwrite(buffer, 1, bytes_received, output_file.get());
-        progress_func(total_downloaded, content_length);
+        progress_func(std::filesystem::path(url).filename().c_str(),total_downloaded, content_length);
         total_downloaded += bytes_received;
     }
     if (bytes_received > 0) {
