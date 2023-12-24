@@ -83,6 +83,10 @@ int main(int argc, char **argv) {
     Configuration configuration;
     std::optional<std::string> task;
 
+    if (std::filesystem::exists("/etc/pkgupd.yml")) {
+        configuration.update_from("/etc/pkgupd.yml");
+    }
+
     for (int i = 1; i < argc; i++) {
         string arg = argv[i];
         auto idx = arg.find_first_of('=');
