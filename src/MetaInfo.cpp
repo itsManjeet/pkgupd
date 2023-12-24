@@ -15,9 +15,7 @@ void MetaInfo::update_from_data(const std::string &data, const std::string &file
 
     if (config.node["depends"]) {
         for (auto const &dep: config.node["depends"]) {
-            auto depend = dep.as<std::string>();
-            if (depend.ends_with(".yml")) depend = depend.substr(0, depend.length() - 4);
-            depends.emplace_back(depend);
+            depends.emplace_back(dep.as<std::string>());
         }
     }
     if (config.node["backup"]) {
@@ -36,8 +34,10 @@ std::string MetaInfo::name() const {
     return name;
 }
 
-std::string MetaInfo::package_name() const {
-  return name() + "-" + version + "-" + cache + ".pkg";
+std::string MetaInfo::package_name(std::string eid) const {
+    if (eid.empty()) eid = id;
+    for(auto& c : eid) if (c == '/') c = '-';
+    return eid + "-" + version + "-" + cache + ".pkg";
 }
 
 

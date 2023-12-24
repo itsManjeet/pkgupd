@@ -34,7 +34,7 @@ PKGUPD_IGNITE_MODULE(build) {
         ignite->resolve(args, status);
     }
 
-    bool early_failure = config->get("ignite.build.early-failure", false);
+    bool early_failure = config->get("ignite.build.early-failure", true);
 
     for (auto &[path, build_info, cached]: status) {
         if (!cached) {

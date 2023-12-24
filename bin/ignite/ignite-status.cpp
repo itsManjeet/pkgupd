@@ -33,6 +33,7 @@ PKGUPD_IGNITE_MODULE(status) {
         } else {
             MESSAGE("     " BLUE("WAITING"), path);
         }
+        DEBUG("PACKAGE: " << ignite->cachefile(build_info));
     }
     return 0;
 }

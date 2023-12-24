@@ -44,7 +44,7 @@ struct MetaInfo {
 
     [[nodiscard]] virtual std::string str() const;
 
-    [[nodiscard]] std::string package_name() const;
+    [[nodiscard]] std::string package_name(std::string eid = "") const;
 
 };
 

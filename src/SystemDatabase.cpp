@@ -96,9 +96,9 @@ SystemDatabase::add(const MetaInfo &meta_info,
     PROCESS("Registering " << meta_info.id);
     DEBUG("NAME  : " << meta_info.name());
     DEBUG("FILES : " << files.size())
-    auto data_file = std::filesystem::path(data_dir) / meta_info.name();
-    if (!std::filesystem::exists(data_dir)) {
-        if (std::error_code code; !std::filesystem::create_directories(data_dir, code)) {
+    auto installed_data_path = std::filesystem::path(data_dir) / meta_info.name();
+    if (!std::filesystem::exists(installed_data_path)) {
+        if (std::error_code code; !std::filesystem::create_directories(installed_data_path, code)) {
             throw std::runtime_error("failed to create required data directory, " + code.message());
         }
     }
@@ -112,16 +112,16 @@ SystemDatabase::add(const MetaInfo &meta_info,
 
     auto const installed_meta_info = InstalledMetaInfo(meta_info, timestamp.str(), is_dependency);
     {
-        std::ofstream writer(data_file);
+        std::ofstream writer(installed_data_path / "info");
         if (!writer.is_open()) {
-            throw std::runtime_error("failed to open data file to write at " + data_file.string());
+            throw std::runtime_error("failed to open data file to write at " + (installed_data_path / "info").string());
         }
         writer << installed_meta_info.str();
     }
 
     mPackages[installed_meta_info.id] = installed_meta_info;
     {
-        std::ofstream writer(data_file.string() + ".files");
+        std::ofstream writer(installed_data_path / "files");
         for (auto const &i: files) {
             writer << i << std::endl;
         }

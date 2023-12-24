@@ -22,7 +22,7 @@ std::filesystem::path Engine::download(const MetaInfo &meta_info, bool force) co
     if (std::filesystem::exists(cache_file) && !force) {
         return cache_file;
     }
-    Downloader::download(server + "/cache/" + meta_info.cache, cache_file);
+    Downloader::download(server + "/cache/" + meta_info.package_name(), cache_file);
     return cache_file;
 }
 
@@ -86,6 +86,17 @@ InstalledMetaInfo Engine::install(const MetaInfo &meta_info, std::vector<std::st
         }
     }
 
+    if (auto const old_installed_meta_info = system_database.get(meta_info.id); old_installed_meta_info) {
+        std::vector<std::string> old_files_list;
+        try {
+            system_database.get_files(*old_installed_meta_info, old_files_list);
+        }
+        catch (...) {
+            // No need to stop execution here
+        }
+        deprecated_files.insert(deprecated_files.end(), old_files_list.begin(), old_files_list.end());
+    }
+
     files_list.clear();
     ArchiveManager::extract(cache_file, root, files_list);
 
@@ -114,17 +125,6 @@ InstalledMetaInfo Engine::install(const MetaInfo &meta_info, std::vector<std::st
         }
     }
 
-
-    if (auto const old_installed_meta_info = system_database.get(meta_info.id); old_installed_meta_info) {
-        std::vector<std::string> old_files_list;
-        try {
-            system_database.get_files(*old_installed_meta_info, old_files_list);
-        }
-        catch (...) {
-            // No need to stop execution here
-        }
-        deprecated_files.insert(deprecated_files.end(), old_files_list.begin(), old_files_list.end());
-    }
 
     return system_database.add(meta_info, files_list, root, false, false);
 }

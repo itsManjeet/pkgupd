@@ -31,9 +31,6 @@ Builder::BuildInfo::BuildInfo(const std::string &filepath, const std::filesystem
     config.search_path.push_back(search_path);
     config.node["cache"] = "none";
     update_from_file(filepath);
-    for (auto &dep: depends) {
-        if (!dep.ends_with(".yml")) dep += ".yml";
-    }
     if (config.node["build-depends"]) {
         for (auto const &dep: config.node["build-depends"]) {
             build_time_depends.push_back(dep.as<std::string>());
@@ -77,7 +74,7 @@ std::string Builder::BuildInfo::resolve(const std::string &data, const std::map<
                 auto data = variable.substr(variable.find_first_of(':') + 1);
                 auto version = variables.at("version");
                 try {                    
-                    auto nth = std::stoi(data);
+                    auto nth = std::stoi(data) - 1;
                     int count = 0, position = 0;
                     while (count <= nth) {
                         position += 1;

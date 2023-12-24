@@ -33,14 +33,19 @@ PKGUPD_MODULE(update) {
     PROCESS("checking outdated components")
     std::vector<MetaInfo> outdated_meta_infos;
     for (auto const& [_, installed_meta_info] : engine->list_installed()) {
-        auto remote_meta_info = engine->get_remote_meta_info(installed_meta_info.id);
-        if (remote_meta_info.cache != installed_meta_info.cache) {
-            changelog << remote_meta_info.id << " "
-                      << installed_meta_info.version << ":" << installed_meta_info.cache
-                      <<  " => "
-                      << remote_meta_info.version << ":" << remote_meta_info.cache;
-            outdated_meta_infos.emplace_back(remote_meta_info);
+        try {
+            auto remote_meta_info = engine->get_remote_meta_info(installed_meta_info.id);
+            if (remote_meta_info.cache != installed_meta_info.cache) {
+                changelog << remote_meta_info.id << " "
+                        << installed_meta_info.version << ":" << installed_meta_info.cache
+                        <<  " => "
+                        << remote_meta_info.version << ":" << remote_meta_info.cache;
+                outdated_meta_infos.emplace_back(remote_meta_info);
+            }
+        } catch (const std::exception& exception) {
+            ERROR(exception.what());
         }
+        
     }
 
     PROCESS("resolving dependencies")
@@ -76,9 +81,11 @@ PKGUPD_MODULE(update) {
 
     engine->triggers(installed_meta_infos);
 
-    for (auto const& file : std::ranges::reverse_view(deprecated_files)) {
+    for (auto file : std::ranges::reverse_view(deprecated_files)) {
         std::error_code error;
-        std::filesystem::remove(file, error);
+        if (file.starts_with("./")) file = file.substr(2);
+        if (file.empty()) continue;
+        std::filesystem::remove(std::filesystem::path(config->get<std::string>("dir.root", "/")) / file, error);
         if (error) {
             ERROR("failed to remove deprecated file " << file);
         }

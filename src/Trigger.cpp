@@ -29,43 +29,43 @@ std::tuple<bool, std::string> Triggerer::exec(type t) {
 
     switch (t) {
         case type::MIME:
-            cmd = "update-mime-database /usr/share/mime";
+            cmd = "/bin/update-mime-database /usr/share/mime";
             break;
 
         case type::DESKTOP:
-            cmd = "update-desktop-database --quiet";
+            cmd = "/bin/update-desktop-database --quiet";
             break;
 
         case type::UDEV:
-            cmd = "udevadm hwdb --update";
+            cmd = "/bin/udevadm hwdb --update";
             break;
 
         case type::GTK3_INPUT_MODULES:
-            cmd = "gtk-query-immodules-3.0 --update-cache";
+            cmd = "/bin/gtk-query-immodules-3.0 --update-cache";
             break;
 
         case type::GTK2_INPUT_MODULES:
-            cmd = "gtk-query-immodules-2.0 --update-cache";
+            cmd = "/bin/gtk-query-immodules-2.0 --update-cache";
             break;
 
         case type::GLIB_SCHEMAS:
-            cmd = "glib-compile-schemas /usr/share/glib-2.0/schemas";
+            cmd = "/bin/glib-compile-schemas /usr/share/glib-2.0/schemas";
             break;
 
         case type::GIO_MODULES:
-            cmd = "gio-querymodules /usr/lib/gio/modules";
+            cmd = "/bin/gio-querymodules /usr/lib/gio/modules";
             break;
 
         case type::GDK_PIXBUF:
-            cmd = "gdk-pixbuf-query-loaders --update-cache";
+            cmd = "/bin/gdk-pixbuf-query-loaders --update-cache";
             break;
 
         case type::FONTS_CACHE:
-            cmd = "fc-cache -s";
+            cmd = "/bin/fc-cache -s";
             break;
 
         case type::LIBRARY_CACHE:
-            cmd = "ldconfig";
+            cmd = "/bin/ldconfig";
             break;
 
         case type::FONTS_SCALE: {
@@ -80,14 +80,14 @@ std::tuple<bool, std::string> Triggerer::exec(type t) {
                 if (std::filesystem::is_empty(i.path()))
                     std::filesystem::remove(i.path(), ee);
 
-                if (int status = Executor("mkfontdir").arg(i.path().string()).run();
+                if (int status = Executor("/bin/mkfontdir").arg(i.path().string()).run();
                         status != 0) {
                     error +=
                             "\nmkfontdir failed with exit code: " + std::to_string(status);
                     status = false;
                 }
 
-                if (int status = Executor("mkfontscale").arg(i.path().string()).run();
+                if (int status = Executor("/bin/mkfontscale").arg(i.path().string()).run();
                         status != 0) {
                     error +=
                             "\nmkfontscale failed with exit code: " + std::to_string(status);
@@ -102,7 +102,7 @@ std::tuple<bool, std::string> Triggerer::exec(type t) {
             bool status = true;
             for (auto const &i:
                     std::filesystem::directory_iterator("/usr/share/icons")) {
-                if (int status_code = Executor("gtk-update-icon-cache").arg("-q").arg(i.path().string()).run();
+                if (int status_code = Executor("/bin/gtk-update-icon-cache").arg("-q").arg(i.path().string()).run();
                         status != 0) {
                     error += "\ngtk-update-icon-cache failed with exit code: " +
                              std::to_string(status_code);
@@ -115,8 +115,14 @@ std::tuple<bool, std::string> Triggerer::exec(type t) {
         default:
             throw std::runtime_error("unimplemented trigger executed");
     }
-
-    if (int status = Executor(cmd).run(); status != 0) {
+    std::stringstream ss(cmd);
+    std::string binary;
+    ss >> binary;
+    auto executor = Executor(binary);
+    for(std::string arg; ss >> arg; ) {
+        executor.arg(arg);
+    }
+    if (int status = executor.run(); status != 0) {
         error += "\nFailed to '" + mesg(t) +
                  "' command failed with exit code: " + std::to_string(status);
         return {false, error};

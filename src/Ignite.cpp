@@ -83,7 +83,7 @@ void Ignite::resolve(const std::vector<std::string> &id,
         }
 
         build_info->second.cache = hash(build_info->second);
-        auto cached = std::filesystem::exists(cache_path / "cache" / build_info->second.package_name());
+        auto cached = std::filesystem::exists(cachefile(build_info->second));
 
         for (auto depend: depends) {
             auto idx = std::find_if(output.begin(), output.end(), [&depend](const auto &val) -> bool {
@@ -158,7 +158,7 @@ void Ignite::build(const Builder::BuildInfo &build_info, Engine *engine) {
             .arg(container.host_root)
             .execute();
     });
-    std::ofstream logger(cache_path / "logs" / (build_info.package_name() + ".log"));
+    std::ofstream logger(cache_path / "logs" / (build_info.package_name(build_info.element_id) + ".log"));
     container.logger = &logger;
     
     auto package_path = cachefile(build_info);
@@ -205,7 +205,7 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
         for (auto const &i: n) env.push_back(i.as<std::string>());
     }
 
-    auto host_root = (cache_path / "temp" / build_info.package_name());
+    auto host_root = (cache_path / "temp" / build_info.package_name(build_info.element_id));
     std::filesystem::create_directories(host_root);
 
     std::vector<std::string> capabilities;
@@ -227,7 +227,7 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
             .capabilites = capabilities,
             .host_root = host_root,
             .base_dir = project_path,
-            .name = build_info.package_name(),
+            .name = build_info.package_name(build_info.element_id),
     };
     for (auto const &i: {"sources", "cache"}) {
         std::filesystem::create_directories(cache_path / i);
@@ -261,7 +261,7 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
         resolve(include, states, false);
 
         for(auto const& [path, info, cached] : states) {
-            auto installation_path = std::filesystem::path("install-root") / build_info.package_name();
+            auto installation_path = std::filesystem::path("install-root") / build_info.package_name(build_info.element_id);
             installation_path = build_info.config.get<std::string>(build_info.name() +"-include-path", 
                 build_info.config.get<std::string>("include-root", installation_path.string()));
             integrate(container, info, installation_path, {});
@@ -273,7 +273,7 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
 }
 
 std::filesystem::path Ignite::cachefile(const Builder::BuildInfo& build_info) {
-    return cache_path / "cache" / build_info.package_name();
+    return cache_path / "cache" / build_info.package_name(build_info.element_id);
 }
 
 void Ignite::integrate(Container &container, 
@@ -295,7 +295,7 @@ void Ignite::integrate(Container &container,
         try {
             Executor("/bin/tar")
                 .arg("-xPhf")
-                .arg(cache_path / "cache" / (build_info.package_name() + i))
+                .arg(sub_cache_file_path)
                 .arg("-C")
                 .arg(container_root)
                 .arg("--exclude=./etc/hosts")
@@ -308,7 +308,7 @@ void Ignite::integrate(Container &container,
                 .execute();
 
         } catch (const std::exception& exception) {
-            throw std::runtime_error("failed to integrate " + build_info.package_name() + i + " " + exception.what());
+            throw std::runtime_error("failed to integrate " + build_info.package_name(build_info.element_id) + i + " " + exception.what());
         }
         
     }
