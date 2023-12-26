@@ -403,7 +403,7 @@ void Builder::pack(const std::filesystem::path &install_root, const std::filesys
 
     for (auto const &i: std::filesystem::recursive_directory_iterator(install_root_package)) {
         if (i.is_directory()) {
-            if (i.path().empty()) {
+            if (i.path().empty() && build_info.config.get<bool>("clean-empty-dir", true)) {
                 std::filesystem::remove(i.path());
             }
         } else if (!keep_files.empty() && keep_file(i.path().filename())) {

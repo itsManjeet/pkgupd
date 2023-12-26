@@ -85,7 +85,13 @@ PKGUPD_MODULE(update) {
         std::error_code error;
         if (file.starts_with("./")) file = file.substr(2);
         if (file.empty()) continue;
-        std::filesystem::remove(std::filesystem::path(config->get<std::string>("dir.root", "/")) / file, error);
+        auto path_to_remove = std::filesystem::path(config->get<std::string>("dir.root", "/")) / file;
+        if (std::filesystem::is_directory(path_to_remove) && !std::filesystem::is_empty(path_to_remove)) {
+            continue;
+        } else {
+            DEBUG("removing " << path_to_remove.string());
+            std::filesystem::remove(path_to_remove, error);
+        }
         if (error) {
             ERROR("failed to remove deprecated file " << file);
         }

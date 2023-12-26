@@ -37,17 +37,18 @@ PKGUPD_IGNITE_MODULE(build) {
     bool early_failure = config->get("ignite.build.early-failure", true);
 
     for (auto &[path, build_info, cached]: status) {
-        if (!cached) {
-            try {
-                PROCESS("Building " << build_info.id)
-                build_info.resolve(*config);
-                ignite->build(build_info, engine);
-            } catch(const std::exception& error) {
-                if (early_failure) {
-                    throw;
-                }
-                ERROR("failed to build " << build_info.id << ": " << error.what());
+        if (cached && !build_info.config.get("force-rebuild", false)) {
+            continue;
+        }
+        try {
+            PROCESS("Building " << build_info.id)
+            build_info.resolve(*config);
+            ignite->build(build_info, engine);
+        } catch(const std::exception& error) {
+            if (early_failure) {
+                throw;
             }
+            ERROR("failed to build " << build_info.id << ": " << error.what());
         }
     }
 
