@@ -293,19 +293,24 @@ void Ignite::integrate(Container &container,
             throw std::runtime_error(build_info.id + " not yet cached");
         }
         try {
-            Executor("/bin/tar")
+            auto extractor = Executor("/bin/tar")
                 .arg("-xPhf")
                 .arg(sub_cache_file_path)
                 .arg("-C")
-                .arg(container_root)
+                .arg(container_root);
+            
+            if (root.empty())  {
+                extractor
                 .arg("--exclude=./etc/hosts")
                 .arg("--exclude=./etc/hostname")
                 .arg("--exclude=./etc/resolve.conf")
                 .arg("--exclude=./proc")
                 .arg("--exclude=./run")
                 .arg("--exclude=./sys")
-                .arg("--exclude=./dev")
-                .execute();
+                .arg("--exclude=./dev");
+            }
+                
+                extractor.execute();
 
         } catch (const std::exception& exception) {
             throw std::runtime_error("failed to integrate " + build_info.package_name(build_info.element_id) + i + " " + exception.what());
