@@ -22,7 +22,8 @@ std::filesystem::path Engine::download(const MetaInfo &meta_info, bool force) co
     if (std::filesystem::exists(cache_file) && !force) {
         return cache_file;
     }
-    Downloader::download(server + "/cache/" + meta_info.package_name(), cache_file);
+    Downloader(server + "/cache/" + meta_info.package_name())
+            .save(cache_file);
     return cache_file;
 }
 
@@ -127,7 +128,10 @@ InstalledMetaInfo Engine::install(const MetaInfo &meta_info, std::vector<std::st
 
     // TODO: optimize file filtering
     deprecated_files.erase(std::remove_if(deprecated_files.begin(), deprecated_files.end(),
-        [&files_list](const std::string& s) { return std::find(files_list.begin(), files_list.end(), s) != files_list.end(); }));
+                                          [&files_list](const std::string &s) {
+                                              return std::find(files_list.begin(), files_list.end(), s) !=
+                                                     files_list.end();
+                                          }));
 
     return system_database.add(meta_info, files_list, root, false, false);
 }
@@ -160,7 +164,8 @@ void Engine::triggers() const {
 void Engine::sync(bool force) {
     auto repo_path = config.get<std::string>(DIR_CACHE, DEFAULT_CACHE_DIR) + "/repo";
     if (!(std::filesystem::exists(repo_path) && !force)) {
-        Downloader::download(server + "/" + config.get<std::string>("version", "stable"), repo_path);
+        Downloader(server + "/" + config.get<std::string>("version", "stable")).
+                save(repo_path);
     }
     repository.load(repo_path);
 }
@@ -178,10 +183,11 @@ void Engine::resolve(const std::vector<std::string> &ids, std::vector<MetaInfo> 
 void Engine::resolve(const std::vector<MetaInfo> &meta_infos, std::vector<MetaInfo> &output_meta_infos) const {
     auto resolver = Resolver<MetaInfo>(
             [&](const std::string &id) -> std::optional<MetaInfo> { return repository.get(id); },
-            [&](const MetaInfo &meta_info) -> bool { 
+            [&](const MetaInfo &meta_info) -> bool {
                 auto installed_meta_info = system_database.get(meta_info.id);
                 if (installed_meta_info == std::nullopt) return false;
-                return installed_meta_info->cache == meta_info.cache; },
+                return installed_meta_info->cache == meta_info.cache;
+            },
             [&](const MetaInfo &pkg) -> std::vector<std::string> { return pkg.depends; }
     );
     std::vector<std::string> ids;

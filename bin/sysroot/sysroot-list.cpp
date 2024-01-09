@@ -15,25 +15,19 @@
  *
  */
 
-#include "ignite_common.h"
+#include "sysroot_common.h"
 
-PKGUPD_IGNITE_MODULE_HELP(status) {
-    os << "Print status of element and its dependencies" << std::endl;
+PKGUPD_SYSROOT_MODULE_HELP(list) {
+    os << "list all deployments" << std::endl;
 }
 
-PKGUPD_IGNITE_MODULE(status) {
-    CHECK_ARGS(1);
-
-    std::vector<std::tuple<std::string, Builder::BuildInfo, bool>> status;
-    ignite->resolve({args[0]}, status, true, true, true);
-
-    for (auto const &[path, build_info, cached]: status) {
-        if (cached) {
-            MESSAGE("      " GREEN("CACHED"), path);
-        } else {
-            MESSAGE("     " BLUE("WAITING"), path);
-        }
-        DEBUG("PACKAGE: " << ignite->cachefile(build_info));
+PKGUPD_SYSROOT_MODULE(list) {
+    sysroot->reload_deployments();
+    for (auto const &i: sysroot->deployments()) {
+        std::cout << (i.is_active() ? "*" : "-")
+                  << sysroot->osname() << ": " << i.cache() << '\n'
+                  << "  version  : " << i.version() << '\n'
+                  << "  deployed : " << (i.is_deployed() ? "YES" : "NO") << '\n';
     }
     return 0;
 }

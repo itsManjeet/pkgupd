@@ -29,9 +29,9 @@ PKGUPD_IGNITE_MODULE(build) {
         for(auto const &[path, build_info]: ignite->get_pool()) {
             all.emplace_back(path);
         }
-        ignite->resolve(all, status);
+        ignite->resolve(all, status, true, true, true);
     } else {
-        ignite->resolve(args, status);
+        ignite->resolve(args, status, true, true, true);
     }
 
     bool early_failure = config->get("ignite.build.early-failure", true);
@@ -41,7 +41,7 @@ PKGUPD_IGNITE_MODULE(build) {
             continue;
         }
         try {
-            PROCESS("Building " << build_info.id)
+            PROCESS("Building " << path)
             build_info.resolve(*config);
             ignite->build(build_info, engine);
         } catch(const std::exception& error) {

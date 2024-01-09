@@ -56,7 +56,9 @@ void Ignite::load() {
 
 void Ignite::resolve(const std::vector<std::string> &id,
                      std::vector<State> &output,
-                     bool devel) {
+                     bool devel,
+                     bool include_depends,
+                     bool include_extra) {
     std::map<std::string, bool> visited;
 
     std::function<void(const std::string &i)> dfs = [&](const std::string &i) {
@@ -69,18 +71,27 @@ void Ignite::resolve(const std::vector<std::string> &id,
         auto depends = build_info->second.depends;
         if (devel) {
             depends.insert(depends.end(), build_info->second.build_time_depends.begin(),
-                       build_info->second.build_time_depends.end());
+                    build_info->second.build_time_depends.end());
         }
-        
+        if (include_extra) {
+          if (build_info->second.config.node["include"]) {
+            for (auto const& i : build_info->second.config.node["include"]) {
+              depends.push_back(i.as<std::string>());
+            }
+          }
+        }
 
-        for (const auto &depend: depends) {
-            if (visited[depend]) continue;
-            try {
-                dfs(depend);
-            } catch (const std::exception &exception) {
-                throw std::runtime_error(std::string(exception.what()) + "\n\tTRACEBACK " + i);
+        if (include_depends) {
+            for (const auto &depend: depends) {
+                if (visited[depend]) continue;
+                try {
+                    dfs(depend);
+                } catch (const std::exception &exception) {
+                    throw std::runtime_error(std::string(exception.what()) + "\n\tTRACEBACK " + i);
+                }
             }
         }
+
 
         build_info->second.cache = hash(build_info->second);
         auto cached = std::filesystem::exists(cachefile(build_info->second));
@@ -90,11 +101,22 @@ void Ignite::resolve(const std::vector<std::string> &id,
                 return std::get<0>(val) == depend;
             });
             if (idx == output.end()) {
-                throw std::runtime_error("internal error " + depend + " not in a pool for " + i);
-            }
-            if (!std::get<2>(*idx)) {
+                if (auto in_pool = pool.find(depend); in_pool == pool.end()) {
+                  throw std::runtime_error("internal error " + depend + " not in a pool for " + i);
+                } else {
+                  auto local_build_info = in_pool->second;
+                  local_build_info.cache = hash(local_build_info);
+                  if (!std::filesystem::exists(cachefile(local_build_info))) {
+                    cached = false;
+                    break;
+                  }
+                }
+
+            } else {
+              if (!std::get<2>(*idx)) {
                 cached = false;
                 break;
+              }
             }
         }
 
@@ -243,7 +265,7 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
         depends.insert(depends.end(), build_info.build_time_depends.begin(), build_info.build_time_depends.end());
     }
 
-    resolve(depends, states);
+    resolve(depends, states, true, true, false);
     for (auto const &[path, info, cached]: states) {
         integrate(container, info, "");
     }
@@ -257,14 +279,30 @@ Container Ignite::setup_container(const Builder::BuildInfo &build_info,
         states.clear();
 
         std::vector<std::string> include;
-        for(auto const& i : build_info.config.node["include"]) include.push_back(i.as<std::string>());
-        resolve(include, states, false);
+        for (auto const& i : build_info.config.node["include"]) include.push_back(i.as<std::string>());
 
+        resolve(include, states, false, build_info.config.get<bool>("include-depends", true), false);
+
+        if (build_info.config.node["include-upon"]) {
+          std::vector<State> sub_states;
+          resolve({build_info.config.node["include-upon"].as<std::string>()},
+                  sub_states, false, true, false);
+          states.erase(std::remove_if(states.begin(), states.end(), [&sub_states](const State& state) -> bool {
+                return std::find_if(sub_states.begin(), sub_states.end(), [&state](const State& other_state) -> bool {
+                            return std::get<0>(state) == std::get<0>(other_state);
+                         }) != sub_states.end();
+          }), states.end());
+        }
+
+        auto include_parts = std::vector<std::string>();
+        for(auto const& i : build_info.config.node["include-parts"]) include_parts.push_back(i.as<std::string>());
+
+        auto include_core = build_info.config.get<bool>("include-core", true);
         for(auto const& [path, info, cached] : states) {
-            auto installation_path = std::filesystem::path("install-root") / build_info.package_name(build_info.element_id);
+            auto installation_path = std::filesystem::path("install-root") / build_info.package_name();
             installation_path = build_info.config.get<std::string>(build_info.name() +"-include-path", 
                 build_info.config.get<std::string>("include-root", installation_path.string()));
-            integrate(container, info, installation_path, {});
+            integrate(container, info, installation_path, include_parts, !include_core);
         }
     }
     
@@ -279,14 +317,17 @@ std::filesystem::path Ignite::cachefile(const Builder::BuildInfo& build_info) {
 void Ignite::integrate(Container &container, 
                        const Builder::BuildInfo &build_info, 
                        const std::filesystem::path &root,
-                       std::vector<std::string> extras) {
+                       std::vector<std::string> extras,
+                       bool skip_core) {
     auto container_root = container.host_root / (root.has_root_path() ? std::filesystem::path(root.string().substr(1)) : root);
     PROCESS("Integrating " << build_info.id);
     std::filesystem::create_directories(container_root);
 
     auto cache_file_path = cachefile(build_info);
     for(auto& e : extras) e.insert(e.begin(), '.');
-    extras.insert(extras.begin(), {""});
+    if (!skip_core) {
+      extras.insert(extras.begin(), {""});
+    }
     for (auto const &i: extras) {
         auto sub_cache_file_path = cache_file_path.string() + i;
         if (!std::filesystem::exists(sub_cache_file_path)) {

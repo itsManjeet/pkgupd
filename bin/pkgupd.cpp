@@ -16,6 +16,7 @@
   X(build)                  \
   X(cleanup)                \
   X(ignite)                 \
+  X(sysroot)                \
   X(cachefile)              \
   X(autoremove)
 

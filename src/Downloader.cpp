@@ -11,6 +11,7 @@
 #include <filesystem>
 #include <iostream>
 #include <sys/stat.h>
+#include <fstream>
 
 using std::string;
 
@@ -27,7 +28,7 @@ static inline std::string humanize(size_t bytes) {
     return std::to_string(bytes) + " Bytes";
 }
 
-int progress_func(const char* filename, ssize_t downloaded, ssize_t total_size) {
+int progress_func(const char *filename, ssize_t downloaded, ssize_t total_size) {
     // ensure that the file to be downloaded is not empty
     // because that would cause a division by zero error later on
     if (total_size <= 0.0) {
@@ -75,10 +76,8 @@ static std::tuple<std::string, std::string, std::string> parse_url(std::string u
     throw std::runtime_error("url doesn't match the pattern");
 }
 
-void Downloader::download(const std::string &url, const std::filesystem::path &outfile) {
-    if (outfile.has_parent_path() && !std::filesystem::exists(outfile.parent_path())) {
-        std::filesystem::create_directories(outfile.parent_path());
-    }
+
+void Downloader::perform(std::ostream &body) {
     auto [protocol, hostname, path] = parse_url(url);
     DEBUG("PROTOCOL  : " << protocol);
     DEBUG("HOSTNAME  : " << hostname);
@@ -115,11 +114,6 @@ void Downloader::download(const std::string &url, const std::filesystem::path &o
         throw std::runtime_error("failed to send request");
     }
 
-    std::unique_ptr<FILE, decltype(&fclose)> output_file(fopen((outfile.string() + ".tmp").c_str(), "wb"), fclose);
-    if (output_file.get() == nullptr) {
-        throw std::runtime_error("failed to open output file for write " + outfile.string());
-    }
-
     char buffer[DOWNLOAD_BUFFER_SIZE];
     ssize_t bytes_received;
     std::string response;
@@ -133,39 +127,48 @@ void Downloader::download(const std::string &url, const std::filesystem::path &o
         }
     }
 
-    std::map<std::string, std::string> response_map;
     std::stringstream ss(response);
     for (std::string line; std::getline(ss, line);) {
         if (auto idx = line.find_first_of(':'); idx != std::string::npos) {
-            response_map[line.substr(0, idx)] = line.substr(idx + 2);
+            header[line.substr(0, idx)] = line.substr(idx + 2);
         }
     }
 
     ssize_t content_length = 0;
-    if (auto idx = response_map.find("Content-Length"); idx != response_map.end()) {
+    if (auto idx = header.find("Content-Length"); idx != header.end()) {
         content_length = std::stol(idx->second);
     }
 
     DEBUG("CONTENT LENGTH : " << content_length);
 
     if (!extra_data.empty()) {
-        fwrite(extra_data.data(), 1, extra_data.length(), output_file.get());
+        body.write(extra_data.data(), (int) extra_data.length());
     }
+
     ssize_t total_downloaded = 0;
     while ((bytes_received = recv(socket_fd, buffer, DOWNLOAD_BUFFER_SIZE, 0)) > 0) {
-        fwrite(buffer, 1, bytes_received, output_file.get());
-        progress_func(std::filesystem::path(url).filename().c_str(),total_downloaded, content_length);
+        body.write(buffer, bytes_received);
+        progress_func(std::filesystem::path(url).filename().c_str(), total_downloaded, content_length);
         total_downloaded += bytes_received;
     }
     if (bytes_received > 0) {
         throw std::runtime_error("error while receiving file");
     }
     std::cout << std::endl;
+}
 
-
+void Downloader::save(const std::filesystem::path &outfile) {
+    if (outfile.has_parent_path() && !std::filesystem::exists(outfile.parent_path())) {
+        std::filesystem::create_directories(outfile.parent_path());
+    }
+    std::ofstream writer(outfile.string() + ".tmp");
+    perform(writer);
     std::filesystem::rename(outfile.string() + ".tmp", outfile);
 }
 
-bool Downloader::valid(char const *url) {
-    return true;
+nlohmann::json Downloader::get_json() {
+    std::stringstream ss;
+    perform(ss);
+
+    return nlohmann::json::parse(ss.str());
 }

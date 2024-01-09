@@ -17,5 +17,11 @@ add_library(${PROJECT_NAME}_LIB STATIC
         Ignite.h
         Container.cpp
         Container.h
+        Sysroot.cpp
+        Sysroot.h
+        SysImage.cpp
+        SysImage.h
+        SysUpgrade.cpp
+        SysUpgrade.h
 )
 target_link_libraries(${PROJECT_NAME}_LIB yaml-cpp)

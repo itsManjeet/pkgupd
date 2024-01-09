@@ -44,7 +44,7 @@ public:
     std::map<std::string, Builder::BuildInfo> const& get_pool() const { return pool; }
 
     void
-    resolve(const std::vector<std::string> &id, std::vector<State> &output, bool devel = true);
+    resolve(const std::vector<std::string> &id, std::vector<State> &output, bool devel = true, bool include_depends = true, bool include_extra = true);
 
     enum class ContainerType {
         Build,
@@ -56,7 +56,7 @@ public:
                     Engine *engine,
                     ContainerType container_type = ContainerType::Shell);
 
-    void integrate(Container &container, const Builder::BuildInfo &build_info, const std::filesystem::path &root = {}, std::vector<std::string> extras = {"devel"});
+    void integrate(Container &container, const Builder::BuildInfo &build_info, const std::filesystem::path &root = {}, std::vector<std::string> extras = {"devel"}, bool skip_core = false);
 
     void build(const Builder::BuildInfo &build_info, Engine *engine);
 };

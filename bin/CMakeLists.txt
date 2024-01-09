@@ -18,6 +18,12 @@ add_executable(${PROJECT_NAME}
         ignite/ignite-status.cpp
         ignite/ignite-build.cpp
         ignite/ignite-checkout.cpp
-        ignite/ignite-meta.cpp)
+        ignite/ignite-meta.cpp
+        
+        pkgupd-sysroot.cpp
+        sysroot/sysroot_common.h
+        sysroot/sysroot-list.cpp
+
+)
 
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_LIB -static)

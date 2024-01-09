@@ -50,9 +50,9 @@ Executor &Executor::start() {
         env.push_back(nullptr);
 
         if (execve(args_[0].c_str(), (char *const *) args.data(), (char *const *) env.data()) == -1) {
-            throw std::runtime_error(strerror(errno));
+            perror("execution failed");
         }
-        throw std::runtime_error("unreachable code");
+        exit(EXIT_FAILURE);
     }
     return *this;
 }

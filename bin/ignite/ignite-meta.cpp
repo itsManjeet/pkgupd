@@ -17,6 +17,7 @@
 
 #include "../../src/json.h"
 #include "ignite_common.h"
+#include "../../src/Executor.h"
 
 #include <fstream>
 
@@ -29,23 +30,40 @@ PKGUPD_IGNITE_MODULE(meta) {
 
     nlohmann::json data;
 
+    auto target_path = std::filesystem::path(args[0]).parent_path();
+    std::filesystem::remove_all(target_path / "apps");
+    std::filesystem::create_directories(target_path / "apps");
+
     for (auto [path, build_info] : ignite->get_pool()) {
         build_info.cache = ignite->hash(build_info);
         auto cache_file = ignite->cachefile(build_info);
         if (std::filesystem::exists(cache_file)) {
             auto depends = std::vector<std::string>();
-            for(std::filesystem::path depend : build_info.depends) {
+            for (std::filesystem::path depend : build_info.depends) {
                 depends.push_back(depend.replace_extension());
             }
+
+            auto type = build_info.config.get<std::string>("type", "component");
+
             data.push_back({
                 {"id", std::filesystem::path(path).replace_extension()},
                 {"version", build_info.version},
                 {"about", build_info.about},
                 {"cache", build_info.cache},
                 {"depends", depends},
+                {"type", type},
                 {"integration", build_info.integration},
                 {"backup", build_info.backup},
             });
+            if (type == "app") {
+                PROCESS("Adding App " << data.back()["id"].get<std::string>());
+                Executor("/bin/tar")
+                    .arg("-xf")
+                    .arg(cache_file)
+                    .arg("-C")
+                    .arg(target_path / "apps")
+                    .execute();
+            }
         }
     }
 
