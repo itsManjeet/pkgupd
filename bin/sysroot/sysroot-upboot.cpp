@@ -15,17 +15,22 @@
  *
  */
 
-#ifndef PKGUPD_IGNITE_COMMON_H
-#define PKGUPD_IGNITE_COMMON_H
+#include "sysroot_common.h"
 
-#include "../../src/Ignite.h"
-#include "../common.h"
+PKGUPD_SYSROOT_MODULE_HELP(upboot) {
+    os << "list all deployments" << std::endl;
+}
 
-#define PKGUPD_IGNITE_MODULE(id)                                               \
-    extern "C" int PKGUPD_IGNITE_##id(std::vector<std::string> const& args,    \
-            Engine* engine, Ignite* ignite, Configuration* config)
-
-#define PKGUPD_IGNITE_MODULE_HELP(id)                                          \
-    extern "C" void PKGUPD_IGNITE_help_##id(std::ostream& os, int padding)
-
-#endif // PKGUPD_IGNITE_COMMON_H
+PKGUPD_SYSROOT_MODULE(upboot) {
+    sysroot->reload_deployments();
+    for (auto const& i : sysroot->deployments()) {
+        std::cout << (i.is_active() ? "*" : "-") << " " << sysroot->osname()
+                  << "  version  : " << i.version() << '\n'
+                  << "  deployed : " << (i.is_deployed() ? "YES" : "NO")
+                  << '\n';
+        if (!i.is_deployed()) { sysroot->deploy(i); }
+    }
+    PROCESS("Updating bootloader configuration");
+    sysroot->generate_boot_config({});
+    return 0;
+}

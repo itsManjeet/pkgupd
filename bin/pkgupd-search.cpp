@@ -1,6 +1,4 @@
 #include "common.h"
-
-
 #include <algorithm>
 #include <iostream>
 
@@ -13,8 +11,9 @@ PKGUPD_MODULE(search) {
 
     engine->sync(false);
     int found = 0;
-    for (auto const &[_, meta_info]: engine->list_remote()) {
-        if (meta_info.id.contains(args[0]) || meta_info.about.contains(args[0])) {
+    for (auto const& [_, meta_info] : engine->list_remote()) {
+        if (meta_info.id.contains(args[0]) ||
+                meta_info.about.contains(args[0])) {
             cout << GREEN(meta_info.id) << ": " << BLUE(meta_info.version)
                  << "\n  " << BOLD(meta_info.about) << '\n'
                  << endl;

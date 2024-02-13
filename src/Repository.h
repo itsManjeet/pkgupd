@@ -14,11 +14,11 @@ public:
 
     void load(std::filesystem::path p);
 
-    [[nodiscard]] std::map<std::string, MetaInfo> const &get() const {
+    [[nodiscard]] std::map<std::string, MetaInfo> const& get() const {
         return mPackages;
     }
 
-    std::optional<MetaInfo> get(const std::string &id) const;
+    std::optional<MetaInfo> get(const std::string& id) const;
 };
 
 #endif

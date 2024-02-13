@@ -15,10 +15,9 @@
  *
  */
 
+#include "../../src/Executor.h"
 #include "../../src/json.h"
 #include "ignite_common.h"
-#include "../../src/Executor.h"
-
 #include <fstream>
 
 PKGUPD_IGNITE_MODULE_HELP(meta) {
@@ -46,23 +45,23 @@ PKGUPD_IGNITE_MODULE(meta) {
             auto type = build_info.config.get<std::string>("type", "component");
 
             data.push_back({
-                {"id", std::filesystem::path(path).replace_extension()},
-                {"version", build_info.version},
-                {"about", build_info.about},
-                {"cache", build_info.cache},
-                {"depends", depends},
-                {"type", type},
-                {"integration", build_info.integration},
-                {"backup", build_info.backup},
+                    {"id", std::filesystem::path(path).replace_extension()},
+                    {"version", build_info.version},
+                    {"about", build_info.about},
+                    {"cache", build_info.cache},
+                    {"depends", depends},
+                    {"type", type},
+                    {"integration", build_info.integration},
+                    {"backup", build_info.backup},
             });
             if (type == "app") {
                 PROCESS("Adding App " << data.back()["id"].get<std::string>());
                 Executor("/bin/tar")
-                    .arg("-xf")
-                    .arg(cache_file)
-                    .arg("-C")
-                    .arg(target_path / "apps")
-                    .execute();
+                        .arg("-xf")
+                        .arg(cache_file)
+                        .arg("-C")
+                        .arg(target_path / "apps")
+                        .execute();
             }
         }
     }

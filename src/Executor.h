@@ -1,17 +1,15 @@
 #ifndef PKGUPD_EXEC_H
 #define PKGUPD_EXEC_H
 
-#include <array>
-#include <string>
-#include <utility>
-#include <vector>
-#include <ostream>
-#include <optional>
-
-#include <sys/wait.h>
 #include "Colors.h"
 #include "Container.h"
-
+#include <array>
+#include <optional>
+#include <ostream>
+#include <string>
+#include <sys/wait.h>
+#include <utility>
+#include <vector>
 
 class Executor {
 
@@ -24,11 +22,9 @@ class Executor {
     bool silent_{false};
 
 public:
-    explicit Executor(const std::string &binary) {
-        args_.push_back(binary);
-    }
+    explicit Executor(const std::string& binary) { args_.push_back(binary); }
 
-    Executor &container(const std::optional<Container> &container) {
+    Executor& container(const std::optional<Container>& container) {
         if (container) {
             std::string path = path_ ? *path_ : "/";
             auto a = container->args();
@@ -40,34 +36,34 @@ public:
         return *this;
     }
 
-    Executor &arg(const std::string &a) {
+    Executor& arg(const std::string& a) {
         args_.emplace_back(a);
         return *this;
     }
 
-    Executor &path(const std::string &p) {
+    Executor& path(const std::string& p) {
         path_ = p;
         return *this;
     }
 
-    Executor &silent() {
+    Executor& silent() {
         silent_ = true;
         return *this;
     }
 
-    Executor &environ(const std::string &env) {
+    Executor& environ(const std::string& env) {
         environ_.push_back(env);
         return *this;
     }
 
-    Executor &environ(const std::vector<std::string> &env) {
+    Executor& environ(const std::vector<std::string>& env) {
         environ_.insert(environ_.end(), env.begin(), env.end());
         return *this;
     }
 
-    Executor &start();
+    Executor& start();
 
-    int wait(std::ostream *out = nullptr);
+    int wait(std::ostream* out = nullptr);
 
     int run();
 
@@ -75,6 +71,5 @@ public:
 
     std::tuple<int, std::string> output();
 };
-
 
 #endif

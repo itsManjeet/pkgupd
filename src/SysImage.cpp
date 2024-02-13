@@ -17,26 +17,32 @@
 
 #include "SysImage.h"
 
+#include "Executor.h"
+#include <algorithm>
+#include <bits/ranges_algo.h>
+#include <limits.h>
 #include <utility>
 
-#include "Executor.h"
-
-SysImage::SysImage(Type type, std::filesystem::path path, bool is_deployed, bool is_active)
-        : type_{type}, path_{std::move(path)}, is_deployed_{is_deployed}, is_active_{is_active} {
-    auto [status, output] = Executor("/bin/unsquashfs")
-            .arg("-cat")
-            .arg("--quiet")
-            .arg("--no-progress")
-            .arg(path_)
-            .arg(".rlxos-version")
-            .output();
-    if (status != 0) {
-        throw std::runtime_error("invalid deployment image '" + path.string() + "' missing .rlxos-version file");
-    }
-    cache_ = output.erase(output.find_last_not_of('\n') + 1);
+SysImage::SysImage(
+        Type type, std::filesystem::path path, bool is_deployed, bool is_active)
+        : type_{type}, path_{std::move(path)}, is_deployed_{is_deployed},
+          is_active_{is_active} {
+    // auto [status, output] = Executor("/bin/unsquashfs")
+    //                                 .arg("-cat")
+    //                                 .arg("--quiet")
+    //                                 .arg("--no-progress")
+    //                                 .arg(path_)
+    //                                 .arg(".rlxos-version")
+    //                                 .output();
+    // if (status != 0) {
+    //     throw std::runtime_error("invalid deployment image '" + path.string()
+    //     +
+    //                              "' missing .rlxos-version file");
+    // }
+    // cache_ = output.erase(output.find_last_not_of('\n') + 1);
 
     std::stringstream os_release;
-    extract("/usr/lib/os-release", os_release);
+    extract("lib/os-release", os_release);
     for (std::string line; std::getline(os_release, line);) {
         auto idx = line.find_first_of('=');
         if (idx == std::string::npos) continue;
@@ -51,43 +57,53 @@ SysImage::SysImage(Type type, std::filesystem::path path, bool is_deployed, bool
     }
 
     if (auto version = release_info_.find("VERSION");
-        (version == release_info_.end() || version->second.empty())) {
+            (version == release_info_.end() || version->second.empty())) {
         throw std::runtime_error("no version in os-release");
     } else {
-        this->version_ = std::stoi(version->second);
+        try {
+            this->version_ = std::stoi(version->second);
+        } catch (...) { this->version_ = 0; }
     }
 }
 
-std::vector<std::string> SysImage::list_files(const std::filesystem::path &p) const {
+std::vector<std::string> SysImage::list_files(
+        const std::filesystem::path& p, bool recursive) const {
     auto files = std::vector<std::string>();
+    size_t depth = INT_MAX;
+    if (!recursive) {
+        depth = std::count(p.string().begin(), p.string().end(), '/') + 1;
+    }
     auto [status, output] = Executor("/bin/unsquashfs")
-            .arg("--quiet")
-            .arg("--no-progress")
-            .arg("-ls")
-            .arg(path_)
-            .arg(p)
-            .output();
+                                    .arg("-ls")
+                                    .arg("-max-depth")
+                                    .arg(std::to_string(depth))
+                                    .arg(path_)
+                                    .arg(p)
+                                    .output();
     if (status != 0) {
-        throw std::runtime_error("failed to list files '" + output + "': " + std::to_string(status));
+        throw std::runtime_error("failed to list files '" + output +
+                                 "': " + std::to_string(status));
     }
     std::stringstream ss(output);
+    auto path_prefix = std::filesystem::path("squashfs-root") / p;
     for (std::string line; std::getline(ss, line);) {
         if (line.empty()) continue;
-        files.emplace_back(line);
+        if (line.starts_with(path_prefix.string())) {
+            line = line.substr(path_prefix.string().length());
+            files.emplace_back(line);
+        }
     }
 
     return files;
 }
 
-void SysImage::extract(const std::filesystem::path &p, std::ostream &os) const {
+void SysImage::extract(const std::filesystem::path& p, std::ostream& os) const {
     auto status = Executor("/bin/unsquashfs")
-            .arg("--quiet")
-            .arg("--no-progress")
-            .arg("-cat")
-            .arg(path_)
-            .arg(p)
-            .start()
-            .wait(&os);
+                          .arg("-cat")
+                          .arg(path_)
+                          .arg(p)
+                          .start()
+                          .wait(&os);
     if (status != 0) {
         throw std::runtime_error("failed to extract file '" + p.string() + "'");
     }

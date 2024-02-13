@@ -10,16 +10,16 @@
 #define BLUE(mesg) COLOR(34, mesg)
 #define BOLD(mesg) COLOR(49, mesg)
 
-#define MESSAGE(header, mesg)                   \
-    if (getenv("PKGUPD_NO_MESSAGE") == nullptr) \
+#define MESSAGE(header, mesg)                                                  \
+    if (getenv("PKGUPD_NO_MESSAGE") == nullptr)                                \
         std::cout << header << BOLD(" ") << BOLD(mesg) << std::endl;
 
 #define ERROR(mesg) MESSAGE(RED("ERROR"), mesg)
 #define PROCESS(mesg) MESSAGE(GREEN("::"), mesg)
 #define INFO(mesg) MESSAGE(BLUE("::"), mesg)
 
-#define DEBUG(mesg)                             \
-    if (getenv("PKGUPD_NO_MESSAGE") == nullptr) \
+#define DEBUG(mesg)                                                            \
+    if (getenv("PKGUPD_NO_MESSAGE") == nullptr)                                \
         std::cout << "\033[2m     " << mesg << RESET << std::endl;
 
 #endif

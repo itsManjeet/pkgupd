@@ -1,24 +1,24 @@
 #include "common.h"
-
 #include <cstring>
 
 #define PKGUPD_DEFAULT_CONFIG "/etc/pkgupd.yml"
-#define PKGUPD_MODULES_LIST \
-  X(install)                \
-  X(remove)                 \
-  X(sync)                   \
-  X(info)                   \
-  X(search)                 \
-  X(update)                 \
-  X(depends)                \
-  X(trigger)                \
-  X(owner)                  \
-  X(build)                  \
-  X(cleanup)                \
-  X(ignite)                 \
-  X(sysroot)                \
-  X(cachefile)              \
-  X(autoremove)
+#define PKGUPD_MODULES_LIST                                                    \
+    X(install)                                                                 \
+    X(remove)                                                                  \
+    X(sync)                                                                    \
+    X(info)                                                                    \
+    X(search)                                                                  \
+    X(update)                                                                  \
+    X(depends)                                                                 \
+    X(trigger)                                                                 \
+    X(owner)                                                                   \
+    X(build)                                                                   \
+    X(cleanup)                                                                 \
+    X(ignite)                                                                  \
+    X(sysroot)                                                                 \
+    X(cachefile)                                                               \
+    X(autoremove)                                                              \
+    X(hijack)
 
 #include <functional>
 #include <iostream>
@@ -35,40 +35,39 @@ PKGUPD_MODULES_LIST
 PKGUPD_MODULES_LIST
 #undef X
 
-map<string, function<int(vector<string> const &, Engine *, Configuration *)>> MODULES = {
+map<string, function<int(vector<string> const&, Engine*, Configuration*)>>
+        MODULES = {
 #define X(id) {#id, PKGUPD_##id},
-        PKGUPD_MODULES_LIST
+                PKGUPD_MODULES_LIST
 #undef X
 };
 
 bool is_number(string s) {
-    for (auto c: s) {
-        if (!(isdigit(c) || c == '.')) {
-            return false;
-        }
+    for (auto c : s) {
+        if (!(isdigit(c) || c == '.')) { return false; }
     }
     return true;
 }
 
 bool is_bool(string s) { return s == "true" || s == "false"; }
 
-void print_help(char const *id) {
+void print_help(char const* id) {
     cout << id << " [TASK] <args>.." << endl
          << "PKGUPD is a system package manager for rlxos." << endl
          << "Perform system level package transcations like installation, "
             "upgradation and removal of packages.\n"
          << endl;
     int size = 10;
-#define X(id) \
-  if (strlen(#id) > size) size = strlen(#id);
+#define X(id)                                                                  \
+    if (strlen(#id) > size) size = strlen(#id);
     PKGUPD_MODULES_LIST
 #undef X
 
     cout << "Task:" << endl;
-#define X(id)                                                        \
-  cout << " - " << BLUE(#id) << std::string(size - strlen(#id), ' ') \
-       << "    ";                                                    \
-  PKGUPD_help_##id(cout, 2 + size + 4);
+#define X(id)                                                                  \
+    cout << " - " << BLUE(#id) << std::string(size - strlen(#id), ' ')         \
+         << "    ";                                                            \
+    PKGUPD_help_##id(cout, 2 + size + 4);
     PKGUPD_MODULES_LIST
 #undef X
 
@@ -80,7 +79,7 @@ void print_help(char const *id) {
          << endl;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     vector<string> args;
     Configuration configuration;
     std::optional<std::string> task;
@@ -129,8 +128,7 @@ int main(int argc, char **argv) {
     try {
         auto engine = Engine(configuration);
         return iter->second(args, &engine, &configuration);
-    }
-    catch (std::exception const &err) {
+    } catch (std::exception const& err) {
         ERROR(err.what());
         return 1;
     }

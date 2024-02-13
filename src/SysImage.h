@@ -19,9 +19,9 @@
 #define PKGUPD_SYSIMAGE_H
 
 #include <filesystem>
+#include <map>
 #include <utility>
 #include <vector>
-#include <map>
 
 class SysImage {
 public:
@@ -29,23 +29,22 @@ public:
         Image,
         Unknown,
     };
+
 private:
     Type type_{Type::Unknown};
     std::filesystem::path path_;
-    std::string cache_;
     int version_;
     bool is_active_{false};
     bool is_deployed_{false};
     std::map<std::string, std::string> release_info_;
 
 public:
-    SysImage(Type type, std::filesystem::path path, bool is_deployed = false, bool is_active = false);
+    SysImage(Type type, std::filesystem::path path, bool is_deployed = false,
+            bool is_active = false);
 
     [[nodiscard]] Type type() const { return type_; }
 
     [[nodiscard]] std::filesystem::path const& path() const { return path_; }
-
-    [[nodiscard]] std::string const& cache() const { return cache_; }
 
     [[nodiscard]] int version() const { return version_; }
 
@@ -55,10 +54,10 @@ public:
 
     void set_deployed(bool d = true) { is_deployed_ = d; }
 
-    [[nodiscard]] std::vector<std::string> list_files(const std::filesystem::path& p) const;
+    [[nodiscard]] std::vector<std::string> list_files(
+            const std::filesystem::path& p, bool recursive = false) const;
 
-    void extract(const std::filesystem::path& p, std::ostream &os) const;
-
+    void extract(const std::filesystem::path& p, std::ostream& os) const;
 };
 
 #endif

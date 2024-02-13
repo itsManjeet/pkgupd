@@ -1,23 +1,21 @@
 #include "common.h"
-
-
 #include <algorithm>
 #include <iostream>
 
 using namespace std;
 
-PKGUPD_MODULE_HELP (autoremove) {
+PKGUPD_MODULE_HELP(autoremove) {
     os << "Cleanup unneeded packages from system" << std::endl;
 }
 
-PKGUPD_MODULE (autoremove) {
+PKGUPD_MODULE(autoremove) {
     CHECK_ARGS(0);
     engine->load_system_database();
 
     auto is_required = [&](std::string id) -> bool {
-        for (auto const &[id, info]: engine->list_installed()) {
-            if (std::find(info.depends.begin(), info.depends.end(),
-                          id) != info.depends.end()) {
+        for (auto const& [id, info] : engine->list_installed()) {
+            if (std::find(info.depends.begin(), info.depends.end(), id) !=
+                    info.depends.end()) {
                 return true;
             }
         }
@@ -26,10 +24,8 @@ PKGUPD_MODULE (autoremove) {
 
     PROCESS("checking for unneeded packages");
     std::vector<InstalledMetaInfo> installed_meta_infos;
-    for (auto const &[id, installed_meta_info]: engine->list_installed()) {
-        if (!installed_meta_info.dependency) {
-            continue;
-        }
+    for (auto const& [id, installed_meta_info] : engine->list_installed()) {
+        if (!installed_meta_info.dependency) { continue; }
         if (!is_required(id)) {
             installed_meta_infos.push_back(installed_meta_info);
         }
@@ -42,15 +38,16 @@ PKGUPD_MODULE (autoremove) {
 
     INFO("Found " << BLUE(to_string(installed_meta_infos.size()))
                   << " unneeded packages");
-    for (auto const &installed_meta_info: installed_meta_infos) {
+    for (auto const& installed_meta_info : installed_meta_infos) {
         std::cout << "- " << installed_meta_info.id << std::endl;
     }
 
-    if (!ask_user("You you want to remove the above unneeded packages", config)) {
+    if (!ask_user(
+                "You you want to remove the above unneeded packages", config)) {
         ERROR("User cancelled the operation");
         return 1;
     }
-    for (auto const &installed_meta_info: installed_meta_infos) {
+    for (auto const& installed_meta_info : installed_meta_infos) {
         PROCESS("uninstalling " << BLUE(installed_meta_info.id));
         engine->uninstall(installed_meta_info);
     }

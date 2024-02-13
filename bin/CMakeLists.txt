@@ -14,16 +14,18 @@ add_executable(${PROJECT_NAME}
         pkgupd-build.cpp
         pkgupd-cachefile.cpp
         pkgupd-ignite.cpp
+        pkgupd-hijack.cpp
         ignite/ignite_common.h
         ignite/ignite-status.cpp
         ignite/ignite-build.cpp
         ignite/ignite-checkout.cpp
         ignite/ignite-meta.cpp
-        
+
         pkgupd-sysroot.cpp
         sysroot/sysroot_common.h
         sysroot/sysroot-list.cpp
+        sysroot/sysroot-upboot.cpp
 
 )
 
-target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_LIB -static)
+target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_LIB)

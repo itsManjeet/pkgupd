@@ -1,8 +1,8 @@
 #ifndef PKGUPD_ARCHIVE_MANAGER_HXX
 #define PKGUPD_ARCHIVE_MANAGER_HXX
 
-#include "defines.hxx"
 #include "MetaInfo.h"
+#include "defines.hxx"
 
 /**
  * This class represent rlxos compressed Package,
@@ -16,25 +16,29 @@ public:
      * @param filepath path to the file in Package (must be started from ./)
      * @return content of file
      */
-    static void get(const std::filesystem::path &filepath, const std::string &input_path,
-                    std::string &output);
+    static void get(const std::filesystem::path& filepath,
+            const std::string& input_path, std::string& output);
 
-    static void extract(const std::filesystem::path &filepath, const std::string &input_path,
-                        const std::filesystem::path &output_path);
+    static void extract(const std::filesystem::path& filepath,
+            const std::string& input_path,
+            const std::filesystem::path& output_path);
 
-    static MetaInfo info(const std::filesystem::path &filepath);
+    static MetaInfo info(const std::filesystem::path& filepath);
 
     /**
      * List all files in the archive
      */
-    static void list(const std::filesystem::path &filepath, std::vector<std::string> &);
+    static void list(
+            const std::filesystem::path& filepath, std::vector<std::string>&);
 
-    static void extract(const std::filesystem::path &filepath, const std::string &input_path,
-                        std::vector<std::string> &files_list);
+    static void extract(const std::filesystem::path& filepath,
+            const std::string& input_path,
+            std::vector<std::string>& files_list);
 
-    static void compress(const std::filesystem::path &filepath, const std::string &input_path);
+    static void compress(const std::filesystem::path& filepath,
+            const std::string& input_path);
 
-    static bool is_archive(const std::filesystem::path &filepath);
+    static bool is_archive(const std::filesystem::path& filepath);
 };
 
 #endif

@@ -3,7 +3,7 @@ add_library(${PROJECT_NAME}_LIB STATIC
         Colors.h
         Configuration.cpp Configuration.h
         defines.hxx
-        Downloader.cpp Downloader.h
+        Http.cpp Http.h
         Engine.cpp Engine.h
         Executor.h Executor.cpp
         MetaInfo.h MetaInfo.cpp
@@ -24,4 +24,6 @@ add_library(${PROJECT_NAME}_LIB STATIC
         SysUpgrade.cpp
         SysUpgrade.h
 )
-target_link_libraries(${PROJECT_NAME}_LIB yaml-cpp)
+target_link_libraries(${PROJECT_NAME}_LIB
+        yaml-cpp::yaml-cpp
+        ${CURL})

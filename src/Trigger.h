@@ -1,8 +1,8 @@
 #ifndef _PKGUPD_TRIGGERER_HH_
 #define _PKGUPD_TRIGGERER_HH_
 
-#include "defines.hxx"
 #include "SystemDatabase.h"
+#include "defines.hxx"
 
 class Triggerer {
 public:
@@ -28,17 +28,17 @@ protected:
 
     std::string regex(type t);
 
-    type get(std::string const &path);
+    type get(std::string const& path);
 
     std::tuple<bool, std::string> exec(type t);
 
-    std::vector<type> get(std::vector<std::string> const &files_list);
+    std::vector<type> get(std::vector<std::string> const& files_list);
 
 public:
-    Triggerer() {
-    }
+    Triggerer() {}
 
-    bool trigger(std::vector<std::pair<InstalledMetaInfo, std::vector<std::string>>> const &infos);
+    bool trigger(std::vector<std::pair<InstalledMetaInfo,
+                    std::vector<std::string>>> const& infos);
 
     bool trigger();
 };
