@@ -19,11 +19,12 @@ add_library(${PROJECT_NAME}_LIB STATIC
         Container.h
         Sysroot.cpp
         Sysroot.h
-        SysImage.cpp
-        SysImage.h
         SysUpgrade.cpp
         SysUpgrade.h
+        Deployment.cpp Deployment.h
+        Error.h
 )
 target_link_libraries(${PROJECT_NAME}_LIB
         yaml-cpp::yaml-cpp
-        ${CURL})
+        ${CURL}
+        OSTree)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Manjeet Singh <itsmanjeet1998@gmail.com>.
+ * Copyright (c) 2024 Manjeet Singh <itsmanjeet1998@gmail.com>.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,18 +15,16 @@
  *
  */
 
-#ifndef PKGUPD_SYSROOT_COMMON_H
-#define PKGUPD_SYSROOT_COMMON_H
+#ifndef UNLOCKED_COMMON_H
+#define UNLOCKED_COMMON_H
 
-#include "../../src/Configuration.h"
-#include "../../src/Sysroot.h"
 #include "../common.h"
 
-#define PKGUPD_SYSROOT_MODULE(id)                                              \
-    extern "C" int PKGUPD_SYSROOT_##id(std::vector<std::string> const& args,   \
-            Sysroot* sysroot, Configuration* config)
+#define PKGUPD_UNLOCKED_MODULE(id)                                             \
+    extern "C" int PKGUPD_UNLOCKED_##id(std::vector<std::string> const& args,  \
+            Engine* engine, Configuration* config)
 
-#define PKGUPD_SYSROOT_MODULE_HELP(id)                                         \
-    extern "C" void PKGUPD_SYSROOT_help_##id(std::ostream& os, int padding)
+#define PKGUPD_UNLOCKED_MODULE_HELP(id)                                        \
+    extern "C" void PKGUPD_UNLOCKED_help_##id(std::ostream& os, int padding)
 
-#endif // PKGUPD_SYSROOT_COMMON_H
+#endif // UNLOCKED_COMMON_H

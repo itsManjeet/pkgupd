@@ -21,11 +21,18 @@ PKGUPD_SYSROOT_MODULE_HELP(list) { os << "list all deployments" << std::endl; }
 
 PKGUPD_SYSROOT_MODULE(list) {
     sysroot->reload_deployments();
-    for (auto const& i : sysroot->deployments()) {
-        std::cout << (i.is_active() ? "*" : "-") << " " << sysroot->osname()
-                  << "  version  : " << i.version() << '\n'
-                  << "  deployed : " << (i.is_deployed() ? "YES" : "NO")
-                  << '\n';
+    for (auto const& i : sysroot->deployments) {
+        std::cout << (i.is_active ? "*" : "-") << " " << sysroot->osname << " "
+                  << i.channel << '\n'
+                  << "  revision  : " << i.revision << '\n'
+                  << "  refspec   : " << i.refspec << std::endl;
+        if (!i.extensions.empty()) {
+            std::cout << "  extensons : " << i.extensions.size() << '\n';
+            for (auto const& [id, revision] : i.extensions) {
+                std::cout << "   - " << id << " : " << revision << '\n';
+            }
+        }
+        std::cout << std::endl;
     }
     return 0;
 }

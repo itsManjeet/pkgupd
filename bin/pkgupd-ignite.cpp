@@ -34,7 +34,7 @@ PKGUPD_IGNITE_MODULES_LIST
 #undef X
 
 std::map<std::string, std::function<int(std::vector<std::string> const&,
-                              Engine*, Ignite*, Configuration*)>>
+                              Ignite*, Configuration*)>>
         IGNITE_MODULES = {
 #define X(id) {#id, PKGUPD_IGNITE_##id},
                 PKGUPD_IGNITE_MODULES_LIST
@@ -84,5 +84,5 @@ PKGUPD_MODULE(ignite) {
             config->get<std::string>("ignite.cache", ""));
     ignite.load();
 
-    return iter->second(sub_args, engine, &ignite, config);
+    return iter->second(sub_args, &ignite, config);
 }

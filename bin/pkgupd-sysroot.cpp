@@ -21,7 +21,7 @@
 
 #define PKGUPD_SYSROOT_MODULES_LIST                                            \
     X(list)                                                                    \
-    X(upboot)
+    X(upgrade)
 
 #define X(id) PKGUPD_SYSROOT_MODULE(id);
 PKGUPD_SYSROOT_MODULES_LIST
@@ -32,7 +32,7 @@ PKGUPD_SYSROOT_MODULES_LIST
 #undef X
 
 std::map<std::string, std::function<int(std::vector<std::string> const&,
-                              Engine*, Sysroot*, Configuration*)>>
+                              Sysroot*, Configuration*)>>
         SYSROOT_MODULES = {
 #define X(id) {#id, PKGUPD_SYSROOT_##id},
                 PKGUPD_SYSROOT_MODULES_LIST
@@ -71,8 +71,12 @@ PKGUPD_MODULE(sysroot) {
     }
     auto sub_args = std::vector<std::string>(args.begin() + 1, args.end());
 
+    if (unshare(CLONE_NEWNS) != 0) {
+        throw std::runtime_error(
+                "failed to setup namespaces: " + std::string(strerror(errno)));
+    }
     auto sysroot = Sysroot(config->get<std::string>("osname", "rlxos"),
             config->get<std::string>("sysroot", "/"));
 
-    return iter->second(sub_args, engine, &sysroot, config);
+    return iter->second(sub_args, &sysroot, config);
 }

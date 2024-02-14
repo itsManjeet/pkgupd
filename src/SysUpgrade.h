@@ -33,17 +33,15 @@ public:
 private:
     Sysroot* sysroot{nullptr};
 
+    static std::tuple<bool, std::string, std::string> get_changelog(
+            OstreeRepo* repo, const std::string& refspec,
+            const std::string& revision);
+
 public:
     explicit SysUpgrade(Sysroot* sysroot) : sysroot{sysroot} {}
 
-    void create_sign(const std::filesystem::path& path,
-            const std::filesystem::path& sign_path);
-
-    std::optional<UpdateInfo> update(
+    std::optional<UpdateInfo> update(const Deployment& deployment,
             const std::string& url, bool dry_run = false);
-
-    int compare(const std::filesystem::path& file,
-            const std::filesystem::path& sign, std::vector<int>& blocks);
 };
 
 #endif // PKGUPD_SYSUPGRADE_H

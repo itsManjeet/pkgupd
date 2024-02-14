@@ -23,7 +23,7 @@
 
 #define PKGUPD_IGNITE_MODULE(id)                                               \
     extern "C" int PKGUPD_IGNITE_##id(std::vector<std::string> const& args,    \
-            Engine* engine, Ignite* ignite, Configuration* config)
+            Ignite* ignite, Configuration* config)
 
 #define PKGUPD_IGNITE_MODULE_HELP(id)                                          \
     extern "C" void PKGUPD_IGNITE_help_##id(std::ostream& os, int padding)

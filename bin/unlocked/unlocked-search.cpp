@@ -1,12 +1,14 @@
-#include "common.h"
+#include "unlocked_common.h"
 #include <algorithm>
 #include <iostream>
 
 using namespace std;
 
-PKGUPD_MODULE_HELP(search) { os << "Search package from repository" << endl; }
+PKGUPD_UNLOCKED_MODULE_HELP(search) {
+    os << "Search package from repository" << endl;
+}
 
-PKGUPD_MODULE(search) {
+PKGUPD_UNLOCKED_MODULE(search) {
     CHECK_ARGS(1);
 
     engine->sync(false);

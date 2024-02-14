@@ -3,22 +3,9 @@
 
 #define PKGUPD_DEFAULT_CONFIG "/etc/pkgupd.yml"
 #define PKGUPD_MODULES_LIST                                                    \
-    X(install)                                                                 \
-    X(remove)                                                                  \
-    X(sync)                                                                    \
-    X(info)                                                                    \
-    X(search)                                                                  \
-    X(update)                                                                  \
-    X(depends)                                                                 \
-    X(trigger)                                                                 \
-    X(owner)                                                                   \
-    X(build)                                                                   \
-    X(cleanup)                                                                 \
     X(ignite)                                                                  \
     X(sysroot)                                                                 \
-    X(cachefile)                                                               \
-    X(autoremove)                                                              \
-    X(hijack)
+    X(unlocked)
 
 #include <functional>
 #include <iostream>
@@ -35,10 +22,9 @@ PKGUPD_MODULES_LIST
 PKGUPD_MODULES_LIST
 #undef X
 
-map<string, function<int(vector<string> const&, Engine*, Configuration*)>>
-        MODULES = {
+map<string, function<int(vector<string> const&, Configuration*)>> MODULES = {
 #define X(id) {#id, PKGUPD_##id},
-                PKGUPD_MODULES_LIST
+        PKGUPD_MODULES_LIST
 #undef X
 };
 
@@ -126,8 +112,7 @@ int main(int argc, char** argv) {
     }
 
     try {
-        auto engine = Engine(configuration);
-        return iter->second(args, &engine, &configuration);
+        return iter->second(args, &configuration);
     } catch (std::exception const& err) {
         ERROR(err.what());
         return 1;

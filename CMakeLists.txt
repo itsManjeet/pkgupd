@@ -8,10 +8,12 @@ set(POSITION_INDEPENDENT_CODE TRUE)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
+find_package(OSTree)
 
 find_library(CURL curl REQUIRED)
-find_package(yaml-cpp)
-if (NOT yaml-cpp_FOUND)
+# find_package(yaml-cpp)
+# if (NOT yaml-cpp_FOUND)
     include(FetchContent)
     FetchContent_Declare(
             yaml-cpp
@@ -24,7 +26,7 @@ if (NOT yaml-cpp_FOUND)
         FetchContent_Populate(yaml-cpp)
         add_subdirectory(${yaml-cpp_SOURCE_DIR} ${yaml-cpp_BINARY_DIR})
     endif ()
-endif ()
+# endif ()
 
 include_directories(include)
 add_subdirectory(src)

@@ -1,4 +1,4 @@
-#include "common.h"
+#include "unlocked_common.h"
 #include <filesystem>
 #include <ranges>
 
@@ -8,7 +8,7 @@ namespace fs = std::filesystem;
 
 using namespace std;
 
-PKGUPD_MODULE_HELP(update) {
+PKGUPD_UNLOCKED_MODULE_HELP(update) {
     os << "Update non-system packages of system" << endl
        << PADDING << " " << BOLD("Options:") << endl
        << PADDING << "  - system.packages=" << BOLD("<list>")
@@ -18,7 +18,7 @@ PKGUPD_MODULE_HELP(update) {
        << endl;
 }
 
-PKGUPD_MODULE(update) {
+PKGUPD_UNLOCKED_MODULE(update) {
     engine->load_system_database();
 
     PROCESS("syncing remote");

@@ -18,37 +18,26 @@
 #ifndef PKGUPD_SYSROOT_H
 #define PKGUPD_SYSROOT_H
 
-#include "SysImage.h"
+#include "Deployment.h"
 #include <filesystem>
-#include <map>
 #include <optional>
+#include <ostree.h>
 #include <vector>
 
-class Sysroot {
-private:
-    std::filesystem::path boot_dir_, root_dir_, deployment_dir_;
-    std::vector<SysImage> deployments_;
-    std::string active_deployment_;
-    std::string osname_;
+struct Sysroot {
+    std::filesystem::path root_dir;
+    std::vector<Deployment> deployments;
+    std::string osname;
+    OstreeSysroot* sysroot{nullptr};
+    OstreeRepo* repo{nullptr};
 
-public:
     explicit Sysroot(std::string osname, std::filesystem::path root_dir = "/");
+
+    virtual ~Sysroot();
 
     void reload_deployments();
 
-    void deploy(const SysImage& deployment);
-
-    [[nodiscard]] std::vector<SysImage> const& deployments() const {
-        return deployments_;
-    }
-
     void generate_boot_config(std::initializer_list<std::string> kargs);
-
-    const std::string& osname() const { return osname_; }
-
-    const std::filesystem::path& deployment_dir() const {
-        return deployment_dir_;
-    }
 };
 
 #endif

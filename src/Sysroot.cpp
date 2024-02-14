@@ -17,147 +17,62 @@
 
 #include "Sysroot.h"
 
+#include "Error.h"
 #include "defines.hxx"
 #include <algorithm>
-#include <fstream>
+#include <glib.h>
 #include <utility>
 
 Sysroot::Sysroot(std::string osname, std::filesystem::path root_dir)
-        : osname_{std::move(osname)}, root_dir_{std::move(root_dir)} {
-    boot_dir_ = root_dir_ / "boot";
-    deployment_dir_ = root_dir_ / "system" / "deploy";
+        : root_dir{std::move(root_dir)}, osname{std::move(osname)} {
+    GError* error = nullptr;
+    const std::unique_ptr<GFile, decltype(&g_object_unref)> file(
+            g_file_new_for_path(this->root_dir.c_str()), g_object_unref);
+    sysroot = ostree_sysroot_new(file.get());
+    ostree_sysroot_initialize_with_mount_namespace(sysroot, nullptr, &error);
+
+    if (!ostree_sysroot_load(sysroot, nullptr, &error)) { throw Error(error); }
+
+    if (!ostree_sysroot_get_repo(sysroot, &repo, nullptr, &error)) {
+        throw Error(error);
+    }
 
     reload_deployments();
-    std::ifstream reader("/proc/mount");
-    for (std::string line; std::getline(reader, line);) {
-        std::stringstream ss(line);
-        std::string source, target, filesystem, options;
-        ss >> source >> target >> filesystem >> options;
-        if (target == (root_dir_ / "usr").string()) {
-            active_deployment_ = source;
-            break;
-        }
-    }
+}
+
+Sysroot::~Sysroot() {
+    ostree_sysroot_unload(sysroot);
+
+    if (repo) g_object_unref(repo);
+    repo = nullptr;
+
+    // if (sysroot) g_object_unref(sysroot);
+    // sysroot = nullptr;
 }
 
 void Sysroot::reload_deployments() {
-    deployments_.clear();
-    if (!std::filesystem::exists(deployment_dir_)) {
-        throw std::runtime_error("no deployment found");
-    }
-    for (auto const& image :
-            std::filesystem::directory_iterator(deployment_dir_)) {
-        if (image.is_directory()) continue;
-        if (image.path().has_extension() && image.path().extension() == ".tmp")
-            continue;
-        try {
-            auto deployment =
-                    SysImage(SysImage::Type::Image, image.path(), false,
-                            (!active_deployment_.empty() &&
-                                    active_deployment_ == image.path()));
-            if (std::filesystem::exists(boot_dir_ /
-                                        std::to_string(deployment.version()) /
-                                        "kernel") &&
-                    std::filesystem::exists(
-                            boot_dir_ / std::to_string(deployment.version()) /
-                            "initrd")) {
-                deployment.set_deployed();
-            }
-            deployments_.emplace_back(deployment);
-        } catch (const std::exception& exception) {
-            ERROR("skipping " << image << ": " << exception.what());
-        }
-    }
-    std::sort(deployments_.begin(), deployments_.end(),
-            [](const SysImage& a, const SysImage& b) -> bool {
-                return a.version() < a.version();
-            });
-}
+    deployments.clear();
 
-void Sysroot::deploy(const SysImage& sys_image) {
-    DEBUG("VERSION: " << sys_image.version());
+    std::unique_ptr<OstreeDeployment, decltype(&g_object_unref)>
+            booted_deployment(ostree_sysroot_get_booted_deployment(sysroot),
+                    g_object_unref);
 
-    PROCESS("Checking kernel");
-    auto kernel_list = sys_image.list_files("lib/modules/");
-    if (kernel_list.empty()) {
-        throw std::runtime_error("no kernel image found");
+    if (booted_deployment == nullptr) {
+        throw std::runtime_error("no booted deployment found");
     }
-    auto kernel_version = kernel_list.front();
-    DEBUG("VERSION: " << kernel_version);
 
-    auto deploy_boot_dir = boot_dir_ / std::to_string(sys_image.version());
-    std::filesystem::create_directories(deploy_boot_dir);
-    {
-        PROCESS("Installing kernel")
-        std::ofstream ks(deploy_boot_dir / "kernel", std::ios_base::binary);
-        sys_image.extract("lib/modules/" + kernel_version + "/bzImage", ks);
-    }
-    {
-        PROCESS("Installing initial ramdisk")
-        std::ofstream is(deploy_boot_dir / "initrd", std::ios_base::binary);
-        sys_image.extract("lib/modules/" + kernel_version + "/initramfs", is);
-    }
-    {
-        PROCESS("Installing system image")
-        auto target_path = deployment_dir_ / sys_image.path().filename();
-        if (target_path != sys_image.path()) {
-            std::filesystem::copy_file(sys_image.path(), target_path,
-                    std::filesystem::copy_options::update_existing);
+    std::unique_ptr<GPtrArray, void (*)(GPtrArray*)> deployment_list(
+            ostree_sysroot_get_deployments(sysroot),
+            +[](GPtrArray* array) -> void { g_ptr_array_free(array, true); });
+    for (auto i = 0; i < deployment_list->len; i++) {
+        deployments.push_back(Deployment(
+                reinterpret_cast<OstreeDeployment*>(deployment_list->pdata[i]),
+                repo));
+
+        if (ostree_deployment_equal(
+                    deployments.back().backend, booted_deployment.get())) {
+            deployments.back().is_active = true;
         }
     }
 }
-
-void Sysroot::generate_boot_config(std::initializer_list<std::string> kargs) {
-    auto grub_config_path = boot_dir_ / "grub" / "grub-entries.cfg";
-    std::ofstream grub_writer(grub_config_path);
-    if (!grub_writer.is_open()) {
-        throw std::runtime_error("failed to open " + grub_config_path.string());
-    }
-    std::string kargs_str;
-    for (auto const& i : kargs) {
-        if (i.starts_with("rd.image=")) continue;
-        kargs_str += " " + i;
-    }
-
-    auto boot_loader_entries = boot_dir_ / "loader" / "entries";
-    bool gen_boot_loader_specifications =
-            std::filesystem::exists(boot_loader_entries);
-
-    if (gen_boot_loader_specifications) {
-        for (auto const& i :
-                std::filesystem::directory_iterator(boot_loader_entries)) {
-            if (i.is_regular_file()) {
-                auto filename = i.path().filename();
-                if (filename.has_extension() &&
-                        filename.extension() == ".conf" &&
-                        filename.string().starts_with(osname_ + "-")) {
-                    std::filesystem::remove(i.path());
-                }
-            }
-        }
-    }
-    int count = 1;
-    for (auto const& deployment : deployments_) {
-        grub_writer << "menuentry '" << osname_ << " " << deployment.version()
-                    << "' {\n"
-                    << "   linux /boot/" << deployment.version()
-                    << "/kernel rd.image=" << deployment.version() << kargs_str
-                    << "\n"
-                    << "   initrd /boot/" << deployment.version() << "/initrd\n"
-                    << "}\n";
-        if (gen_boot_loader_specifications) {
-            std::ofstream entry_writer(
-                    boot_loader_entries /
-                    (osname_ + "-" + std::to_string(count++) + ".conf"));
-            entry_writer << "title " << osname_ << " " << deployment.version()
-                         << '\n'
-                         << "version " << deployment.version() << '\n'
-                         << "options rd.image=" << deployment.version()
-                         << kargs_str << '\n'
-                         << "linux /boot/" << deployment.version() << "/kernel"
-                         << '\n'
-                         << "initrd /boot/" << deployment.version()
-                         << "/initrd\n";
-        }
-    }
-}
+void Sysroot::generate_boot_config(std::initializer_list<std::string> kargs) {}
