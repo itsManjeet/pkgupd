@@ -12,8 +12,8 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 find_package(OSTree)
 
 find_library(CURL curl REQUIRED)
-# find_package(yaml-cpp)
-# if (NOT yaml-cpp_FOUND)
+find_package(yaml-cpp)
+if (NOT yaml-cpp_FOUND)
     include(FetchContent)
     FetchContent_Declare(
             yaml-cpp
@@ -26,7 +26,7 @@ find_library(CURL curl REQUIRED)
         FetchContent_Populate(yaml-cpp)
         add_subdirectory(${yaml-cpp_SOURCE_DIR} ${yaml-cpp_BINARY_DIR})
     endif ()
-# endif ()
+endif ()
 
 include_directories(include)
 add_subdirectory(src)
