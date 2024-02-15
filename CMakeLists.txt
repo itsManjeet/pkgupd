@@ -13,25 +13,17 @@ find_package(OSTree)
 
 find_library(CURL curl REQUIRED)
 find_package(yaml-cpp)
-if (NOT yaml-cpp_FOUND)
-    include(FetchContent)
-    FetchContent_Declare(
-            yaml-cpp
-            GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-            GIT_TAG yaml-cpp-0.7.0
-    )
-    FetchContent_GetProperties(yaml-cpp)
-    if (NOT yaml-cpp_POPULATED)
-        message(STATUS "Fetching yaml-cpp...")
-        FetchContent_Populate(yaml-cpp)
-        add_subdirectory(${yaml-cpp_SOURCE_DIR} ${yaml-cpp_BINARY_DIR})
-    endif ()
-endif ()
+
 
 include_directories(include)
 add_subdirectory(src)
 add_subdirectory(bin)
 
+install(TARGETS ${PROJECT_NAME}_LIB ${PROJECT_NAME}
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib)
 
-install(TARGETS pkgupd
-        RUNTIME DESTINATION bin)
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/src
+        DESTINATION include
+        FILES_MATCHING PATTERN "*.h")

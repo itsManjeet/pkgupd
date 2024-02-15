@@ -257,9 +257,8 @@ std::optional<SysUpgrade::UpdateInfo> SysUpgrade::update(
                 throw Error(error);
 
             std::unique_ptr<OstreeMutableTree, decltype(&g_object_unref)>
-                    mutableTree(
-                            ostree_mutable_tree_new_from_commit(sysroot->repo,
-                                    deployment.base_revision.c_str(), &error),
+                    mutableTree(ostree_mutable_tree_new_from_commit(
+                                        sysroot->repo, refs[0].c_str(), &error),
                             g_object_unref);
             if (mutableTree == nullptr) throw Error(error);
 

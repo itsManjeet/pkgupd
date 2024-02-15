@@ -1,4 +1,4 @@
-add_library(${PROJECT_NAME}_LIB STATIC
+add_library(${PROJECT_NAME}_LIB SHARED
         ArchiveManager.cpp ArchiveManager.cpp
         Colors.h
         Configuration.cpp Configuration.h
@@ -25,6 +25,6 @@ add_library(${PROJECT_NAME}_LIB STATIC
         Error.h
 )
 target_link_libraries(${PROJECT_NAME}_LIB
-        yaml-cpp::yaml-cpp
+        ${YAML_CPP_LIBRARIES}
         ${CURL}
         OSTree)
