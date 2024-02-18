@@ -326,9 +326,24 @@ void Builder::compile_source(const std::filesystem::path& build_root,
                     continue;
                 }
 
-                if (mime_type.starts_with("text/") ||
-                        mime_type.ends_with("symlink"))
+                std::vector<std::string> mime_to_strip;
+                if (config.node["strip-mimetype"]) {
+                    for (auto const& i : config.node["strip-mimetype"]) {
+                        mime_to_strip.emplace_back(i.as<std::string>());
+                    }
+                }
+
+                if (build_info.config.node["strip-mimetype"]) {
+                    for (auto const& i :
+                            build_info.config.node["strip-mimetype"]) {
+                        mime_to_strip.emplace_back(i.as<std::string>());
+                    }
+                }
+
+                if (std::find(mime_to_strip.begin(), mime_to_strip.end(),
+                            mime_type) == mime_to_strip.end()) {
                     continue;
+                }
 
                 // Some .so are GNU linker scripts, skip them
                 DEBUG("MIME_TYPE: '" << mime_type << "'")
