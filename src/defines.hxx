@@ -18,6 +18,6 @@
 
 #define DEFAULT_ROOT_DIR "/"
 #define DEFAULT_CACHE_DIR "/var/cache/pkgupd"
-#define DEFAULT_DATA_DIR "/var/lib/pkgupd/manifest"
+#define DEFAULT_DATA_DIR "/usr/share/pkgupd/manifest"
 
 #endif
