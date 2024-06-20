@@ -36,6 +36,8 @@ public:
 
     void load();
 
+    std::filesystem::path const& get_cache_path() const { return cache_path; }
+
     std::string hash(const Builder::BuildInfo& build_info);
 
     std::filesystem::path cachefile(const Builder::BuildInfo& build_info);

@@ -15,8 +15,8 @@
  *
  */
 
-#include "../../src/Executor.h"
-#include "../../src/json.h"
+#include "../../Executor.h"
+#include "../../json.h"
 #include "ignite_common.h"
 #include <fstream>
 
@@ -26,13 +26,12 @@ PKGUPD_IGNITE_MODULE_HELP(meta) {
 
 PKGUPD_IGNITE_MODULE(meta) {
     CHECK_ARGS(1);
+    
+    auto channel = args[0];
 
     nlohmann::json data;
-
-    auto target_path = std::filesystem::path(args[0]).parent_path();
-    std::filesystem::remove_all(target_path / "apps");
-    std::filesystem::create_directories(target_path / "apps");
-
+    auto target_path = ignite->get_cache_path();
+    
     for (auto [path, build_info] : ignite->get_pool()) {
         build_info.cache = ignite->hash(build_info);
         auto cache_file = ignite->cachefile(build_info);
@@ -54,19 +53,12 @@ PKGUPD_IGNITE_MODULE(meta) {
                     {"integration", build_info.integration},
                     {"backup", build_info.backup},
             });
-            if (type == "app") {
-                PROCESS("Adding App " << data.back()["id"].get<std::string>());
-                Executor("/bin/tar")
-                        .arg("-xf")
-                        .arg(cache_file)
-                        .arg("-C")
-                        .arg(target_path / "apps")
-                        .execute();
-            }
         }
     }
+    
+    PROCESS("Writing metadata for " << data.size() << " package(s)");
 
-    std::ofstream writer(args[0]);
+    std::ofstream writer(target_path / channel);
     writer << data;
     return 0;
 }

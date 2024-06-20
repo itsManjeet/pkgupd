@@ -1,8 +1,8 @@
 #ifndef PKGUPD_COMMON_HH
 #define PKGUPD_COMMON_HH
 
-#include "../src/Configuration.h"
-#include "../src/Engine.h"
+#include "../Configuration.h"
+#include "../Engine.h"
 #include <iostream>
 
 static inline bool ask_user(const std::string& mesg, Configuration* config) {

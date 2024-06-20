@@ -2,7 +2,6 @@
 
 #include <arpa/inet.h>
 #include <cstring>
-#include <format>
 #include <fstream>
 #include <netdb.h>
 #include <regex>

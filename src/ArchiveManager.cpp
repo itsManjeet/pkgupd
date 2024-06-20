@@ -86,7 +86,6 @@ void ArchiveManager::extract(const std::filesystem::path& filepath,
                          .arg(filepath)
                          .arg("-C")
                          .arg(output_path)
-                         .arg("./")
                          .start()
                          .wait(&output);
 

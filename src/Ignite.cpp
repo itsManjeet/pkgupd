@@ -248,6 +248,7 @@ Container Ignite::setup_container(const Builder::BuildInfo& build_info,
                             {"/cache", cache_path / "cache"},
                             {"/files", project_path / "files"},
                             {"/patches", project_path / "patches"},
+                            {"/rlxos", project_path},
 
                     },
             .capabilites = capabilities,

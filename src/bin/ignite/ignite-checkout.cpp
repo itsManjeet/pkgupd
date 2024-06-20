@@ -15,7 +15,7 @@
  *
  */
 
-#include "../../src/ArchiveManager.h"
+#include "../../ArchiveManager.h"
 #include "ignite_common.h"
 
 PKGUPD_IGNITE_MODULE_HELP(checkout) {

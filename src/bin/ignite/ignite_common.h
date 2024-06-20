@@ -18,7 +18,7 @@
 #ifndef PKGUPD_IGNITE_COMMON_H
 #define PKGUPD_IGNITE_COMMON_H
 
-#include "../../src/Ignite.h"
+#include "../../Ignite.h"
 #include "../common.h"
 
 #define PKGUPD_IGNITE_MODULE(id)                                               \
