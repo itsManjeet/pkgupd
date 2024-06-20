@@ -1,6 +1,6 @@
-#include "unlocked_common.h"
+#include "common.h"
 
-PKGUPD_UNLOCKED_MODULE_HELP(install) {
+PKGUPD_MODULE_HELP(install) {
     os << "Install package from repository" << std::endl
        << PADDING << " " << BOLD("Options:") << std::endl
        << PADDING << "  - installer.depends=" << BOLD("<bool>")
@@ -17,7 +17,7 @@ PKGUPD_UNLOCKED_MODULE_HELP(install) {
        << std::endl;
 }
 
-PKGUPD_UNLOCKED_MODULE(install) {
+PKGUPD_MODULE(install) {
     engine->sync(false);
     engine->load_system_database();
 

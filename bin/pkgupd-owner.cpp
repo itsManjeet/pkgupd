@@ -1,12 +1,12 @@
-#include "unlocked_common.h"
+#include "common.h"
 #include <algorithm>
 #include <fstream>
 
-PKGUPD_UNLOCKED_MODULE_HELP(owner) {
+PKGUPD_MODULE_HELP(owner) {
     os << "Search the package who provide specified file." << std::endl;
 }
 
-PKGUPD_UNLOCKED_MODULE(owner) {
+PKGUPD_MODULE(owner) {
     CHECK_ARGS(1);
     engine->load_system_database();
     std::filesystem::path filepath = args[0];

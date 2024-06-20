@@ -1,9 +1,9 @@
-#include "unlocked_common.h"
+#include "common.h"
 #include <iostream>
 
 using namespace std;
 
-PKGUPD_UNLOCKED_MODULE_HELP(depends) {
+PKGUPD_MODULE_HELP(depends) {
     os << "List all the dependent packages required" << endl
        << PADDING << " " << BOLD("Options:") << endl
        << PADDING << "  - depends.all=" << BOLD("<bool>")
@@ -13,7 +13,7 @@ PKGUPD_UNLOCKED_MODULE_HELP(depends) {
        << endl;
 }
 
-PKGUPD_UNLOCKED_MODULE(depends) {
+PKGUPD_MODULE(depends) {
     engine->load_system_database();
 
     std::vector<MetaInfo> meta_infos;

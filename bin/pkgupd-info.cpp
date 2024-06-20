@@ -1,14 +1,14 @@
-#include "unlocked_common.h"
+#include "common.h"
 #include <fstream>
 #include <iostream>
 
 using namespace std;
 
-PKGUPD_UNLOCKED_MODULE_HELP(info) {
+PKGUPD_MODULE_HELP(info) {
     os << "Display package information of specified package" << endl;
 }
 
-PKGUPD_UNLOCKED_MODULE(info) {
+PKGUPD_MODULE(info) {
     CHECK_ARGS(1);
     engine->load_system_database();
 

@@ -2,10 +2,8 @@
 
 #include "defines.hxx"
 #include <algorithm>
-#include <cstring>
 #include <ctime>
 #include <fstream>
-#include <sys/stat.h>
 #include <utility>
 
 InstalledMetaInfo::InstalledMetaInfo(const std::string& input) {
@@ -48,9 +46,9 @@ void SystemDatabase::load(std::filesystem::path p) {
                     std::string((std::istreambuf_iterator<char>(reader)),
                             (std::istreambuf_iterator<char>())));
             mPackages[meta_info.id] = std::move(meta_info);
-            ;
         } catch (std::exception const& exception) {
-            std::cerr << "failed to load: " << exception.what() << std::endl;
+            DEBUG("failed to read " << path.path().filename().string() << " : "
+                                    << exception.what())
         }
     }
     DEBUG("DATABASE SIZE " << mPackages.size());

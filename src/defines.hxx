@@ -1,10 +1,8 @@
-
-
-#ifndef _LIBPKGUPD_DEFINES_HH_
-#define _LIBPKGUPD_DEFINES_HH_
+#ifndef PKGUPD_DEFINES_H
+#define PKGUPD_DEFINES_H
 
 #include "Colors.h"
-#include <assert.h>
+#include <cassert>
 #include <ctime>
 #include <filesystem>
 #include <iostream>
@@ -20,6 +18,6 @@
 
 #define DEFAULT_ROOT_DIR "/"
 #define DEFAULT_CACHE_DIR "/var/cache/pkgupd"
-#define DEFAULT_DATA_DIR "/usr/share/pkgupd/manifest"
+#define DEFAULT_DATA_DIR "/var/lib/pkgupd/manifest"
 
 #endif

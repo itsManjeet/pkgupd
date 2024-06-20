@@ -15,14 +15,14 @@
  *
  */
 
-#include "unlocked_common.h"
+#include "common.h"
 #include <fstream>
 
-PKGUPD_UNLOCKED_MODULE_HELP(cachefile) {
+PKGUPD_MODULE_HELP(cachefile) {
     os << "print the cache file name" << std::endl;
 }
 
-PKGUPD_UNLOCKED_MODULE(cachefile) {
+PKGUPD_MODULE(cachefile) {
     CHECK_ARGS(1);
 
     engine->sync();

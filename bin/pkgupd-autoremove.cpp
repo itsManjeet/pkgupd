@@ -1,14 +1,14 @@
-#include "unlocked_common.h"
+#include "common.h"
 #include <algorithm>
 #include <iostream>
 
 using namespace std;
 
-PKGUPD_UNLOCKED_MODULE_HELP(autoremove) {
+PKGUPD_MODULE_HELP(autoremove) {
     os << "Cleanup unneeded packages from system" << std::endl;
 }
 
-PKGUPD_UNLOCKED_MODULE(autoremove) {
+PKGUPD_MODULE(autoremove) {
     CHECK_ARGS(0);
     engine->load_system_database();
 

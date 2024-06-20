@@ -3,9 +3,20 @@
 
 #define PKGUPD_DEFAULT_CONFIG "/etc/pkgupd.yml"
 #define PKGUPD_MODULES_LIST                                                    \
-    X(ignite)                                                                  \
-    X(sysroot)                                                                 \
-    X(unlocked)
+    X(install)                                                                 \
+    X(remove)                                                                  \
+    X(sync)                                                                    \
+    X(info)                                                                    \
+    X(search)                                                                  \
+    X(update)                                                                  \
+    X(depends)                                                                 \
+    X(trigger)                                                                 \
+    X(owner)                                                                   \
+    X(build)                                                                   \
+    X(cleanup)                                                                 \
+    X(cachefile)                                                               \
+    X(autoremove)                                                              \
+    X(ignite)
 
 #include <functional>
 #include <iostream>
@@ -22,13 +33,15 @@ PKGUPD_MODULES_LIST
 PKGUPD_MODULES_LIST
 #undef X
 
-map<string, function<int(vector<string> const&, Configuration*)>> MODULES = {
+map<string,
+        function<int(vector<string> const&, Engine* engine, Configuration*)>>
+        MODULES = {
 #define X(id) {#id, PKGUPD_##id},
-        PKGUPD_MODULES_LIST
+                PKGUPD_MODULES_LIST
 #undef X
 };
 
-bool is_number(string s) {
+bool is_number(const string& s) {
     for (auto c : s) {
         if (!(isdigit(c) || c == '.')) { return false; }
     }
@@ -92,6 +105,7 @@ int main(int argc, char** argv) {
             } else {
                 configuration.set(var, val);
             }
+            DEBUG("USER CONFIG " << var << " = " << val)
 
         } else if (!task.has_value()) {
             task = arg;
@@ -111,8 +125,10 @@ int main(int argc, char** argv) {
         exit(EXIT_FAILURE);
     }
 
+    auto engine = Engine(configuration);
+
     try {
-        return iter->second(args, &configuration);
+        return iter->second(args, &engine, &configuration);
     } catch (std::exception const& err) {
         ERROR(err.what());
         return 1;

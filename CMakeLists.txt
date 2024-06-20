@@ -9,11 +9,21 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
-find_package(OSTree)
 
-find_library(CURL curl REQUIRED)
-find_package(yaml-cpp)
+include(FetchContent)
 
+FetchContent_Declare(
+        yaml-cpp
+        GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+        GIT_TAG yaml-cpp-0.7.0
+)
+FetchContent_GetProperties(yaml-cpp)
+
+if (NOT yaml-cpp_POPULATED)
+    message(STATUS "Fetching yaml-cpp...")
+    FetchContent_Populate(yaml-cpp)
+    add_subdirectory(${yaml-cpp_SOURCE_DIR} ${yaml-cpp_BINARY_DIR})
+endif ()
 
 include_directories(include)
 add_subdirectory(src)

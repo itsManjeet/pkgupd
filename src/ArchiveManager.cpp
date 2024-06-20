@@ -86,6 +86,7 @@ void ArchiveManager::extract(const std::filesystem::path& filepath,
                          .arg(filepath)
                          .arg("-C")
                          .arg(output_path)
+                         .arg("./")
                          .start()
                          .wait(&output);
 
@@ -96,7 +97,7 @@ void ArchiveManager::extract(const std::filesystem::path& filepath,
         if (f.empty()) continue;
         files_list.emplace_back(f);
     }
-    DEBUG("EXTRACTED: " << files_list.size() << " file(s)");
+    DEBUG("EXTRACTED: " << files_list.size() << " file(s) at " << output_path);
 
     if (status != 0) {
         throw std::runtime_error(

@@ -1,4 +1,4 @@
-add_library(${PROJECT_NAME}_LIB SHARED
+add_library(${PROJECT_NAME}_LIB STATIC
         ArchiveManager.cpp ArchiveManager.cpp
         Colors.h
         Configuration.cpp Configuration.h
@@ -17,14 +17,6 @@ add_library(${PROJECT_NAME}_LIB SHARED
         Ignite.h
         Container.cpp
         Container.h
-        Sysroot.cpp
-        Sysroot.h
-        SysUpgrade.cpp
-        SysUpgrade.h
-        Deployment.cpp Deployment.h
-        Error.h
 )
-target_link_libraries(${PROJECT_NAME}_LIB
-        ${YAML_CPP_LIBRARIES}
-        ${CURL}
-        OSTree)
+target_link_libraries(${PROJECT_NAME}_LIB PRIVATE
+        yaml-cpp::yaml-cpp)

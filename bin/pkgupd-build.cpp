@@ -15,16 +15,16 @@
  *
  */
 
-#include "unlocked_common.h"
+#include "common.h"
 #include <fstream>
 
-PKGUPD_UNLOCKED_MODULE(install);
+PKGUPD_MODULE(install);
 
-PKGUPD_UNLOCKED_MODULE_HELP(build) {
+PKGUPD_MODULE_HELP(build) {
     os << "Build the PKGUPD component from element file" << std::endl;
 }
 
-PKGUPD_UNLOCKED_MODULE(build) {
+PKGUPD_MODULE(build) {
     CHECK_ARGS(1);
 
     auto c = config->get<std::string>("builder.config", "");
@@ -54,7 +54,7 @@ PKGUPD_UNLOCKED_MODULE(build) {
                 i++;
             }
         }
-        if (PKGUPD_UNLOCKED_install(to_install, engine, config) != 0) {
+        if (PKGUPD_install(to_install, engine, config) != 0) {
             ERROR("failed to install build dependencies");
             return 1;
         }

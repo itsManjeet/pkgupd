@@ -128,12 +128,14 @@ InstalledMetaInfo Engine::install(
         }
     }
 
-    // TODO: optimize file filtering
-    deprecated_files.erase(std::remove_if(deprecated_files.begin(),
-            deprecated_files.end(), [&files_list](const std::string& s) {
-                return std::find(files_list.begin(), files_list.end(), s) !=
-                       files_list.end();
-            }));
+    if (!deprecated_files.empty()) {
+        // TODO: optimize file filtering
+        deprecated_files.erase(std::remove_if(deprecated_files.begin(),
+                deprecated_files.end(), [&files_list](const std::string& s) {
+                    return std::find(files_list.begin(), files_list.end(), s) !=
+                           files_list.end();
+                }));
+    }
 
     return system_database.add(meta_info, files_list, root, false, false);
 }

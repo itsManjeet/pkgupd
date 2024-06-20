@@ -1,15 +1,14 @@
-#ifndef _DOWNLOADER_HH_
-#define _DOWNLOADER_HH_
+#ifndef PKGUPD_HTTP_H
+#define PKGUPD_HTTP_H
 
 #include "Configuration.h"
 #include "defines.hxx"
 #include "json.h"
-#include <curl/curl.h>
 #include <utility>
 
 class Http {
 private:
-    CURL* curl{nullptr};
+    std::string m_url;
 
     void perform(std::ostream* os);
 

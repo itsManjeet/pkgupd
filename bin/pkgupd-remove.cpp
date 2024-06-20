@@ -1,10 +1,10 @@
-#include "unlocked_common.h"
+#include "common.h"
 #include <algorithm>
 #include <iostream>
 
 using namespace std;
 
-PKGUPD_UNLOCKED_MODULE_HELP(remove) {
+PKGUPD_MODULE_HELP(remove) {
     os << "Remove package from system" << endl
        << PADDING << " " << BOLD("Options:") << endl
        << PADDING << "  - system.packages=" << BOLD("<list>")
@@ -12,7 +12,7 @@ PKGUPD_UNLOCKED_MODULE_HELP(remove) {
        << endl;
 }
 
-PKGUPD_UNLOCKED_MODULE(remove) {
+PKGUPD_MODULE(remove) {
     CHECK_ARGS(1);
     engine->load_system_database();
 

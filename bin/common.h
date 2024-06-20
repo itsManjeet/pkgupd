@@ -20,8 +20,8 @@ static inline bool ask_user(const std::string& mesg, Configuration* config) {
 }
 
 #define PKGUPD_MODULE(id)                                                      \
-    extern "C" int PKGUPD_##id(                                                \
-            std::vector<std::string> const& args, Configuration* config)
+    extern "C" int PKGUPD_##id(std::vector<std::string> const& args,           \
+            Engine* engine, Configuration* config)
 
 #define PKGUPD_MODULE_HELP(id)                                                 \
     extern "C" void PKGUPD_help_##id(std::ostream& os, int padding)
