@@ -86,16 +86,14 @@ InstalledMetaInfo Engine::install(
         }
     }
 
+    std::vector<std::string> old_files_list;
     if (auto const old_installed_meta_info = system_database.get(meta_info.id);
             old_installed_meta_info) {
-        std::vector<std::string> old_files_list;
         try {
             system_database.get_files(*old_installed_meta_info, old_files_list);
         } catch (...) {
             // No need to stop execution here
         }
-        deprecated_files.insert(deprecated_files.end(), old_files_list.begin(),
-                old_files_list.end());
     }
 
     files_list.clear();
@@ -128,13 +126,12 @@ InstalledMetaInfo Engine::install(
         }
     }
 
-    if (!deprecated_files.empty()) {
-        // TODO: optimize file filtering
-        deprecated_files.erase(std::remove_if(deprecated_files.begin(),
-                deprecated_files.end(), [&files_list](const std::string& s) {
-                    return std::find(files_list.begin(), files_list.end(), s) !=
-                           files_list.end();
-                }));
+    if (!old_files_list.empty()) {
+        for(auto const& i : old_files_list) {
+            if (std::find(files_list.begin(), files_list.end(), i) == files_list.end()) {
+                deprecated_files.emplace_back(i);
+            }
+        }
     }
 
     return system_database.add(meta_info, files_list, root, false, false);
