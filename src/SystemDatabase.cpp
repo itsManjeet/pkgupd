@@ -130,7 +130,7 @@ void SystemDatabase::remove(const InstalledMetaInfo& installed_meta_info) {
             std::filesystem::path(data_dir) / installed_meta_info.name();
     if (std::filesystem::exists(data_file)) {
         std::error_code code;
-        std::filesystem::remove(data_file, code);
+        std::filesystem::remove_all(data_file, code);
         if (code)
             throw std::runtime_error(
                     "failed to remove data file: " + data_file.string() + ": " +

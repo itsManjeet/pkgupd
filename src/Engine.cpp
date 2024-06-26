@@ -13,14 +13,20 @@ Engine::Engine(const Configuration& config)
 
 std::filesystem::path Engine::download(
         const MetaInfo& meta_info, bool force) const {
-    auto cache_file = root /
-                      config.get<std::string>(DIR_CACHE, DEFAULT_CACHE_DIR) /
-                      "cache" / meta_info.package_name();
-    if (std::filesystem::exists(cache_file) && !force) { return cache_file; }
+    for (auto const& ext : {"", ".doc", ".devel"}) {
+        auto cache_file =
+                root / config.get<std::string>(DIR_CACHE, DEFAULT_CACHE_DIR) /
+                "cache" / (meta_info.package_name() + ext);
+        if (std::filesystem::exists(cache_file) && !force) { continue; }
 
-    Http().url(server + "/cache/" + meta_info.package_name())
-            .download(cache_file);
-    return cache_file;
+        Http().url(server + "/cache/" + meta_info.package_name() + ext)
+                .download(cache_file);
+        if (!std::filesystem::exists(cache_file))
+            throw std::runtime_error("failed to download " + meta_info.name());
+    }
+
+    return root / config.get<std::string>(DIR_CACHE, DEFAULT_CACHE_DIR) /
+           "cache" / meta_info.package_name();
 }
 
 void Engine::uninstall(const InstalledMetaInfo& installed_meta_info) {
@@ -60,31 +66,7 @@ InstalledMetaInfo Engine::install(
     auto cache_file = root /
                       config.get<std::string>(DIR_CACHE, DEFAULT_CACHE_DIR) /
                       "cache" / meta_info.package_name();
-    if (!std::filesystem::exists(cache_file)) {
-        throw std::runtime_error("missing cache file " + cache_file.string());
-    }
-
     std::vector<std::string> files_list;
-    // Just to verify package
-    ArchiveManager::list(cache_file, files_list);
-
-    if (!config.get("no-backup", false)) {
-        for (const auto& file : meta_info.backup) {
-            auto const filepath = root / file;
-            if (std::filesystem::exists(filepath)) {
-                std::error_code error;
-                std::filesystem::copy(filepath, (filepath.string() + ".old"),
-                        std::filesystem::copy_options::recursive |
-                                std::filesystem::copy_options::
-                                        overwrite_existing,
-                        error);
-                if (error) {
-                    throw std::runtime_error(
-                            "failed to backup file " + filepath.string());
-                }
-            }
-        }
-    }
 
     std::vector<std::string> old_files_list;
     if (auto const old_installed_meta_info = system_database.get(meta_info.id);
@@ -96,39 +78,70 @@ InstalledMetaInfo Engine::install(
         }
     }
 
-    files_list.clear();
-    ArchiveManager::extract(cache_file, root, files_list);
-
-    if (!config.get("no-backup", false)) {
-        for (const auto& file : meta_info.backup) {
-            auto const filepath = root / file;
-            if (std::filesystem::exists(filepath) &&
-                    std::filesystem::exists((filepath.string() + ".old"))) {
-                std::error_code error;
-                std::filesystem::copy(filepath, (filepath.string() + ".new"),
-                        std::filesystem::copy_options::recursive |
-                                std::filesystem::copy_options::
-                                        overwrite_existing,
-                        error);
-                if (error) {
-                    throw std::runtime_error("failed to add new backup file " +
-                                             filepath.string());
+    for (auto const& ext : {"", ".doc", ".devel"}) {
+        auto package_cache_file = cache_file.string() + ext;
+        if (!std::filesystem::exists(package_cache_file)) {
+            throw std::runtime_error(
+                    "missing cache file " + package_cache_file);
+        }
+        // Just to verify package
+        ArchiveManager::list(package_cache_file, files_list);
+        if (!config.get("no-backup", false)) {
+            for (const auto& file : meta_info.backup) {
+                auto const filepath = root / file;
+                if (std::filesystem::exists(filepath)) {
+                    std::error_code error;
+                    std::filesystem::copy(filepath,
+                            (filepath.string() + ".old"),
+                            std::filesystem::copy_options::recursive |
+                                    std::filesystem::copy_options::
+                                            overwrite_existing,
+                            error);
+                    if (error) {
+                        throw std::runtime_error(
+                                "failed to backup file " + filepath.string());
+                    }
                 }
+            }
+        }
 
-                std::filesystem::rename(
-                        (filepath.string() + ".old"), filepath, error);
-                if (error) {
-                    throw std::runtime_error("failed to recover backup file " +
-                                             filepath.string() + ", " +
-                                             error.message());
+        files_list.clear();
+        ArchiveManager::extract(cache_file, root, files_list);
+
+        if (!config.get("no-backup", false)) {
+            for (const auto& file : meta_info.backup) {
+                auto const filepath = root / file;
+                if (std::filesystem::exists(filepath) &&
+                        std::filesystem::exists((filepath.string() + ".old"))) {
+                    std::error_code error;
+                    std::filesystem::copy(filepath,
+                            (filepath.string() + ".new"),
+                            std::filesystem::copy_options::recursive |
+                                    std::filesystem::copy_options::
+                                            overwrite_existing,
+                            error);
+                    if (error) {
+                        throw std::runtime_error(
+                                "failed to add new backup file " +
+                                filepath.string());
+                    }
+
+                    std::filesystem::rename(
+                            (filepath.string() + ".old"), filepath, error);
+                    if (error) {
+                        throw std::runtime_error(
+                                "failed to recover backup file " +
+                                filepath.string() + ", " + error.message());
+                    }
                 }
             }
         }
     }
 
     if (!old_files_list.empty()) {
-        for(auto const& i : old_files_list) {
-            if (std::find(files_list.begin(), files_list.end(), i) == files_list.end()) {
+        for (auto const& i : old_files_list) {
+            if (std::find(files_list.begin(), files_list.end(), i) ==
+                    files_list.end()) {
                 deprecated_files.emplace_back(i);
             }
         }
