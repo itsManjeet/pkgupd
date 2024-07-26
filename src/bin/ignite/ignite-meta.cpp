@@ -26,12 +26,15 @@ PKGUPD_IGNITE_MODULE_HELP(meta) {
 
 PKGUPD_IGNITE_MODULE(meta) {
     CHECK_ARGS(1);
-    
+
     auto channel = args[0];
 
     nlohmann::json data;
-    auto target_path = ignite->get_cache_path();
-    
+    auto target_path = ignite->get_cache_path() / channel;
+
+    std::filesystem::remove_all(target_path / "apps");
+    std::filesystem::create_directories(target_path / "apps");
+
     for (auto [path, build_info] : ignite->get_pool()) {
         build_info.cache = ignite->hash(build_info);
         auto cache_file = ignite->cachefile(build_info);
@@ -43,6 +46,16 @@ PKGUPD_IGNITE_MODULE(meta) {
 
             auto type = build_info.config.get<std::string>("type", "component");
 
+            if (type == "app") {
+                PROCESS("Adding app " << build_info.id);
+                
+                Executor("/bin/tar")
+                    .arg("-xf")
+                    .arg(cache_file)
+                    .arg("-C")
+                    .arg(target_path / "apps")
+                    .execute();
+            }
             data.push_back({
                     {"id", std::filesystem::path(path).replace_extension()},
                     {"version", build_info.version},
@@ -55,10 +68,10 @@ PKGUPD_IGNITE_MODULE(meta) {
             });
         }
     }
-    
+
     PROCESS("Writing metadata for " << data.size() << " package(s)");
 
-    std::ofstream writer(target_path / channel);
+    std::ofstream writer(target_path / "meta.json");
     writer << data;
     return 0;
 }
