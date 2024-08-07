@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Manjeet Singh <itsmanjeet1998@gmail.com>.
+ * Copyright (c) 2024 Manjeet Singh <itsmanjeet1998@gmail.com>.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,6 +73,8 @@ public:
 
     void pack(const std::filesystem::path& install_root,
             const std::filesystem::path& package);
+
+    void strip(const std::filesystem::path& install_root);
 };
 
 #endif // PKGUPD_BUILDER_H

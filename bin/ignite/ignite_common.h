@@ -15,29 +15,17 @@
  *
  */
 
-#include "../../ArchiveManager.h"
-#include "ignite_common.h"
+#ifndef PKGUPD_IGNITE_COMMON_H
+#define PKGUPD_IGNITE_COMMON_H
 
-PKGUPD_IGNITE_MODULE_HELP(checkout) {
-    os << "Checkout built cache" << std::endl;
-}
+#include <Ignite.h>
+#include "../common.h"
 
-PKGUPD_IGNITE_MODULE(checkout) {
-    CHECK_ARGS(2);
+#define PKGUPD_IGNITE_MODULE(id)                                               \
+    extern "C" int PKGUPD_IGNITE_##id(std::vector<std::string> const& args,    \
+            Ignite* ignite, Configuration* config)
 
-    std::filesystem::create_directories(args[1]);
+#define PKGUPD_IGNITE_MODULE_HELP(id)                                          \
+    extern "C" void PKGUPD_IGNITE_help_##id(std::ostream& os, int padding)
 
-    std::vector<std::tuple<std::string, Builder::BuildInfo, bool>> status;
-    ignite->resolve({args[0]}, status);
-
-    auto [path, build_info, cached] = status.back();
-    if (!cached) {
-        ERROR(path << " not cached yet");
-        return 1;
-    }
-
-    std::vector<std::string> files;
-    ArchiveManager::extract(ignite->cachefile(build_info), args[1], files);
-
-    return 0;
-}
+#endif // PKGUPD_IGNITE_COMMON_H

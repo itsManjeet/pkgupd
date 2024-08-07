@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Manjeet Singh <itsmanjeet1998@gmail.com>.
+ * Copyright (c) 2024 Manjeet Singh <itsmanjeet1998@gmail.com>.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -119,7 +119,6 @@ void Ignite::resolve(const std::vector<std::string>& id,
                         break;
                     }
                 }
-
             } else {
                 if (!std::get<2>(*idx)) {
                     cached = false;
@@ -376,7 +375,6 @@ void Ignite::integrate(Container& container,
             }
 
             extractor.execute();
-
         } catch (const std::exception& exception) {
             throw std::runtime_error(
                     "failed to integrate " +

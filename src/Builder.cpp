@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023 Manjeet Singh <itsmanjeet1998@gmail.com>.
+ * Copyright (c) 2024 Manjeet Singh <itsmanjeet1998@gmail.com>.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -303,51 +303,53 @@ void Builder::compile_source(const std::filesystem::path& build_root,
     }
 
     if (build_info.config.get<bool>("strip", true)) {
-        for (auto const& iter : std::filesystem::recursive_directory_iterator(
-                     resolved_install_root)) {
-            if (!iter.is_regular_file()) continue;
-            // if file is executable and writable or
-            // if file ends with .so and .a
-            // TODO check if it cover all cases
-            if (((iter.path().has_extension() &&
-                         (iter.path().extension() == ".so" ||
-                                 iter.path().extension() == ".a")) ||
-                        (access(iter.path().c_str(), X_OK) == 0)) &&
-                    access(iter.path().c_str(), W_OK) == 0) {
+        strip(resolved_install_root);
+    }
+}
 
-                auto [status, mime_type] = Executor("/bin/file")
-                                                   .arg("-b")
-                                                   .arg("--mime-type")
-                                                   .arg(iter.path())
-                                                   .output();
-                if (status != 0) {
-                    ERROR("failed to read MIME TYPE for " +
-                            iter.path().string() + ": " + mime_type);
-                    continue;
+void Builder::strip(const std::filesystem::path& install_root) {
+    for (auto const& iter :
+            std::filesystem::recursive_directory_iterator(install_root)) {
+        if (!iter.is_regular_file()) continue;
+        // if file is executable and writable or
+        // if file ends with .so and .a
+        // TODO check if it cover all cases
+        if (((iter.path().has_extension() &&
+                     (iter.path().extension() == ".so" ||
+                             iter.path().extension() == ".a")) ||
+                    (access(iter.path().c_str(), X_OK) == 0)) &&
+                access(iter.path().c_str(), W_OK) == 0) {
+
+            auto [status, mime_type] = Executor("/bin/file")
+                                               .arg("-b")
+                                               .arg("--mime-type")
+                                               .arg(iter.path())
+                                               .output();
+            if (status != 0) {
+                ERROR("failed to read MIME TYPE for " + iter.path().string() +
+                        ": " + mime_type);
+                continue;
+            }
+
+            std::vector<std::string> mime_to_strip;
+            if (config.node["strip-mimetype"]) {
+                for (auto const& i : config.node["strip-mimetype"]) {
+                    mime_to_strip.emplace_back(i.as<std::string>());
                 }
+            }
 
-                std::vector<std::string> mime_to_strip;
-                if (config.node["strip-mimetype"]) {
-                    for (auto const& i : config.node["strip-mimetype"]) {
-                        mime_to_strip.emplace_back(i.as<std::string>());
-                    }
+            if (build_info.config.node["strip-mimetype"]) {
+                for (auto const& i : build_info.config.node["strip-mimetype"]) {
+                    mime_to_strip.emplace_back(i.as<std::string>());
                 }
+            }
 
-                if (build_info.config.node["strip-mimetype"]) {
-                    for (auto const& i :
-                            build_info.config.node["strip-mimetype"]) {
-                        mime_to_strip.emplace_back(i.as<std::string>());
-                    }
-                }
+            if (std::find(mime_to_strip.begin(), mime_to_strip.end(),
+                        mime_type) == mime_to_strip.end()) {
+                continue;
+            }
 
-                if (std::find(mime_to_strip.begin(), mime_to_strip.end(),
-                            mime_type) == mime_to_strip.end()) {
-                    continue;
-                }
-
-                // Some .so are GNU linker scripts, skip them
-                DEBUG("MIME_TYPE: '" << mime_type << "'")
-
+            try {
                 auto dbg_file_path = iter.path().string() + ".dbg";
                 // Copy debugging symbols to dbg directory
                 Executor("/bin/objcopy")
@@ -381,6 +383,11 @@ void Builder::compile_source(const std::filesystem::path& build_root,
                         .path(iter.path().parent_path())
                         .silent()
                         .execute();
+            } catch (const std::exception& exception) {
+                ERROR("failed to strip " << iter.path().string()
+                                         << " with mimetype " << mime_type
+                                         << " because " << exception.what());
+                continue;
             }
         }
     }
@@ -402,7 +409,7 @@ void Builder::pack(const std::filesystem::path& install_root,
     std::vector<std::regex> keep_files;
     if (build_info.config.node["keep-files"]) {
         for (auto const& i : build_info.config.node["keep-files"]) {
-            keep_files.push_back(std::regex(i.as<std::string>()));
+            keep_files.emplace_back(i.as<std::string>());
         }
     }
 

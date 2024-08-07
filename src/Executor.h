@@ -69,6 +69,8 @@ public:
 
     void execute();
 
+    void dump_command(std::ostream& os);
+
     std::tuple<int, std::string> output();
 };
 

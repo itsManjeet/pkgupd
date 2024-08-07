@@ -1,4 +1,4 @@
-add_executable(${PROJECT_NAME}
+add_library(${PROJECT_NAME}_Shared SHARED
         ArchiveManager.cpp ArchiveManager.cpp
         Colors.h
         Configuration.cpp Configuration.h
@@ -17,31 +17,7 @@ add_executable(${PROJECT_NAME}
         Ignite.h
         Container.cpp
         Container.h
-
-        bin/pkgupd.cpp
-
-        bin/pkgupd-autoremove.cpp
-        bin/pkgupd-cleanup.cpp
-        bin/pkgupd-depends.cpp
-        bin/pkgupd-info.cpp
-        bin/pkgupd-installer.cpp
-        bin/pkgupd-owner.cpp
-        bin/pkgupd-remove.cpp
-        bin/pkgupd-search.cpp
-        bin/pkgupd-sync.cpp
-        bin/pkgupd-trigger.cpp
-        bin/pkgupd-update.cpp
-        bin/pkgupd-build.cpp
-        bin/pkgupd-cachefile.cpp
-
-        bin/common.h
-
-        bin/pkgupd-ignite.cpp
-        bin/ignite/ignite_common.h
-        bin/ignite/ignite-status.cpp
-        bin/ignite/ignite-build.cpp
-        bin/ignite/ignite-checkout.cpp
-        bin/ignite/ignite-meta.cpp
 )
-target_link_libraries(${PROJECT_NAME} PRIVATE
-        libyaml-cpp.a)
+
+target_link_libraries(${PROJECT_NAME}_Shared PUBLIC
+        yaml-cpp)

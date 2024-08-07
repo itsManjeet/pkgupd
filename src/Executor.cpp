@@ -92,22 +92,21 @@ std::tuple<int, std::string> Executor::output() {
     return {status, output_data};
 }
 
+void Executor::dump_command(std::ostream& os) {
+    std::stringstream ss;
+    for (auto const& a : args_) { ss << a << " "; }
+
+    os << "COMMAND  : " << ss.str() << std::endl;
+    os << "path     : " << (path_ ? *path_ : ".") << std::endl;
+}
+
 void Executor::execute() {
-    if (!silent_) {
-        std::stringstream ss;
-        for (auto const& a : args_) { ss << a << " "; }
-        DEBUG("COMMAND : " << ss.str());
-        DEBUG("PATH    : " << (path_ ? *path_ : "."));
+    if (!silent_) { dump_command(logger_ ? *logger_ : std::cout); }
 
-        if (logger_) {
-            *logger_ << "COMMAND  : " << ss.str() << std::endl;
-            *logger_ << "path     : " << (path_ ? *path_ : ".") << std::endl;
-        }
-    }
-
-    if (int status = run(); status != 0) {
-
-        throw std::runtime_error("failed to execute command: exit code " +
+    if (auto const status = run(); status != 0) {
+        dump_command(std::cerr);
+        if (logger_) dump_command(*logger_);
+        throw std::runtime_error("failed to execute command : exit code " +
                                  std::to_string(status));
     }
 }

@@ -1,8 +1,8 @@
 #ifndef PKGUPD_COMMON_HH
 #define PKGUPD_COMMON_HH
 
-#include "../Configuration.h"
-#include "../Engine.h"
+#include <Configuration.h>
+#include <Engine.h>
 #include <iostream>
 
 static inline bool ask_user(const std::string& mesg, Configuration* config) {
@@ -10,11 +10,7 @@ static inline bool ask_user(const std::string& mesg, Configuration* config) {
         std::cout << mesg << " [Y|N] >> ";
         char c;
         std::cin >> c;
-        if (c == 'Y' || c == 'y') {
-            return true;
-        } else {
-            return false;
-        }
+        if (c == 'Y' || c == 'y') { return true; } else { return false; }
     }
     return true;
 }

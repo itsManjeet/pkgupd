@@ -15,8 +15,8 @@
  *
  */
 
-#include "../../Executor.h"
-#include "../../json.h"
+#include <Executor.h>
+#include <json.h>
 #include "ignite_common.h"
 #include <fstream>
 
@@ -48,13 +48,13 @@ PKGUPD_IGNITE_MODULE(meta) {
 
             if (type == "app") {
                 PROCESS("Adding app " << build_info.id);
-                
+
                 Executor("/bin/tar")
-                    .arg("-xf")
-                    .arg(cache_file)
-                    .arg("-C")
-                    .arg(target_path / "apps")
-                    .execute();
+                        .arg("-xf")
+                        .arg(cache_file)
+                        .arg("-C")
+                        .arg(target_path / "apps")
+                        .execute();
             }
             data.push_back({
                     {"id", std::filesystem::path(path).replace_extension()},
