@@ -1,5 +1,5 @@
-#ifndef PKGUPD_SYSTEMDATABASE_H
-#define PKGUPD_SYSTEMDATABASE_H
+#ifndef PKGUPD_SYSTEM_DATABASE_H
+#define PKGUPD_SYSTEM_DATABASE_H
 
 #include "Configuration.h"
 #include "MetaInfo.h"

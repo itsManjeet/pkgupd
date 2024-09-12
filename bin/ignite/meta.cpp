@@ -15,10 +15,10 @@
  *
  */
 
+#include "common.h"
 #include <Executor.h>
-#include <json.h>
-#include "ignite_common.h"
 #include <fstream>
+#include <json.h>
 
 PKGUPD_IGNITE_MODULE_HELP(meta) {
     os << "Generate meta information" << std::endl;

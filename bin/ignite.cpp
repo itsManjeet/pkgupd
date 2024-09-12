@@ -15,7 +15,7 @@
  *
  */
 
-#include "ignite/ignite_common.h"
+#include "ignite/common.h"
 #include <cstring>
 #include <functional>
 

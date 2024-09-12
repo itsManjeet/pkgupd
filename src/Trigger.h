@@ -1,8 +1,8 @@
-#ifndef _PKGUPD_TRIGGERER_HH_
-#define _PKGUPD_TRIGGERER_HH_
+#ifndef PKGUPD_TRIGGERER_H
+#define PKGUPD_TRIGGERER_H
 
 #include "SystemDatabase.h"
-#include "defines.hxx"
+#include "defines.h"
 
 class Triggerer {
 public:
@@ -35,7 +35,7 @@ protected:
     std::vector<type> get(std::vector<std::string> const& files_list);
 
 public:
-    Triggerer() {}
+    Triggerer() = default;
 
     bool trigger(std::vector<std::pair<InstalledMetaInfo,
                     std::vector<std::string>>> const& infos);

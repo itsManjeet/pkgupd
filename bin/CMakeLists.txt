@@ -1,28 +1,28 @@
 add_executable(${PROJECT_NAME}
         pkgupd.cpp
 
-        pkgupd-autoremove.cpp
-        pkgupd-cleanup.cpp
-        pkgupd-depends.cpp
-        pkgupd-info.cpp
-        pkgupd-installer.cpp
-        pkgupd-owner.cpp
-        pkgupd-remove.cpp
-        pkgupd-search.cpp
-        pkgupd-sync.cpp
-        pkgupd-trigger.cpp
-        pkgupd-update.cpp
-        pkgupd-build.cpp
-        pkgupd-cachefile.cpp
+        autoremove.cpp
+        cleanup.cpp
+        depends.cpp
+        info.cpp
+        installer.cpp
+        owner.cpp
+        remove.cpp
+        search.cpp
+        sync.cpp
+        trigger.cpp
+        update.cpp
+        build.cpp
+        cachefile.cpp
 
         common.h
 
-        pkgupd-ignite.cpp
-        ignite/ignite_common.h
-        ignite/ignite-status.cpp
-        ignite/ignite-build.cpp
-        ignite/ignite-checkout.cpp
-        ignite/ignite-meta.cpp
+        ignite.cpp
+        ignite/common.h
+        ignite/status.cpp
+        ignite/build.cpp
+        ignite/checkout.cpp
+        ignite/meta.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_Shared)

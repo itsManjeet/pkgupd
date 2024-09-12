@@ -2,7 +2,7 @@
 #define LIBPKGUPD_METAINFO_HXX
 
 #include "Configuration.h"
-#include "defines.hxx"
+#include "defines.h"
 
 /**
  * @brief PackageInfo holds all the information of rlxos packages

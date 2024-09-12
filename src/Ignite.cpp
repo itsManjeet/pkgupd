@@ -171,14 +171,15 @@ std::string Ignite::hash(const Builder::BuildInfo& build_info) {
 void Ignite::build(const Builder::BuildInfo& build_info, Engine* engine) {
     auto container = setup_container(build_info, engine, ContainerType::Build);
     std::shared_ptr<void> _(nullptr, [&container](...) {
-        for (auto const& i :
-        std::filesystem::recursive_directory_iterator(container.host_root)) {
+        for (auto const& i : std::filesystem::recursive_directory_iterator(
+                     container.host_root)) {
             if (access(i.path().c_str(), W_OK) != 0) {
                 std::error_code code;
                 std::filesystem::permissions(i.path(),
-                std::filesystem::perms::group_all | 
-                std::filesystem::perms::owner_all |
-                std::filesystem::perms::group_all, code);
+                        std::filesystem::perms::group_all |
+                                std::filesystem::perms::owner_all |
+                                std::filesystem::perms::group_all,
+                        code);
             }
         }
         std::filesystem::remove_all(container.host_root);

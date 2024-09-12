@@ -1,7 +1,7 @@
-#ifndef _LIBPKGUPD_RESOLVEDEPENDS_HH_
-#define _LIBPKGUPD_RESOLVEDEPENDS_HH_
+#ifndef PKGUPD_RESOLVE_DEPENDS_H
+#define PKGUPD_RESOLVE_DEPENDS_H
 
-#include "defines.hxx"
+#include "defines.h"
 #include <functional>
 #include <optional>
 

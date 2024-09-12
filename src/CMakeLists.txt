@@ -1,8 +1,8 @@
-add_library(${PROJECT_NAME}_Shared SHARED
+add_library(${PROJECT_NAME}_Shared
         ArchiveManager.cpp ArchiveManager.cpp
         Colors.h
         Configuration.cpp Configuration.h
-        defines.hxx
+        defines.h
         Http.cpp Http.h
         Engine.cpp Engine.h
         Executor.h Executor.cpp

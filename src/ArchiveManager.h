@@ -1,8 +1,8 @@
-#ifndef PKGUPD_ARCHIVE_MANAGER_HXX
-#define PKGUPD_ARCHIVE_MANAGER_HXX
+#ifndef PKGUPD_ARCHIVE_MANAGER_H
+#define PKGUPD_ARCHIVE_MANAGER_H
 
 #include "MetaInfo.h"
-#include "defines.hxx"
+#include "defines.h"
 
 /**
  * This class represent rlxos compressed Package,

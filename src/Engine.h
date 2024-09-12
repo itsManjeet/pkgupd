@@ -1,5 +1,5 @@
-#ifndef LIBPKGUPD_ENGINE_HXX
-#define LIBPKGUPD_ENGINE_HXX
+#ifndef PKGUPD_ENGINE_H
+#define PKGUPD_ENGINE_H
 
 #include "Builder.h"
 #include "Container.h"

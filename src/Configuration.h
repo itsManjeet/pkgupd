@@ -1,5 +1,5 @@
-#ifndef LIBPKGUPD_CONFIGURATION_HH
-#define LIBPKGUPD_CONFIGURATION_HH
+#ifndef PKGUPD_CONFIGURATION_H
+#define PKGUPD_CONFIGURATION_H
 
 #include <filesystem>
 #include <string>

@@ -15,8 +15,8 @@
  *
  */
 
+#include "common.h"
 #include <ArchiveManager.h>
-#include "ignite_common.h"
 
 PKGUPD_IGNITE_MODULE_HELP(checkout) {
     os << "Checkout built cache" << std::endl;

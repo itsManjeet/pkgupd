@@ -1,6 +1,6 @@
 #include "SystemDatabase.h"
 
-#include "defines.hxx"
+#include "defines.h"
 #include <algorithm>
 #include <ctime>
 #include <fstream>
@@ -8,8 +8,7 @@
 
 InstalledMetaInfo::InstalledMetaInfo(const std::string& input) {
     update_from_data(input, "");
-
-    // timestamp = config.get<std::string>("timestamp");
+    timestamp = config.get<std::string>("timestamp");
 }
 
 std::string InstalledMetaInfo::str() const {

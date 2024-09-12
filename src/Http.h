@@ -2,7 +2,7 @@
 #define PKGUPD_HTTP_H
 
 #include "Configuration.h"
-#include "defines.hxx"
+#include "defines.h"
 #include "json.h"
 #include <utility>
 

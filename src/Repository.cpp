@@ -1,6 +1,6 @@
 #include "Repository.h"
 
-#include "defines.hxx"
+#include "defines.h"
 #include "json.h"
 #include <algorithm>
 #include <filesystem>

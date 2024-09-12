@@ -15,7 +15,7 @@
  *
  */
 
-#include "ignite_common.h"
+#include "common.h"
 
 PKGUPD_IGNITE_MODULE_HELP(build) {
     os << "Build the element into container" << std::endl;

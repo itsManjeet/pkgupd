@@ -15,7 +15,7 @@
  *
  */
 
-#include "ignite_common.h"
+#include "common.h"
 
 PKGUPD_IGNITE_MODULE_HELP(status) {
     os << "Print status of element and its dependencies" << std::endl;
