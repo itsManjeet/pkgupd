@@ -105,8 +105,8 @@ InstalledMetaInfo Engine::install(
             }
         }
 
-        files_list.clear();
-        ArchiveManager::extract(cache_file, root, files_list);
+        std::vector<std::string> dummy_files_list;
+        ArchiveManager::extract(cache_file, root, dummy_files_list);
 
         if (!config.get("no-backup", false)) {
             for (const auto& file : meta_info.backup) {
