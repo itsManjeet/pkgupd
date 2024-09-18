@@ -18,6 +18,7 @@
 #include "Executor.h"
 
 #include <cstring>
+#include <iostream>
 #include <sstream>
 
 enum { READ = 0, WRITE = 1 };

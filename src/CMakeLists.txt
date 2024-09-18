@@ -3,7 +3,6 @@ add_library(${PROJECT_NAME}_Shared
         Colors.h
         Configuration.cpp Configuration.h
         defines.h
-        Http.cpp Http.h
         Engine.cpp Engine.h
         Executor.h Executor.cpp
         MetaInfo.h MetaInfo.cpp

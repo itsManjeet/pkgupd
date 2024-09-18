@@ -19,7 +19,6 @@
 
 #include "ArchiveManager.h"
 #include "Executor.h"
-#include "Http.h"
 #include <filesystem>
 #include <fstream>
 #include <optional>

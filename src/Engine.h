@@ -3,7 +3,6 @@
 
 #include "Builder.h"
 #include "Container.h"
-#include "Http.h"
 #include "Repository.h"
 #include "SystemDatabase.h"
 
@@ -24,7 +23,7 @@ public:
     InstalledMetaInfo install(const MetaInfo& meta_infos,
             std::vector<std::string>& deprecated_files);
 
-    std::filesystem::path build(const Builder::BuildInfo& build_info,
+    [[nodiscard]] std::filesystem::path build(const Builder::BuildInfo& build_info,
             const std::optional<Container>& container = {}) const;
 
     std::filesystem::path hash(const Builder::BuildInfo& build_info);
@@ -58,4 +57,4 @@ public:
     void triggers() const;
 };
 
-#endif // LIBPKGUPD_ENGINE_HXX
+#endif // PKGUPD_ENGINE_H

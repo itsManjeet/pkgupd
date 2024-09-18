@@ -1,6 +1,7 @@
 #include "Engine.h"
 
 #include "ArchiveManager.h"
+#include "Executor.h"
 #include "Resolver.h"
 #include "Trigger.h"
 #include "picosha2.h"
@@ -18,13 +19,23 @@ std::filesystem::path Engine::download(
                       config.get<std::string>(DIR_CACHE, DEFAULT_CACHE_DIR) /
                       "cache" / (meta_info.package_name());
 
-    Http().url(server + "/cache/" + meta_info.package_name())
-            .download(cache_file);
-    if (!std::filesystem::exists(cache_file))
-        throw std::runtime_error("failed to download " + meta_info.name());
+    Executor("curl")
+            .arg("-C")
+            .arg("-")
+            .arg("--fail")
+            .arg("--retry")
+            .arg("3")
+            .arg("--retry-delay")
+            .arg("3")
+            .arg("-L")
+            .arg("-o")
+            .arg(cache_file.string() + ".part")
+            .arg(server + "/cache/" + meta_info.package_name())
+            .execute();
 
-    return root / config.get<std::string>(DIR_CACHE, DEFAULT_CACHE_DIR) /
-           "cache" / meta_info.package_name();
+    std::filesystem::rename(cache_file.string() + ".part", cache_file);
+
+    return cache_file;
 }
 
 void Engine::uninstall(const InstalledMetaInfo& installed_meta_info) {
@@ -174,8 +185,18 @@ void Engine::sync(bool force) {
     auto repo_path =
             config.get<std::string>(DIR_CACHE, DEFAULT_CACHE_DIR) + "/repo";
     if (!(std::filesystem::exists(repo_path) && !force)) {
-        Http().url(server + "/" + config.get<std::string>("version", "stable"))
-                .download(repo_path);
+        Executor("curl")
+                .arg("--fail")
+                .arg("--retry")
+                .arg("3")
+                .arg("--retry-delay")
+                .arg("3")
+                .arg("-L")
+                .arg("-o")
+                .arg(repo_path)
+                .arg(server + "/" +
+                        config.get<std::string>("version", "stable"))
+                .execute();
     }
     repository.load(repo_path);
 }

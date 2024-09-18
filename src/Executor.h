@@ -1,7 +1,6 @@
 #ifndef PKGUPD_EXEC_H
 #define PKGUPD_EXEC_H
 
-#include "Colors.h"
 #include "Container.h"
 #include <array>
 #include <optional>
