@@ -37,7 +37,7 @@ PKGUPD_IGNITE_MODULE(checkout) {
     }
 
     std::vector<std::string> files;
-    ArchiveManager::extract(ignite->cachefile(build_info), args[1], files);
+    ArchiveManager::extract(ignite->cache_file(build_info), args[1], files);
 
     return 0;
 }

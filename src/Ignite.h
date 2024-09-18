@@ -36,13 +36,16 @@ public:
 
     void load();
 
-    std::filesystem::path const& get_cache_path() const { return cache_path; }
+    [[nodiscard]] std::filesystem::path const& get_cache_path() const {
+        return cache_path;
+    }
 
     std::string hash(const Builder::BuildInfo& build_info);
 
-    std::filesystem::path cachefile(const Builder::BuildInfo& build_info);
+    std::filesystem::path cache_file(const Builder::BuildInfo& build_info);
 
-    std::map<std::string, Builder::BuildInfo> const& get_pool() const {
+    [[nodiscard]] std::map<std::string, Builder::BuildInfo> const&
+    get_pool() const {
         return pool;
     }
 
@@ -60,9 +63,7 @@ public:
             ContainerType container_type = ContainerType::Shell);
 
     void integrate(Container& container, const Builder::BuildInfo& build_info,
-            const std::filesystem::path& root = {},
-            std::vector<std::string> extras = {"devel"},
-            bool skip_core = false);
+            const std::filesystem::path& root = {});
 
     void build(const Builder::BuildInfo& build_info, Engine* engine);
 };

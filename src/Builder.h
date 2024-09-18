@@ -64,7 +64,7 @@ public:
 
     std::optional<std::filesystem::path> prepare_sources(
             const std::filesystem::path& source_dir,
-            const std::filesystem::path& build_root);
+            const std::filesystem::path& build_root) const;
 
     Compiler get_compiler(const std::filesystem::path& build_root);
 
@@ -72,9 +72,9 @@ public:
             const std::filesystem::path& install_root);
 
     void pack(const std::filesystem::path& install_root,
-            const std::filesystem::path& package);
+            const std::filesystem::path& package) const;
 
-    void strip(const std::filesystem::path& install_root);
+    void strip(const std::filesystem::path& install_root) const;
 };
 
 #endif // PKGUPD_BUILDER_H

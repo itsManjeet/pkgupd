@@ -100,7 +100,7 @@ void Ignite::resolve(const std::vector<std::string>& id,
         }
 
         build_info->second.cache = hash(build_info->second);
-        auto cached = std::filesystem::exists(cachefile(build_info->second));
+        auto cached = std::filesystem::exists(cache_file(build_info->second));
 
         for (auto depend : depends) {
             auto idx = std::find_if(output.begin(), output.end(),
@@ -114,7 +114,8 @@ void Ignite::resolve(const std::vector<std::string>& id,
                 } else {
                     auto local_build_info = in_pool->second;
                     local_build_info.cache = hash(local_build_info);
-                    if (!std::filesystem::exists(cachefile(local_build_info))) {
+                    if (!std::filesystem::exists(
+                                cache_file(local_build_info))) {
                         cached = false;
                         break;
                     }
@@ -196,7 +197,7 @@ void Ignite::build(const Builder::BuildInfo& build_info, Engine* engine) {
             (build_info.package_name(build_info.element_id) + ".log"));
     container.logger = &logger;
 
-    auto package_path = cachefile(build_info);
+    auto package_path = cache_file(build_info);
     auto builder = Builder(config, build_info, container);
     auto subdir = builder.prepare_sources(
             cache_path / "sources", container.host_root / "build-root");
@@ -314,11 +315,6 @@ Container Ignite::setup_container(const Builder::BuildInfo& build_info,
                     states.end());
         }
 
-        auto include_parts = std::vector<std::string>();
-        for (auto const& i : build_info.config.node["include-parts"])
-            include_parts.push_back(i.as<std::string>());
-
-        auto include_core = build_info.config.get<bool>("include-core", true);
         for (auto const& [path, info, cached] : states) {
             auto installation_path = std::filesystem::path("install-root") /
                                      build_info.package_name();
@@ -326,22 +322,21 @@ Container Ignite::setup_container(const Builder::BuildInfo& build_info,
                     build_info.name() + "-include-path",
                     build_info.config.get<std::string>(
                             "include-root", installation_path.string()));
-            integrate(container, info, installation_path, include_parts,
-                    !include_core);
+            integrate(container, info, installation_path);
         }
     }
 
     return container;
 }
 
-std::filesystem::path Ignite::cachefile(const Builder::BuildInfo& build_info) {
+std::filesystem::path Ignite::cache_file(const Builder::BuildInfo& build_info) {
     return cache_path / "cache" /
            build_info.package_name(build_info.element_id);
 }
 
 void Ignite::integrate(Container& container,
-        const Builder::BuildInfo& build_info, const std::filesystem::path& root,
-        std::vector<std::string> extras, bool skip_core) {
+        const Builder::BuildInfo& build_info,
+        const std::filesystem::path& root) {
     auto container_root =
             container.host_root /
             (root.has_root_path()
@@ -350,38 +345,34 @@ void Ignite::integrate(Container& container,
     PROCESS("Integrating " << build_info.id);
     std::filesystem::create_directories(container_root);
 
-    auto cache_file_path = cachefile(build_info);
-    for (auto& e : extras) e.insert(e.begin(), '.');
-    if (!skip_core) { extras.insert(extras.begin(), {""}); }
-    for (auto const& i : extras) {
-        auto sub_cache_file_path = cache_file_path.string() + i;
-        if (!std::filesystem::exists(sub_cache_file_path)) {
-            throw std::runtime_error(build_info.id + " not yet cached");
-        }
-        try {
-            auto extractor = Executor("/bin/tar")
-                                     .arg("-xPhf")
-                                     .arg(sub_cache_file_path)
-                                     .arg("-C")
-                                     .arg(container_root);
+    auto cache_file_path = cache_file(build_info);
 
-            if (root.empty()) {
-                extractor.arg("--exclude=./etc/hosts")
-                        .arg("--exclude=./etc/hostname")
-                        .arg("--exclude=./etc/resolve.conf")
-                        .arg("--exclude=./proc")
-                        .arg("--exclude=./run")
-                        .arg("--exclude=./sys")
-                        .arg("--exclude=./dev");
-            }
+    if (!std::filesystem::exists(cache_file_path)) {
+        throw std::runtime_error(build_info.id + " not yet cached");
+    }
+    try {
+        auto extractor = Executor("/bin/tar")
+                                 .arg("-xPhf")
+                                 .arg(cache_file_path)
+                                 .arg("-C")
+                                 .arg(container_root);
 
-            extractor.execute();
-        } catch (const std::exception& exception) {
-            throw std::runtime_error(
-                    "failed to integrate " +
-                    build_info.package_name(build_info.element_id) + i + " " +
-                    exception.what());
+        if (root.empty()) {
+            extractor.arg("--exclude=./etc/hosts")
+                    .arg("--exclude=./etc/hostname")
+                    .arg("--exclude=./etc/resolve.conf")
+                    .arg("--exclude=./proc")
+                    .arg("--exclude=./run")
+                    .arg("--exclude=./sys")
+                    .arg("--exclude=./dev");
         }
+
+        extractor.execute();
+    } catch (const std::exception& exception) {
+        throw std::runtime_error(
+                "failed to integrate " +
+                build_info.package_name(build_info.element_id) + " " +
+                exception.what());
     }
 
     if (root.empty() && !build_info.integration.empty()) {
@@ -406,9 +397,9 @@ void Ignite::integrate(Container& container,
             writer << meta_info.str();
         }
         if (!build_info.integration.empty()) {
-            auto integration_script =
-                    build_info.resolve(build_info.integration, config);
             {
+                auto integration_script =
+                        build_info.resolve(build_info.integration, config);
                 std::ofstream writer(data_dir / "integration");
                 writer << integration_script;
             }

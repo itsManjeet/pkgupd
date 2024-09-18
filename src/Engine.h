@@ -25,7 +25,7 @@ public:
             std::vector<std::string>& deprecated_files);
 
     std::filesystem::path build(const Builder::BuildInfo& build_info,
-            const std::optional<Container>& container = {});
+            const std::optional<Container>& container = {}) const;
 
     std::filesystem::path hash(const Builder::BuildInfo& build_info);
 

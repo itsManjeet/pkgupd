@@ -71,14 +71,16 @@ std::string Builder::BuildInfo::resolve(const std::string& data,
                 result.replace(match[0].first, match[0].second, it->second);
                 // TODO: a better way to handle this hack
             } else if (variable.starts_with("version:")) {
-                auto data = variable.substr(variable.find_first_of(':') + 1);
+                auto variable_data =
+                        variable.substr(variable.find_first_of(':') + 1);
                 auto version = variables.at("version");
                 try {
-                    auto nth = std::stoi(data) - 1;
+                    auto nth = std::stoi(variable_data) - 1;
                     int count = 0, position = 0;
                     while (count <= nth) {
                         position += 1;
-                        position = version.find('.', position);
+                        position =
+                                static_cast<int>(version.find('.', position));
                         if (position == std::string::npos) {
                             throw std::string(
                                     "invalid variable value spliting for " +
@@ -92,7 +94,7 @@ std::string Builder::BuildInfo::resolve(const std::string& data,
                     throw std::runtime_error(error);
                 } catch (...) {
                     result.replace(match[0].first, match[0].second,
-                            replace(version, '.', data[0]));
+                            replace(version, '.', variable_data[0]));
                 }
             } else {
                 throw std::runtime_error(
@@ -140,7 +142,7 @@ std::string Builder::BuildInfo::resolve(const std::string& value,
 
 std::optional<std::filesystem::path> Builder::prepare_sources(
         const std::filesystem::path& source_dir,
-        const std::filesystem::path& build_root) {
+        const std::filesystem::path& build_root) const {
     std::optional<std::filesystem::path> subdir;
 
     std::filesystem::create_directories(build_root);
@@ -261,8 +263,9 @@ void Builder::compile_source(const std::filesystem::path& build_root,
         DEBUG(script);
 
         if (script.length() > 500) {
-            auto script_path = resolved_build_root / "pkgupd_exec_script.sh";
             {
+                auto script_path =
+                        resolved_build_root / "pkgupd_exec_script.sh";
                 std::ofstream script_writer(script_path);
                 script_writer << script;
             }
@@ -307,7 +310,7 @@ void Builder::compile_source(const std::filesystem::path& build_root,
     }
 }
 
-void Builder::strip(const std::filesystem::path& install_root) {
+void Builder::strip(const std::filesystem::path& install_root) const {
     for (auto const& iter :
             std::filesystem::recursive_directory_iterator(install_root)) {
         if (!iter.is_regular_file()) continue;
@@ -394,17 +397,11 @@ void Builder::strip(const std::filesystem::path& install_root) {
 }
 
 void Builder::pack(const std::filesystem::path& install_root,
-        const std::filesystem::path& package) {
+        const std::filesystem::path& package) const {
     auto install_root_package = install_root / build_info.package_name();
-    auto install_root_devel =
-            install_root / (build_info.package_name() + ".devel");
     auto install_root_dbg = install_root / (build_info.package_name() + ".dbg");
-    auto install_root_doc = install_root / (build_info.package_name() + ".doc");
 
-    for (auto const& i :
-            {install_root_dbg, install_root_devel, install_root_doc}) {
-        std::filesystem::create_directories(i);
-    }
+    std::filesystem::create_directories(install_root_dbg);
 
     std::vector<std::regex> keep_files;
     if (build_info.config.node["keep-files"]) {
@@ -424,7 +421,8 @@ void Builder::pack(const std::filesystem::path& install_root,
                                      const std::filesystem::path& old_parent,
                                      const std::filesystem::path& new_parent)
             -> std::filesystem::path {
-        auto relative_path = std::filesystem::relative(filepath, old_parent);
+        const auto relative_path =
+                std::filesystem::relative(filepath, old_parent);
         return new_parent / relative_path;
     };
 
@@ -436,25 +434,10 @@ void Builder::pack(const std::filesystem::path& install_root,
         std::filesystem::rename(filepath, replaced_path);
     };
 
-    for (auto const& devel :
-            {"usr/include", "usr/lib/cmake", "usr/lib/pkgconfig"}) {
-        if (auto path = install_root_package / devel;
-                std::filesystem::exists(path)) {
-            move_file(path, install_root_devel);
-        }
-    }
-
     for (auto const& dbg : {"usr/src", "usr/lib/debug"}) {
         if (auto path = install_root_package / dbg;
                 std::filesystem::exists(path)) {
             move_file(path, install_root_dbg);
-        }
-    }
-
-    for (auto const& dbg : {"usr/share/doc", "usr/share/man"}) {
-        if (auto path = install_root_package / dbg;
-                std::filesystem::exists(path)) {
-            move_file(path, install_root_doc);
         }
     }
 
@@ -469,8 +452,6 @@ void Builder::pack(const std::filesystem::path& install_root,
             continue;
         } else if (i.path().has_extension() && i.path().extension() == ".la") {
             std::filesystem::remove(i.path());
-        } else if (i.path().has_extension() && i.path().extension() == ".a") {
-            move_file(i.path(), install_root_devel);
         } else if (i.path().has_extension() && i.path().extension() == ".dbg") {
             move_file(i.path(), install_root_dbg);
         }
@@ -493,8 +474,6 @@ void Builder::pack(const std::filesystem::path& install_root,
     for (auto const& i : std::map<std::string, std::string>{
                  {"", install_root_package},
                  {".dbg", install_root_dbg},
-                 {".devel", install_root_devel},
-                 {".doc", install_root_doc},
          }) {
         Executor("/bin/tar")
                 .arg("--zstd")
