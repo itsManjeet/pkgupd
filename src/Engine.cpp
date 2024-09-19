@@ -19,7 +19,7 @@ std::filesystem::path Engine::download(
                       config.get<std::string>(DIR_CACHE, DEFAULT_CACHE_DIR) /
                       "cache" / (meta_info.package_name());
 
-    Executor("curl")
+    Executor("/bin/curl")
             .arg("-C")
             .arg("-")
             .arg("--fail")
@@ -185,7 +185,7 @@ void Engine::sync(bool force) {
     auto repo_path =
             config.get<std::string>(DIR_CACHE, DEFAULT_CACHE_DIR) + "/repo";
     if (!(std::filesystem::exists(repo_path) && !force)) {
-        Executor("curl")
+        Executor("/bin/curl")
                 .arg("--fail")
                 .arg("--retry")
                 .arg("3")
