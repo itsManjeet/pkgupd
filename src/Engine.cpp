@@ -83,7 +83,7 @@ InstalledMetaInfo Engine::install(
         try {
             system_database.get_files(*old_installed_meta_info, old_files_list);
         } catch (...) {
-            // No need to stop execution here
+            old_files_list.clear();
         }
     }
 
@@ -112,8 +112,8 @@ InstalledMetaInfo Engine::install(
     }
 
     // TODO: compare extract file list with file in archive
-    files_list.clear();
-    ArchiveManager::extract(cache_file, root, files_list);
+    std::vector<std::string> extracted_files_list;
+    ArchiveManager::extract(cache_file, root, extracted_files_list);
 
     if (!config.get("no-backup", false)) {
         for (const auto& file : meta_info.backup) {
