@@ -6,7 +6,6 @@
 void ArchiveManager::get(const std::filesystem::path& filepath,
         const std::string& input_path, std::string& output) {
     auto [status, out] = Executor("/bin/tar")
-                                 .arg("--zstd")
                                  .arg("-O")
                                  .arg("-xPf")
                                  .arg(filepath)
@@ -24,7 +23,6 @@ void ArchiveManager::extract(const std::filesystem::path& filepath,
         const std::filesystem::path& output_path) {
     std::ofstream writer(output_path);
     int status = Executor("/bin/tar")
-                         .arg("--zstd")
                          .arg("-O")
                          .arg("-xPf")
                          .arg(filepath)
@@ -47,8 +45,7 @@ MetaInfo ArchiveManager::info(const std::filesystem::path& input_path) {
 void ArchiveManager::list(const std::filesystem::path& filepath,
         std::vector<std::string>& files) {
     std::stringstream output;
-    int status = Executor("/usr/bin/tar")
-                         .arg("--zstd")
+    int status = Executor("/bin/tar")
                          .arg("-tf")
                          .arg(filepath)
                          .start()
