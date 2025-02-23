@@ -15,8 +15,7 @@
     X(build)                                                                   \
     X(cleanup)                                                                 \
     X(cachefile)                                                               \
-    X(autoremove)                                                              \
-    X(ignite)
+    X(autoremove)
 
 #include <functional>
 #include <iostream>

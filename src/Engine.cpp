@@ -82,9 +82,7 @@ InstalledMetaInfo Engine::install(
             old_installed_meta_info) {
         try {
             system_database.get_files(*old_installed_meta_info, old_files_list);
-        } catch (...) {
-            old_files_list.clear();
-        }
+        } catch (...) { old_files_list.clear(); }
     }
 
     if (!std::filesystem::exists(cache_file)) {

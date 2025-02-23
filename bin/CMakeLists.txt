@@ -16,13 +16,6 @@ add_executable(${PROJECT_NAME}
         cachefile.cpp
 
         common.h
-
-        ignite.cpp
-        ignite/common.h
-        ignite/status.cpp
-        ignite/build.cpp
-        ignite/checkout.cpp
-        ignite/meta.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} ${PROJECT_NAME}_Shared)

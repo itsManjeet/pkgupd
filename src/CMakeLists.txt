@@ -12,8 +12,6 @@ add_library(${PROJECT_NAME}_Shared
         Trigger.cpp Trigger.h
         json.h
         Builder.cpp Builder.h
-        Ignite.cpp
-        Ignite.h
         Container.cpp
         Container.h
 )
